@@ -1,0 +1,31 @@
+\chapter{Conclusiones}
+
+A lo largo de este trabajo buscamos analizar la forma en la que el algoritmo DCS permite ser conceptualizado en una serie de \textit{fases}, de las cuales comprendimos su funcionamiento durante la ejecución del algoritmo general de forma agnóstica a la heurística utilizada. Mediante la identificación de estas fases pudimos ver que el algoritmo (DCS) atraviesa etapas cuyos objetivos parciales no siempre se mantienen, más allá de ser etapas que conducen a un objetivo en común (resolver el problema de control en general). Por ejemplo, para encontrar una solución, primero es necesario encontrar un estado marcado y luego encontrar la manera de llegar de forma controlable a él. 
+
+Para llegar a ese análisis, primero atravesamos un proceso exploratorio sobre el algoritmo estándar y parte de su implementación para finalmente acceder al algoritmo \textit{on-the-fly} y sus detalles. Este último, sumado a los detalles de la \textit{heurística RA} fueron estudiados con precisión para poder desarrollar este trabajo.
+
+\vspace{.5cm}
+Con este enfoque en mente y el trabajo realizado hemos logrado los siguientes objetivos:
+
+\begin{itemize}
+    \item Definir y entender en profundidad las etapas que atraviesa el algoritmo (DCS) durante su ejecución y cuantificar el rendimiento de las heurísticas actuales para cada fase.
+    
+    \item Introducción de cambios a la heurística “Ready Abstraction” que impactaron en una de las fases de ejecución cuyo rendimiento es menor en términos relativos.  
+    
+    \item Implementación de los cambios sobre la heurística incorporados en la herramienta MTSA \cite{mtsa}
+    
+    \item Mejora del rendimiento de la heurística con los cambios introducidos, tomando los casos del \textit{benchmark} con ventana de mejora en la etapa 3.
+
+\end{itemize}
+
+
+Como trabajo a futuro, presentamos las siguientes ideas:
+
+\begin{itemize}
+    \item Modificación del algoritmo de exploración on-the-fly para resolución de otros problemas, por ejemplo cambiando el objetivo de nonblocking por objetivos de tipo GR1.
+    
+    \item Análisis más profundo del impacto (positivo o negativo) que tienen los cambios propuestos en la exploración.
+    
+    \item Propuesta de nuevas modificaciones más refinadas a RA basándonos en el análisis de fases.
+
+\end{itemize}

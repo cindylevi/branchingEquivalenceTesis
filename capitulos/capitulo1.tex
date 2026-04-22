@@ -1,0 +1,59 @@
+\newcommand{\multlinecomment}[1]{\directlua{-- #1}}
+
+\chapter{Introducción}
+% \section{Introducción}
+{\begin{small}%
+\begin{flushright}%
+\it
+
+Lo que vieron mis ojos fue simultáneo: \\
+lo que transcribiré, sucesivo, \\
+porque el lenguaje lo es. \\
+Algo, sin embargo, recogeré.
+
+--JLB
+\end{flushright}%
+\end{small}%
+\vspace{.5cm}}
+
+La automatización de tareas ha sido a lo largo de la historia un desafío \textit{motivante} para las Ciencias de la Computación. Desde sus inicios se buscó la manera de automatizar las tareas tediosas o repetitivas. Yendo un poco más lejos, la posibilidad de una computadora que \textit{se programe} a sí misma es abordada por distintas ramas de la computación. Entre ellas se encuentran muchas agrupadas dentro del término \textit{Inteligencia Artificial}. En el trabajo que presentamos nos abocaremos al caso particular de programas que generan \textbf{Síntesis Automática de Controladores}.
+
+En este área de estudio buscamos desarrollar código que \textbf{sintetice} una solución de un determinado problema de forma \textbf{automática} partiendo de ciertas \textit{reglas y objetivos} (o pre/post condiciones) que se proveen y es necesario cumplirlos. De esta manera, lo que devuelve nuestro programa es una estrategia que garantiza alcanzar una solución, si es que existe. Por otro lado, en el caso de que dadas las reglas y los objetivos planteados no exista una solución posible, avisa sobre la inexistencia de la misma. En el caso de garantizar la existencia de una solución, a la estrategia que permite alcanzarla se la conoce con el nombre de \textbf{Controlador}.
+
+Este tipo de programas tienen múltiples aplicaciones, entre ellas podemos nombrar el control de aviones para demarcar incendios forestales \cite{ZudaireIncendio}, donde a veces incluso es necesario que el programa pueda adaptarse en medio de su ejecución.
+
+El problema de \textit{síntesis} fue estudiado dentro de distintas áreas como: Control de Eventos Discretos \cite{DEC}, Síntesis Reactiva \cite{sreac} y Planning automático \cite{paut}. Si bien este trabajo se basa en resultados que provienen de combinar enfoques de las tres áreas, nos basamos principalmente en Control de Eventos Discretos (Discrete Event Control o DEC).
+
+En este enfoque modelamos el problema utilizando autómatas finitos, también conocidos como máquinas de estados finitas. Un autómata finito, está conformado por estados y transiciones entre ellos. Podemos pensar los \textit{estados} como puntos y las transiciones como flechas de un solo sentido que unen a uno o varios de ellos. A estos puntos los llamamos estados ya que representan un momento particular del dominio que se quiere modelar, por ejemplo en el caso del avión mencionado anteriormente se podría hablar de estados que representen posibilidades como: \textit{avión aterrizado}, \textit{avión sin combustible}, \textit{avión en vuelo}, etc.
+
+Por otro lado, vamos a tomar dentro de nuestro modelo a las transiciones como posibles acciones. En este caso algunas transiciones las podemos controlar y otras estarán fuera de nuestro alcance. Volviendo al ejemplo del avión, una acción \textbf{controlable} podría ser \textit{encendido de motor} mientras que la acción \textit{aterrizaje de emergencia} probablemente sea representada en nuestro modelo como una acción \textbf{no controlable}.
+
+En el autómata mencionado además existen estados distinguidos. Por un lado tomaremos un estado como \textit{inicial} y será el estado desde el cual empezaremos la exploración. Además habrá \textit{estados objetivos} que serán los estados a los cuales buscaremos llegar. En este caso de análisis y a lo largo de la tesis llamaremos \textit{marcados} a estos estados objetivo y buscaremos que el sistema no solo pueda
+alcanzarlos, sino que sea capaz de hacerlo infinitas veces y de manera segura. Esta última condición de \textit{seguridad} se refiere intuitivamente a que debemos llegar a un estado marcado mediante una secuencia de acciones que evite estados no controlables no deseados en el sistema. A esto se le agrega la condición de llegar al estado marcado infinitas veces, lo que refiere a que buscaremos poder mantenernos \textit{de forma controlable} con transiciones que nos garanticen un ciclo de permanencia en el estado marcado.
+
+El valor de este enfoque y de un algoritmo que permita realizar síntesis es la generalización a distintos problemas. El autómata descripto puede modelar un avión como el caso mencionado, o el funcionamiento de una agencia de viajes como se verá en otro ejemplo o podrá modelar el funcionamiento de diversos problemas complejos. De todas formas, nuestro algoritmo podrá generar un \textbf{controlador} sin necesitar ningún cambio específico. Para lograr esto trabajará un experto en el área, quien decide las reglas y objetivos que conformarán el autómata a analizar, por ejemplo partir de un avión en un hangar e intentando llegar a un estado marcado que describa a un avión aterrizado luego de formar un patrón en el cielo. Pero como podemos ver, este experto no debe preocuparse por como se sintetiza el controlador que resuelve el autómata que modela su problema, esa parte está garantizada por el algoritmo de síntesis que genera el controlador.
+
+Por último cabe destacar que el modelado de un sistema complejo resulta prácticamente imposible utilizando un solo autómata. Por esta razón es que se suelen modelar distintas partes del problema original como autómatas independientes y luego se componen para formar el modelo completo del sistema. Esta composición a la que nos referimos debe respetar ciertas reglas y garantiza que un estado del sistema compuesto representa la combinación de estados en que está cada componente al finalizar. 
+
+Tradicionalmente la forma de resolver el problema consiste en tomar estos autómatas independientes, realizar la composición y obtener el autómata completo para que sea analizado por el programa para sintetizar el controlador. Sin embargo, cuando el problema a resolver escala en tamaño de estados y transiciones de forma abrupta el autómata compuesto se vuelve demasiado grande, haciendo imposible su análisis y en ocasiones resultando imposible también el proceso de composición.
+
+En este contexto surge el enfoque de exploración \textit{on-the-fly}, en donde la composición se construye a medida que se van explorando transiciones mediante las cuales intentamos resolver el problema de síntesis evitando, en la medida de lo posible, la composición de todo el modelo. Este enfoque fue presentado por primera vez en la tesis doctoral de Daniel Ciolek \cite{Ciolek} y luego profundizado en la tesis de Licenciatura de Matías Durán y Florencia Zanollo \cite{DuranZanollo} cuyo trabajo resulto publicado \cite{paperOTF}.
+
+Basándonos en este trabajo, en esta tesis analizaremos el comportamiento del algoritmo de exploración del autómata compuesto que describimos anteriormente. Vamos a definir y describir ciertas fases o etapas relevantes del proceso, buscando experimentar el desempeño de las heurísticas existentes y que posibilidades de mejora existen en base a esta información. 
+
+En el capítulo 2 presentaremos los antecedentes y definiciones necesarias alrededor del problema de síntesis de controladores. Luego en el capítulo 3 presentaremos la idea básica de exploración \textit{on-the-fly} junto con una descripción del enfoque y pseudocódigo asociado como paso necesario para encarar el análisis posterior.
+
+Habiendo presentado las intuiciones del algoritmo, en el capítulo 4 avanzamos en la definición y análisis de las fases de exploración involucradas. En ese capítulo realizamos las definiciones necesarias y hacemos una experimentación acerca del peso de estas fases utilizando la heurística RA definida en \cite{Ciolek} y comparándola con heurísticas tradicionales.
+
+En el capítulo 5 avanzamos con una propuesta de cambio a la heurística RA que involucra el aprovechamiento de información brindada en el análisis de etapas del algoritmo y busca mejorar la \textit{performance} de las fases en las que RA tenga menor rendimiento.
+
+Finalmente, en el capítulo 6 presentamos las conclusiones y aportes del trabajo realizado.
+
+
+% Seguidamente, en el capı́tulo 5, exponemos detalles sobre la implementación, MTSA,
+% heurı́sticas diseñadas para testeo y detalles sobre la baterı́a de tests, desarrollada utilizando
+% TDD (Test Driven Development).
+% Como paso final en el capı́tulo 6 presentamos el benchmark utilizado y resultados de
+% performance; tanto entre distintos resultados de SCD como versus otros algoritmos del
+% estado del arte.
+% Finalmente, en el capı́tulo 7 listamos las conclusiones y aportes del trabajo presentado.
