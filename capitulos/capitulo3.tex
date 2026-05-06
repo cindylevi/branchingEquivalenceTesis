@@ -1,5 +1,3 @@
-\newcommand{\multlinecomment}[1]{\directlua{-- #1}}
-
 \chapter{Exploración \textit{on-the-fly}}
 
 El problema de síntesis de controlador tiene una solución clásica que compone toda la planta para luego explorarla. Este enfoque tiene un límite de escalabilidad en el cual la composición de la planta llega al límite de tiempo o memoria y nunca llega a producirse la exploración. Esto se debe al hecho de que al componer distintos autómatas, la cantidad de estados de la composición es exponencial respecto de los estados en los componentes. 
@@ -63,7 +61,7 @@ Por otro lado, también nos vamos a referir a la heurística \textit{RA} (Ready 
 Para visualizar de forma clara el funcionamiento y las ventajas de la exploración on-the-fly, se muestra a continuación una ejecución posible sobre una planta ejemplo. 
 
 Además vamos a establecer una convención que nos permita interpretar este tipo de gráficas con las que representamos a los LTS. Esto lo haremos mediante un código de colores que nos servirán para diferenciar algunas características de cada estado representado con un círculo con una etiqueta para nombrarlo adentro.
-\\
+\medskip
 Describiremos a continuación el código mediante el cual se representarán los siguientes aspectos para calificar estados y transiciones:
 
 \begin{itemize}

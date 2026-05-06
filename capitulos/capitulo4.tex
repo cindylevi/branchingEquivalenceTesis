@@ -75,14 +75,14 @@ En la figura \ref{fig:ejemploFTL} podemos ver un ejemplo en donde la línea punt
 \end{figure}
 
 Lo que podemos ver en la figura \ref{fig:ejemploFTL2} es el conjunto resultado de la primera iteración del método \textbf{findNewGoals} luego de eliminar el estado que mencionamos anteriormente y que destacamos en la figura \ref{fig:ejemploFTL}. De esta manera destacamos al estado $e2$ que se puede ver como no cumple la condición número dos de las enumeradas previamente porque justamente se trata de un estado que, en esta iteración, ni siquiera recibe transiciones entrantes. Por lo tanto podemos determinar que no será alcanzable desde ningún estado, lo que implica que tampoco será alcanzable por un estado del ciclo.
-\\
+\medskip
 Para el ejemplo citado en las figuras, el algoritmo de punto fijo sobre el conjunto que representa al ciclo resultará con un conjunto vacío ya que todos los estados serán removidos por alguna de las condiciones comentadas previamente. Podemos ver en el pseudocódigo correspondiente a \textbf{findNewGoals} que en ese caso devolvería un conjunto vacío que no genera ningún cambio a nivel general de la ejecución del algoritmo DCS. Justamente lo que buscamos en esta fase es lograr un subciclo controlable como resultado de nuestro método, en donde exista una iteración que ya no modifique el conjunto y a la vez haya elementos que compongan el subciclo buscado. 
-\\
+\medskip
 % Acá definimos los conjuntos que se particionan en el FNG
 En este sentido conviene analizar en mayor profundidad las razones por las cuales el resultado de la ejecución del método \textbf{findNewGoals} no resulta exitosa (es decir devuelve un conjunto vacío) y eso lo haremos, en principio, caracterizando algunos tipos de estados que se desprenden de la lógica del método iterativo.
-\\
+\medskip
 En principio analizaremos los estados del ciclo que es parámetro del método \textbf{findNewGoals} que cumplen con la condición de estar \textit{forzados a irse} y que formalizamos previamente. La idea de este análisis será ver que características nos permiten agrupar a esos estados. 
-\\
+\medskip
 Por un lado, nos interesa analizar los estados forzados a irse \textbf{en la primera iteración} del método \textbf{findNewGoals}. Es importante chequear esta condición en la primera iteración ya que después el método funciona quitando elementos del conjunto, por lo cual en posteriores iteraciones se pueden encontrar transiciones no exploradas por haber removido previamente al destinatario de alguna de esas transiciones. Estos estados que el método quita en la primera iteración del conjunto son los que desencadenan el resultado negativo sobre el chequeo de controlabilidad del ciclo. Podemos afirmar que, en caso de \textit{resolver} las transiciones de esos estados que \textit{lo sacan} del ciclo, hubieramos encontrado un subciclo controlable como resultado del método \textbf{findNewGoals}.
 
 \begin{figure}[h!]
@@ -97,9 +97,9 @@ En la figura \ref{fig:ejemploFTL3} y dentro del círculo punteado representamos 
 \subsection{Fase 4: propagación de estados Goal}
 
 Concluímos la fase anterior devolviendo un subciclo controlable que contiene un estado marcado. Este proceso es condición necesaria para resolver nuestro problema en general ya que nos permite lograr no solo alcanzabilidad a un estado marcado, sino también una manera de llegar de forma controlable a el. Por como fue definido el problema de control previamente, partimos la exploración desde un estado inicial desde el cual tenemos que poder alcanzar, también controlablemente, el subciclo mencionado.
-\\
+\medskip
 La Fase 4 inicia con la primera ejecución del método \textbf{propagateGoal}, cuyo parámetro será el ciclo controlable que encontramos en la fase anterior. Este método buscará garantizar que podamos llegar controlablemente desde el estado inicial hacia alguno de los estados del ciclo.
-\\
+\medskip
 Por lo tanto, primero buscaremos encontrar todos los estados \textit{ancestros} explorados que no hayan sido etiquetados como \textit{Goal} o \textit{Error} de los elementos del ciclo mediante el método \textbf{ancestorsNone}. Los \textit{ancestros} conseguidos mediante esta función se formalizan con el siguiente conjunto:
 
 \vspace{.5cm}
@@ -139,7 +139,7 @@ Sobre este nuevo conjunto de estados \textit{ancestros} del ciclo controlable y 
 \FloatBarrier
 
 En la figura \ref{fig:propGoalFallido} podemos ver un caso en donde ejecutamos el método \textbf{propagateGoal} habiendo completado la Fase 3 por encontrar un subciclo controlable con un estado marcado (marcado con línea de puntos resaltada en verde). Sin embargo, el proceso de propagación iniciado desde todos los estados del ciclo falla al llegar al estado \textit{ef}, el cual tiene una transición no controlable \textbf{ef} saliente hacia un estado \textbf{marcado como deadlock}. 
-\\
+\medskip
 En ese sentido buscamos caracterizar los estados que nos llevan a \textit{perder} en el proceso de la \textbf{Fase 4} por no lograr una propagación controlable hacia el estado inicial. Este análisis nos puede dar algunos indicios de cara a la elaboración de una estrategia que minimice las ejecuciones de \textbf{propagateGoal}. En principio no encontramos características en las heurísticas con las que venimos trabajando \textit{(Random, BFS, RA)} que utilicen esta información de cara a elegir transiciones para la exploración. Este aspecto nos motivará de cara a la siguiente sección, en la cual buscaremos variantes de las heurísticas existentes que permitan utilizar nueva información.
 
 \begin{figure}[h!]
@@ -165,7 +165,7 @@ En la siguiente \textit{subsección} mostramos los resultados de una experimenta
     
     \item \textbf{Cat and Mouse:} Juego de dos jugadores donde cada uno toma turnos para moverse a una casilla adyacente dentro de un mapa de la forma de un corredor dividido en 2k + 1 áreas. En \textbf{CM} \textit{n gatos y la misma cantidad de ratones} son colocados en extremos opuestos del corredor. El objetivo es mover a los ratones de manera que no terminen en el mismo lugar que un gato. Los movimientos de los gatos no son controlables. En el centro del corredor hay un agujero que lleva a los ratones a un área segura.
     
-    \item \textbf{Bidding Workflow:} Modela el proceso de evaluación de proyectos de una empresa. El proyecto debe ser aprobado por \textit{n equipos}. El objetivo es sintetizar un flujo de trabajo que intente llegar a un consenso, es decir, aprobar/rechazar el proyecto cuando todos los equipos lo aceptan/rechazan. La propuesta puede ser reasignada para reevaluación por un equipo hasta \textit{k veces}, no se puede reasignar si el equipo ya lo habı́a aceptado. Cuando un equipo \textit{lo rechaza k veces} el proyecto puede ser rechazado sin consenso. Es un caso de estudio tı́pico del dominio de Business Process Management.
+    \item \textbf{Bidding Workflow:} Modela el proceso de evaluación de proyectos de una empresa. El proyecto debe ser aprobado por \textit{n equipos}. El objetivo es sintetizar un flujo de trabajo que intente llegar a un consenso, es decir, aprobar/rechazar el proyecto cuando todos los equipos lo aceptan/rechazan. La propuesta puede ser reasignada para reevaluación por un equipo hasta \textit{k veces}, no se puede reasignar si el equipo ya lo había aceptado. Cuando un equipo \textit{lo rechaza k veces} el proyecto puede ser rechazado sin consenso. Es un caso de estudio típico del dominio de Business Process Management.
     
     \item \textbf{Air-Traffic Management:} Representa la torre de control de un aeropuerto, que recibe \textit{n peticiones} de aterrizaje simultáneas. La torre necesita avisar si tiene permiso para aterrizar o, en caso contrario, en cuál de los \textit{k espacios aéreos} debe realizar maniobras de espera. El objetivo es que todos los aviones puedan aterrizar de manera segura. El problema solo tiene solución si la cantidad de aviones es menor a la de espacios aéreos (n $<$ k).
     
@@ -220,15 +220,14 @@ A continuación otorgamos una descripción más precisa acerca del significado q
 {\centering
 \vspace{0.7cm}
 
-I_f \cong \left\{ \begin{array}{lcc}
-            \\ 0 &  si  & \textbf{RA} \ $no explora estados en esa fase$ \\
-            \\ 0 \  \textless \ I_f \ \textless \ 0.5 &  si  & \textbf{RA} \ $explora \textbf{menos} estados que \textbf{BFS} en esa fase$ \\
-            \\ 0.5 &  si  & \textbf{RA} \ $explora \textbf{igual} cantidad de estados que BFS en la fase$ \\
-            \\ 0.5 \  \textless \ I_f \ \textless \ 1 &  si  & \textbf{RA} \ $explora \textbf{más} estados que \textbf{BFS} en esa fase$ \\
-            \\ 1 &  si  & \textbf{BFS} \ $no explora estados en esa fase$ 
-            
+\[ I_f \cong \left\{ \begin{array}{lcc}
+            0 &  \text{si}  & \mathbf{RA} \ \text{no explora estados en esa fase} \\
+            0 < I_f < 0.5 &  \text{si}  & \mathbf{RA} \ \text{explora \textbf{menos} estados que } \mathbf{BFS} \text{ en esa fase} \\
+            0.5 &  \text{si}  & \mathbf{RA} \ \text{explora \textbf{igual} cantidad de estados que BFS en la fase} \\
+            0.5 < I_f < 1 &  \text{si}  & \mathbf{RA} \ \text{explora \textbf{más} estados que } \mathbf{BFS} \text{ en esa fase} \\
+            1 &  \text{si}  & \mathbf{BFS} \ \text{no explora estados en esa fase}
              \end{array}
-   \right.
+   \right. \]
 
 \centering}
 

@@ -242,34 +242,4 @@
 
 \newcommand{\multlinecomment}[1]{\directlua{-- #1}}
 
-\newcommand{\D}{\rightarrow}
-\newcommand{\B}{\rightsquigarrow}
-
-\newcommand{\A}{\mathcal{A}}
-\newcommand{\E}{\mathcal{E}}
-\newcommand{\G}{\mathcal{G}}
-\newcommand{\M}{\mathcal{M}}
-\newcommand{\R}{\mathcal{R}}
-\newcommand{\W}{\mathcal{W}}
-
-\renewcommand{\L}{\mathcal{L}}
-\renewcommand{\P}{\mathcal{P}}
-\renewcommand{\S}{\mathcal{S}}
-
-\newcommand{\w}{\ensuremath{\omega}}
-
-\newcommand{\notstep}[2]{\overset{#1}{\not\D}_{#2}}
-\newcommand{\step}[2]{\overset{#1}{\D}_{#2}}
-\newcommand{\mstep}[2]{\overset{#1}{\twoheadrightarrow}_{#2}}
-\newcommand{\lstep}[2]{\overset{#1}{\longrightarrow}_{#2}}
-\newcommand{\walk}[2]{\overset{#1}{\Rightarrow}_{#2}}
-\newcommand{\hop}[2]{\overset{#1}{\B}_{#2}}
-\newcommand{\runw}[2]{\,\overset{#1}{\dotrightarrow}_{#2}\,}
-\newcommand{\run}[3]{
-\,\overset{#1\ldots#2}{\longdotrightarrow}_{#3}\,}
-\newcommand{\runlst}[3]{
-\overset{#1\quad#2}{\raisebox{.1pt}{-}{\,\cdot\cdot\cdot}\!\D}_{#3}}
-\newcommand{\enabled}[2]{\step{}{#1}\!\!(#2)}
-\newcommand{\runs}[2]{\runw{}{#1}\!\!(#2)}
-
-\newcommand{\trimlst}[1]{\trimbox{0 0 0 5pt}{\ensuremath{#1}}}
+\newcommand{\Review}[1]{#1}

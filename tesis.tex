@@ -20,6 +20,9 @@
   keywordstyle=[2]{\color{OliveGreen}},
   keywordstyle=[3]{\color{MidnightBlue}},
   commentstyle=\color{OliveGreen},
+  breaklines=true,
+  breakatwhitespace=true,
+  postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
 }
 
 \lstdefinelanguage{pseudocode}{
@@ -33,7 +36,6 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 			% configure language options
-\usepackage[utf8x]{inputenc}									% configure input encoding
 \usepackage[inline]{enumitem}									% control layout of itemize, enumerate, description
 \usepackage{xspace}	
 \usepackage{multicol,lipsum}
@@ -53,6 +55,8 @@
 \usepackage[section]{placeins}
 
 \usepackage{subfigure}
+\let\D\undefined
+\let\B\undefined
 \input{commands}
 
 
@@ -60,13 +64,13 @@
 
 %%%% CARATULA
 
-\def\autor{Hernán Gabriel Gagliardi}
-\def\tituloTesis{Definición y análisis de etapas de exploración on-the-fly para síntesis de controladores del tipo non-blocking}
-\def\runtitulo{Definición y análisis de etapas de exploración on-the-fly para síntesis de controladores del tipo non-blocking}
-\def\runtitle{Star Wars: Rebellion and Empire}
+\def\autor{Cindy Eliana Levi}
+\def\tituloTesis{Escalando la síntesis composicional de controladores mediante una nueva técnica de minimización para branching bisimilarity}
+\def\runtitulo{Escalando la síntesis composicional de controladores mediante una nueva técnica de minimización para branching bisimilarity}
+\def\runtitle{Escalando la síntesis composicional de controladores mediante una nueva técnica de minimización para branching bisimilarity}
 \def\director{Sebastian Uchitel}
-\def\codirector{Sebastian Zudaire}
-\def\lugar{Buenos Aires, 2024}
+\def\codirector{Hernán Gabriel Gagliardi}
+\def\lugar{Buenos Aires, 2026}
 \input{caratula}
 
 %%%% ABSTRACTS, AGRADECIMIENTOS Y DEDICATORIA

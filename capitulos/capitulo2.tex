@@ -13,13 +13,13 @@ A su vez, una \k{corrida} de una palabra $w = \l_0,\ldots,\l_k$ en $T$, es una s
 
 \noindent \textbf{Notación 2}: \ Decimos que un estado $s$ es alcanzado por una palabra $w$ en una corrida comenzando en el estado $s'$, anotado como $s \in w(s')$, cuando $\exists w_{0} \ldot \exists w_{1} \ldot w = w_{0} \ldot w_{1}$ y $s' \runw{w_{0}}{E} s$.
 
-\\
+\medskip
 
 Los autómatas definen un lenguaje, un conjunto de palabras que aceptan. Dado un conjunto de eventos A, notamos con $A^{*}$ al conjunto de palabras finitas de eventos de A. El lenguaje generado por un autómata $T$, notado como $\L(T)$, es el conjunto de palabras formadas por eventos que cumplen $\D_T$. Formalmente, si $w \in A_T^*$, entonces $w \in \L(T)$ si y sólo si existe una corrida para $w$ comenzando desde el estado inicial  $\init{t}$ de $T$, que notamos $\init{t} \runw{w}{T} t'$. Generalmente los estados marcados se utilizan para indicar el logro de una tarea. Por lo tanto, consideramos como lenguaje marcado \textit{(o aceptado)} por $T$ (lo cual notamos $\L_m(T)$) al conjunto de palabras cuya corrida termina en un estado marcado.
 
 Formalmente, sea $w \in \L(T)$, entonces $w \in \L_m(T)$ si y solo si hay una corrida de $w$ que comienza en el estado inicial $\init{t}$  y alcanza un estado marcado $t_m \in M_T$, que notamos $\init{t} \runw{w}{T} t_m$. Este último concepto es relevante para la definición de la composición paralela. Es una parte fundamental del trabajo para definir las palabras aceptadas por el problema \textit{nonblocking} ya que el lenguaje aceptado por la planta compuesta es el mismo que el aceptado por cada uno de los componentes por separado.
 
-\\
+\medskip
 
 \noindent \textbf{Definición 2} (\textit{Composición Paralela}): La composición paralela  $(\|)$ de dos autómatas $T$ y $Q$ es un operador simétrico y asociativo que produce un autómata \\ $T \| Q = (S_T 
 {\times} S_Q, A_T {\cup} A_Q, \D_{T\|Q}, \<\init{t},\init{q}\>, M_T {\times} M_Q)$, donde $\D_{T\|Q}$ es la menor relación que satisface las siguientes reglas (omitimos la versión simétrica de la primera regla):

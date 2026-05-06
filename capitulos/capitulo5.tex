@@ -1,193 +1,190 @@
-\chapter{Modificaciones a RA usando el enfoque de fases}
-\section{Introducción}
+\chapter{Implementación del algoritmo}
 
-En el capítulo anterior describimos las etapas que atraviesa el algoritmo DCS para resolver el problema de síntesis para problemas con propiedades de tipo \textit{non-blocking}. Notamos también como el desarrollo de estas etapas, aún siendo agnósticas a la heurística de exploración elegida, tienen un impacto directo en su rendimiento. Luego del análisis de \textit{performance} para distintas métricas de cada etapa de exploración en la heurística \textbf{RA} \cite{Ciolek}, visualizamos que, si bien provee una mejora en general sobre otras heurísticas sencillas, se podía ajustar para mejorar su rendimiento en las fases 3 y 4.
-
-Por estas razones es que en el siguiente capítulo decidimos estudiar en mayor profundidad el funcionamiento del algoritmo DCS usando heurística RA durante la fase 3, identificando aspectos que nos permitan acelerar el progreso de esta etapa en el contexto general.  
-
-En concreto propondremos, a lo largo de este capítulo, un cambio en el comportamiento de RA a ejecutarse solamente cuando haya entrado en la tercera fase de exploración. Con este cambio buscaremos ganar rendimiento para los problemas del \textit{benchmark} en donde esta etapa es particularmente costosa y no empeorar los resultados en el resto de los casos.  
-
-\section{Comportamiento actual de RA durante las fases}
-
-En el capítulo anterior caracterizamos la etapa 3 como la encargada de garantizar un ciclo controlable que contenga un estado marcado o alcanzabilidad a algún estado \textbf{Goal}. Además notamos que el \textit{etiquetado} de ciertos estados como \textbf{Goal} dependen del éxito inicial de esta fase, por lo que previamente a ejecutarla exitosamente por primera vez, ningún estado de la exploración debería ser \textbf{Goal}. Por lo tanto, durante la etapa 3 los estados explorados solo pueden estar etiquetados como \textbf{Error} o como \textbf{None}.
-
-El esfuerzo de cualquier heurística para esta etapa debería ser el de garantizar la controlabilidad del ciclo previamente alcanzado en la etapa anterior. Sin embargo, por el diseño propio de la heurística RA vemos que la información adicional que genera ayuda a resolver las etapas 1 y 2 por haber calculado la estimación de distancia a un \textit{marcado} para cada estado. Esto último es una gran herramienta para resolver la etapa 1, mientras que el hecho de priorizar -ante transiciones de igual valor- las que vuelven al ciclo, es información valiosa para completar la etapa 2.
-
-Dicho esto, si bien encontramos casos en donde la heurística RA optimiza el rendimiento de la etapa 3 comparándola con otras heurísticas, entendemos que podría lograrse una modificación sobre la misma que contemple el objetivo parcial de esta fase, el cual difiere de los de las etapas anteriores. 
-
-Para encarar esta tarea, haremos un análisis preliminar sobre como evoluciona la exploración en el espacio acotado de la etapa 3. De esta manera buscaremos información que nos permita introducir cambios positivos sobre RA para la resolución de esta fase.
-
-\newpage
-\subsection{Evolución de la exploración en Fase 3}
-
-Analizaremos la evolución general de la exploración durante el lapso definido como etapa 3. Para realizar esto es indispensable profundizar algunos aspectos del método \textbf{findNewGoalsIn} previamente visitado en el capítulo anterior y formalizado en \ref{lst:dcs.gather}.
-
-\begin{lstlisting}[language={pseudocode},label={lst:dcs.gather},caption={Método findNewGoalsIn del algoritmo DCS.},float=ht, frame=single]
- function findNewGoalsIn($\SCC$):
-   $C = \SCC$; $C' = \emptyset$
-   while $C' \neq  C:$
-     $C' = C$; $C'' = \emptyset$
-     while $C'' \neq C:$
-     	$C'' = C$
-     	$C=C \setminus \{ s \in C \mid$ 
-            forcedTo($s, S_{\unexploredToBottom{\structure'}}\setminus (C \cup \Goals),\unexploredToBottom{\structure'}$) $\vee$
-            $(\nexists s' \in C , \exists \l \ldot s' \step{\l}{\structure'} s)\}$	
-     $C = C \setminus \{ s \in C \mid \neg$canReachGoalOrMarkedIn($s, C$)$\}$
-   return C
-  
-\end{lstlisting}
-
-Podemos ver que este método  utiliza un \textbf{conjunto C} que contiene el ciclo (representado como otro conjunto de estados) al que le queremos chequear controlabilidad. Este otro conjunto es denominado en el pseudocódigo como \textit{loops} y viene como parámetro de la etapa anterior. Particularmente el algoritmo \textbf{findNewGoalsIn} realiza un método de punto fijo iterando sobre los conjuntos $C$, $C^{'}$ y $C^{''}$ (líneas 3 y 5) con el que se van removiendo algunos estados del conjunto $C$ que representa el ciclo a verificar. Si mediante la eliminación de estos elementos alcanzamos reducimos el conjunto C a vacío, concluimos negativamente el chequeo. Estos estados, que describimos con mayor profundidad en el capítulo anterior, son los estados $s$ tal que:
-
-\begin{enumerate}
-    \item $\exists e \ldot forcedTo(s, e, \unexploredToBottom{\structure'}) \wedge e \notin (C \cup Goals)$
-    \item  $\nexists s' \in C , \exists \l \ldot s' \step{\l}{\structure'} s$
-\end{enumerate}
-
-Los estados $e$ que satisfacen la condición número 1 son los que están forzados a irse mediante transiciones no controlables a estados que no forman parte del ciclo ni están etiquetados como \textbf{Goal}. Podemos ver un ejemplo de este tipo de estados coloreados en rojo en la figura \ref{fig:cap5forcedToLeave}. Sin embargo, nos interesará evaluar la composición de este conjunto \textbf{en la primera iteración del punto fijo} ya que si resolvemos la controlabilidad de estos estados, estaría resuelto el problema de controlabilidad del ciclo. Por otro lado, también querremos analizar como varía el tamaño del conjunto número 2 a lo largo de las ejecuciones de \textbf{findNewGoalsIn}. Podemos notar que, dada una ejecución de \textbf{findNewGoalsIn}, el segundo conjunto empezará a registrar elementos solamente luego de la primera iteración ya que al evaluar la primera el conjunto C es conexo por el chequeo previo de la etapa 2. Sin embargo, luego de empezar a quitarle elementos a $C$ que componen el conjunto de \textit{forzados a irse}, empezarán a quedar estados \textit{disconexos} que van a satisfacer la segunda condición.
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.65\textwidth]{capitulos/cap5/ejemplocap5fng1.png}
-    \caption{Los estados rodeados por linea de puntos conforman el ciclo a analizar. Los estados rojos son aquellos que cumplen la condición 1 durante la ejecución de \textbf{findNewGoalsIn} en la Fase 3}
-    \label{fig:cap5forcedToLeave}
-\end{figure}
-
-\FloatBarrier
-La propuesta que describiremos a continuación se basa en la idea de reducir los estados que se encuentran en estos conjuntos críticos previamente descriptos y que aparecen en esta fase. La idea será evaluar la \textit{performance} de priorizar el conjunto que llamaremos \textit{loopExtendido} construyéndolo en cada ejecución de \textbf{findNewGoalsIn} desde su primera corrida en el algoritmo DCS en total hasta la primera corrida que no genere un conjunto vacío y de comienzo a la etapa 4.
-
-% En principio vamos a correr este análisis sobre los casos del benchmark TA, CM y BW, casos cuya conclusión previa fue la posibilidad de mejora en la tercera etapa. Vamos a visualizar la evolución sobre la cantidad de estados para estos conjuntos previamente descriptos -además de algunas métricas generales- que aparecen en esta fase. La idea será evaluar el tamaño de estos conjuntos para cada ejecución de \textbf{findNewGoalsIn} que se realiza desde su primera corrida en el algoritmo DCS en total hasta la primera corrida que no genere un conjunto vacío y de comienzo a la etapa 4.
-
-% \begin{figure}[h!]
-%     \centering
-%     \includegraphics[width=.75\textwidth]{capitulos/cap5/ejemplo-fng-estados.png}
-%     \caption{Evolución de conjuntos de estados característicos durante las ejecuciones de \linebreak \textbf{findNewGoalsIn} en la Fase 3}
-%     \label{fig:ejemploFngEstados}
-% \end{figure}
-
-% \FloatBarrier
-% En la figura \ref{fig:ejemploFngEstados}
+% Capítulo descriptivo: dónde encaja el algoritmo en el flujo composicional,
+% cómo se construyó, qué decisiones de diseño se tomaron por sobre lo que
+% deja abierto el paper, qué adaptaciones requirió el contexto de síntesis
+% de controladores, y cómo se validó la correctitud.
 
 
+\section{Introduccion}
+% Una frase sobre qué es MTSA y por qué es la plataforma natural donde
+% implementar el reemplazo de WSOE por branching bisimilarity.
+La herramienta MTSA \cite{mtsa} es el framework de desarrollo realizado en Java para varias iniciativas de LaFHIS en el contexto de la investigacion sobre LTSs. Es por eso que tanto el algoritmo composicional presentado por Uchitel y Gagliardi \#AGREGAR CITA\# como la version de WSOE utilizada para la composicionalidad fueron implementados en esta herramienta. Era entonces natural realizar el desarrollo del algoritmo de Branching Equivalence sobre el mismo framework, ante la promesa de que esto reduciria la complejidad. A su vez, nos permitira comparar de forma mas veridica ambos algoritmos, realizando pruebas de Benchmarks tanto para tiempos de ejecucion como para el uso de memoria.
 
-\subsection{Propuesta de cambio a RA}
-
-En la sección anterior observamos la importancia que tienen en la etapa 3 los estados que están forzados a irse en la primera iteración del método \textbf{findNewGoalsIn}. Por un lado es correcto decir que si pudiéramos garantizar la controlabilidad de las transiciones que salen de esos estados resolveríamos el problema de controlabilidad del ciclo.
-
-Por lo tanto, haremos una propuesta de modificación que reemplace a las transiciones recomendadas por la heurística RA mientras ocurra esta etapa. La propuesta de modificación tendrá como objetivo reducir los estados de ese conjunto para buscar una rápida resolución del objetivo de esta etapa. 
-
-Para eso buscaremos construir un conjunto de estados que consideraremos \textbf{prioritarios} con una lógica tal que, durante la fase 3, reemplacemos la elección del próximo a estado desde el cual transicionar que proponga RA por un estado de ese conjunto. La construcción de este nuevo conjunto de \textbf{estados prioritarios} se irá modificando en cada nueva ejecución del método \textbf{findNewGoalsIn} y tendrá validez hasta que se de la primera ejecución exitosa del mismo, es decir cuando el método no devuelva un conjunto vacío.
-
-Estos \textbf{estados prioritarios} que vamos a calcular en cada iteración del método \textbf{findNewGoalsIn} estarán relacionados con estos estados forzados a irse en la primera iteración que describimos anteriormente, con la idea de explorar y agotar rápidamente sus transiciones para garantizar una controlabilidad más rápida del ciclo. Dado un ciclo que funciona como input del método \textbf{findNewGoalsIn} en una iteración determinada y dado el estado $ES$ de exploración al momento, construiremos un conjunto con los siguientes elementos:
-
-\begin{enumerate}
-    \item Todos los elementos que están forzados a irse en la primera iteración. Es decir los elementos que, para todo estado $s \in ciclo$, se cumple la siguiente condición: $\exists e \ldot forcedTo(s, e, \unexploredToBottom{\structure'}) \wedge e \notin (C \cup Goals)$
-    
-    \item Para los elementos que cumplen la condición interior, tomamos el subconjunto correspondiente a los estados cuyas transiciones hayan sido completamente exploradas. De ese subconjunto \textbf{al que llamaremos S}, donde habrá estados con transiciones no controlables que lo fuercen a salir de forma no controlable del ciclo, tomaremos una clausura definida de la siguiente manera: $\{ e \ | \ \exists e' \in S, \exists l=l_0, \ldots l_n, e' \runw{l}{ES} e   \}$
-    
-\end{enumerate}
-    
-De esta manera construimos un conjunto que contiene a todos los estados conocidos que son alcanzados mediante transiciones no controlables partiendo del conjunto original. A este conjunto lo denominaremos \textit{loopExtendido} y será la base de  nuestra modificación, ya que cuando estemos en fase 3 antepondremos la elección de estados de este conjunto para tomar la próxima transición. 
+En primer lugar, se realizo la implementación del algoritmo de Branching Equivalence en el archivo BranchingEquivalence.java, creado en mtstools/DCS/Compositional/ ya que bajo este modulo estan las herramientas utilizadas por el algoritmo composicional.
 
 
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.75\textwidth]{capitulos/cap5/ejemploLoopExtendido.png}
-    \caption{En color naranja podemos ver un ejemplo del conjunto de clausura loopExtendido}
-    \label{fig:ejemploLoopExtendido}
-\end{figure}
+A su vez, en CompositionalApproach.java se reemplazó la llamada original al algoritmo de WSOE por la llamada a la nueva funcion que utiliza el algoritmo de Groote y Jansen, reemplazando tambien los preprocesamientos necesarios para los algoritmos que se hacen en algunos casos fuera de las funciones principales.
 
-Por otro lado, una vez elegido el estado mantendremos el orden de la elección de las transiciones mediante el criterio que ya utiliza RA. En la figura \ref{fig:ejemploLoopExtendido} podemos ver los estados pertenecientes al conjunto \textit{loopExtendido} que serán prioritarios coloreados en naranja. Podemos ver que muchos de los estados se encuentran fuera de los estados explorados hasta el momento. En este caso se garantizaría controlabilidad en el caso en que se exploren todas las transiciones no controlables y que estas transiciones terminen volviendo al ciclo.
+La llamada al algoritmo de Branching Equivalence queda entonces de esta forma
+\begin{lstlisting}[language=Java, numbers=none]                                
+  Pair<List<Set<Long>>, List<Set<Triple<Long, String, Long>>>> branchingPartition
+                    = BranchingEquivalence.getPartitions(localControllerMTS, localAlphabet, totalTranslator, goal.getFluents());
 
-Habiendo definido el conjunto \textit{loopExtendido}, redefinimos el método \textbf{expandNext} comentado previamente para marcar la prioridad sobre la elección de estados desde los cuales explorar. Este método modificado reemplaza al método \textbf{expandNext} original solo durante la ejecución de la etapa 3.
+  MTS<Long, String> minimizationResult = BranchingEquivalence.buildMinimisedMTSFromPartition(localControllerMTS, tauLabels, translatorControllable, branchingPartition);
+\end{lstlisting}                                                               
 
-\begin{lstlisting}[language={pseudocode},label={lst:dcs.expandNextMod},caption={Modificación del expandNext utilizando el conjunto de prioridades.},float=ht, frame=single]
- procedure expandNextModificado($\heuristic$):
-   
-   (*@{if (isEmpty(loopExtendido)):}@*)(*@\label{line:foundDead}@*)
-     expandNext(heuristic)
-   (*@{else @*)
-     ${\Goals = \Goals \cup \{e'\}}$
-     
-     let $\trimlst{(e,\l,e') \ldot e\in S_\structure \wedge e\in loopExtendido \wedge e\step{\l}{E} e' \wedge   
-  \neg (e\step{\l}{\structure} e')\wedge e \in \NONE \wedge}$ 
-       $\trimlst{\forall (s,\l',s') \ldot  s\in S_\structure \wedge s\in loopExtendido \wedge s\step{\l}{E} s' \wedge 
-       \neg (s\step{\l}{\structure} s') \wedge s \in \NONE}$ 
-         $\implies \trimlst{\heuristic(e, \l, e') >=\heuristic(s, \l',   s'))}$
-     (*@{if (isLoosing(e')):}@*)(*@\label{line:foundDead}@*)
-        ${\Errors = \Errors \cup \{e'\}}$
-     (*@{else if 
-     (isWinning($e'$)):}@*)(*@\label{line:initialDeadMarked}@*)
-        ${\Goals = \Goals \cup \{e'\}}$
-     if $e'\notin \Errors \cup \Goals$:
-        $\NONE = \NONE \cup \{e'\}$
-     return $(e,\l,e')$
- 
-\end{lstlisting}
+donde en la funcion getPartitions(...) se implementa el algoritmo de Groote y Jansen y se devuelve la partición final de estados y transiciones, y en buildMinimisedMTSFromPartition(...) se construye el MTS minimizado a partir de la partición calculada.
 
-Podemos ver en el Listing \ref{lst:dcs.expandNextMod} la intervención que se hace sobre el algoritmo DCS para beneficiar a los estados que están en el conjunto \textit{loopExtendido} para ser expandidos en primer orden. Cabe destacar que si tenemos más de un elemento en el conjunto prioritario, se elige con el criterio de la heurística que estemos usando. 
+A su vez, el algoritmo recibe como parámetros el MTS a minimizar, el alfabeto local, el traductor total y los fluents objetivo. 
 
-\subsection{Experimentación y resultados}
+En primer lugar, la modalidad de desarrollo fue en primera mano implementar la logica del algoritmo lo mas fielmente al paper posible, es decir, sin tomar en cuenta las optimizaciones ni las cotas de complejidad. En la version cero (v0), el algoritmo 
 
-Habiendo introducido el cambio que describimos en la sección anterior, vamos a realizar una comparación con el uso del \textbf{algoritmo DCS} tradicional con la utilización de la \textbf{heurística RA}. Esperamos que el cambio introducido se ejecute sin perder la buena \textit{performance} que aportaba la técnica original. 
-
-A continuación, en la figura \ref{fig:comparacionDCSFases} veremos la comparación en detalle entre la ejecución del algoritmo DCS tradicional y nuestro esquema de conjunto prioritario de estados durante fase 3. Para ambos casos se estableció un \textit{timeout experimental} de 30 minutos y aclaramos que el \textit{benchmark} se corrió en un equipo de las mismas características  para ambas versiones del \textbf{algoritmo DCS}.
+\section{Primer desarrollo del algoritmo (v0)}
 
 
+\subsection{Idea general: dos particiones que se refinan en simultáneo}
+Como fue explicado en el capitulo 3, el algoritmo de Groote y Jansen mantiene dos estructuras de refinamiento: una partición de estados $\Pi_s$ y una particion de transiciones $\Pi_t$. En $\Pi_s$ se encuentran los "bloques" de estados estables tal que si dos estados estan en distintos bloques entonces NO son branching equivalent. En $\Pi_t$ se encuentran los "bunches" de transiciones no-inertes, es decir, las transiciones que pueden distinguir estados. Ambas estructuras se refinan a la par: cada vez que un bloque de estados se parte en dos, se actualizan los bunches para reflejar el nuevo bloque, y cada vez que un bunch se parte en slices por (acción, bloque destino), se generan nuevos splitters para estabilizar los bloques afectados. El proceso continúa hasta llegar al punto fijo donde no quedan ni splitters pendientes ni bunches por refinar: las clases de equivalencia son entonces los bloques finales de $\Pi_s$.
+La idea para esta primera implementación fue mantener la estructura del paper, donde el loop principal itera sobre cada conjunto de trancisiones no triviales que estan en $\Pi_t$, tomando un subconjunto chico de transiciones. Este subconjunto de trancisiones, es separado de su "bunch" original y añadido a $\Pi_t$ como un nuevo bunch. Luego, se deben refinar los bloques de $\Pi_s$ para que queden estables respecto al nuevo conjunto de trancisiones obtenido.
 
-% \begin{figure}[h!]
-%     \centering
-%     \includegraphics[width=.50\textwidth]{capitulos/cap5/output1.png}
-%     \caption{Resultados de la ejecución del benchmark usando RA común y nuestra variante de RA}
-%     \label{fig:comparacionDCSFases}
-% \end{figure}
+\subsection{Estructuras utilizadas}
+$\Pi_s$ se implementó como \lstinline|List<Set<Long>>|, es decir una lista de conjuntos de estados. Cada \lstinline|Set<Long>| representa un bloque de estados.
+$\Pi_t$ se implementó como \lstinline|List<Set<Triple<Long, String, Long>>>|, es decir una lista de conjuntos de transiciones. Cada \lstinline|Set<Triple<Long, String, Long>>| representa un bunch de transiciones no-inertes.
+A su vez, se debió utilizar una estructura \lstinline|Pi_t_cola| para poder iterar sobre los bunches a la vez que se actualizaba la lista de pendientes a refinar.
+Tal como se menciona en el paper de Groote y Jansen, se utiliza tambien la estructura del \lstinline|splitterList| para almacenar los splitters generados durante el proceso de refinamiento. A su vez, se creo la clase \lstinline|Splitter| para representar cada splitter, que contiene el bloque que se va a partir, el conjunto de transiciones que cruzan bloques y un flag de primary/secondary, un conjunto de transiciones marcadas para identificar que esos bloques son estables y un groupId para identificar que Splitters se originaron a partir de la misma division inicial.
 
-
-% \begin{figure}[h!]
-%     \centering
-%     \includegraphics[width=.45\textwidth]{capitulos/cap5/output2.png}
-%     \caption{Resultados de la ejecución del benchmark usando RA común y nuestra variante de RA}
-%     \label{fig:comparacionDCSFases}
-% \end{figure}
-
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.55\textwidth]{capitulos/cap5/comparacionDCSFases.png}
-    \caption{Resultados de la ejecución del benchmark usando RA común y nuestra variante de RA}
-    \label{fig:comparacionDCSFases}
-\end{figure}
-
-\FloatBarrier
-En principio analizaremos, para la figura \ref{fig:comparacionDCSFases}, los resultados de los casos \textbf{TA} y \textbf{BW}. Empezaremos analizando los resultados de estos casos porque según lo expresado en la tabla \ref{tab:pesoponderado} se trata de los que tienen mayor preponderancia de Fase 3. Por lo tanto, repasando la figura \ref{fig:comparacionDCSFases} podemos ver que nuestro enfoque de prioridad del conjunto \textit{loopExtendido} obtiene una ganancia con respecto al \textbf{algoritmo DCS tradicional} con respecto a la cantidad de instancias resueltas.
-
-Con respecto a AT vemos que se mantuvo la \textit{performance} en los casos donde el problema tiene resolución que son los que cumplen la condición $n < k$.
-
-Por otro lado, en el único caso donde se puede observar un notorio retroceso es en el caso de \textbf{DP}, donde pareciera que adoptar una estrategia específica para Fase 3 cuando la heurística RA original la resolvía rápidamente entorpece la exploración y la vuelve más ineficiente.
-
-En el resto de los casos (TL y CM) vemos que la \textit{performance} de nuestro enfoque es muy similar a la del algoritmo DCS tradicional. Este es un resultado esperable ya que el cambio introducido opera en la etapa 3 que tiene menor proporción para los otros casos.
+\subsection{Inicialización}
+En primer lugar, el primer preprocesamiento requerido para este algoritmo es eliminar las componentes tau fuertemente conexas. La implementacion de este paso usa la logica del algoritmo de Kosaraju, que tiene una complejidad O(n + m), por lo que cumple con la complejidad prometida por Groote y Jansen.
+Luego, se debe inicializar $\Pi_s$, que arranca con dos bloques (Bvis y Binvis), donde Bvis contiene el conjunto de estados desde los cuales se puede alcanzar una transición visible y Binvis es su complemento.
+Para realizar esta inicializacion, se ejecuta la funcion \texttt{computeBvis} que genera un grafo de predecesores, almacenando para cada transicion, cual fue su origen. Luego, identifica cuales son visibles y realiza un DFS para propagar las acciones visibles y identificar desde que estados son alcanzables. Por lo tanto, la complejidad resultante de la funcion es tambien O(n + m). Finalmente, Bvis se inicializa con el conjunto de estados identificados por esta funcion como visibles y Binvis se inicializa con el resto.
+$\Pi_t$ es inicializado con un único bunch que contiene todas las transiciones no-inertes.
 
 
-% Tabla que contiene el porcentaje de cada fase para cada heurística
-\begin{table}[h!]
-\begin{center}
-\begin{tabular}{| c | c | c | c | c | c | c | }
-\hline
-\multicolumn{7}{ |c| }{Cantidad de instancias resueltas por cada heurística} \\ \hline
-Heurística / Caso & TA & AT & BW & CM & DP & TL \\ \hline
-RA común & 42 & \textbf{59} & 35 & 20 & \textbf{79} & 81  \\
-RA modificado & \textbf{58} & 57 & \textbf{42} & \textbf{21} & 60 & 81  \\ \hline
-% Total & 100\% & 100\% & 100\% & 100\% & 100\% & 100\% \\ \hline
-\end{tabular}
-\caption{Porcentaje de cada fase medido en estados explorados para la heurística RA}
-\label{tab:instanciasresueltas}
-\end{center}
-\end{table}
-
-En la tabla \ref{tab:instanciasresueltas} se observa de manera más directa los resultados de la experimentación comentada previamente. Como vimos en la sección anterior, los problemas en los que la heurística original RA tenía una dificultad de resolución durante la Fase 3 eran \textbf{TA, BW} y \textbf{AT}. Podemos observar, mediante la sencilla modificación de la heurística, una mejora en la cantidad de instancias resueltas para los dos primeros casos. En cuanto a \textbf{AT}, las dos instancias por las cuales supera RA común a nuestra modificación se tratan de instancias en donde se determina que no existe controlador para ese problema. Entendiendo que se trata de un problema distinto al enfoque que venimos trabajando y que necesitaría un abordaje distinto, miramos el subconjunto de problemas \textit{controlables} dentro de \textbf{AT} en donde la performance se mantiene empatada.
-
-En cuanto a los otros tres problemas, podemos ver un empate en el caso de \textbf{TL} en donde ambas variantes de la heurística obtienen el resultado positivo aprovechando el enfoque DCS. Luego, para el caso de \textbf{CM} conseguimos un rendimiento muy similar en donde nuestro enfoque resuelve un caso por fuera de lo que resuelve RA común, más allá de que el mayor costo se concentra en la Fase 4. Por último, en el caso de \textbf{DP} se observa un fuerte retroceso de \textit{performance} de nuestra propuesta de modificación en la cual evidentemente se puede ver que la priorización que elegimos entorpece la exploración general.
+\section{Optimizaciones y mejoras (v1)}
+\subsection{Estructura del bucle: dos fases que alternan}
+% El bucle principal alterna dos fases: Fase 1 estabiliza estados drenando
+% splitterList; Fase 2 refina un bunch y genera nuevos splitters. Continúa
+% hasta que ambas estructuras quedan vacías.
 
 
+\subsection{Fase 1: estabilización de estados}
+% Por cada splitter pendiente se ejecuta split(B, transitions, marks); si
+% parte el bloque B en R y U se actualizan las estructuras, se subdividen los
+% splitters obsoletos que apuntaban a B y se propaga la cascada de $\tau$
+% no-inertes nuevas mediante la cola newFrontiers.
 
-\vspace{2cm}
+
+\subsection{Fase 2: refinamiento de bunches}
+% Se elige un bunch T de la cola, se lo parte en slices por (acción, bloque
+% destino), se elige una small half de tamaño $\le |T|/2$ y se generan
+% splitters primary/secondary asociados por groupId para que la próxima
+% Fase 1 los procese.
+
+
+\subsection{Construcción del MTS minimizado}
+% Cada bloque recibe un identificador nuevo, cada transición $s \xrightarrow{a} s'$
+% del MTS original se mapea a $\text{block}(s) \xrightarrow{a} \text{block}(s')$
+% en el resultado, y los self-loops $\tau$ controlables se renombran a
+% c_<acción> y se registran en translatorControllable.
+
+
+\section{Decisiones de diseño no dictadas por el paper}
+
+\subsection{Dos fases en lugar del nesting outer-while + inner-for}
+% El paper anida un while externo sobre bunches con un for interno sobre
+% splitters. Implementar dos fases que alternan al mismo nivel no cambia la
+% complejidad asintótica, pero da invariantes verificables y separa los
+% efectos de la restabilización del flujo principal.
+
+
+\subsection{Identidad por referencia para la cola de bunches}
+% Los bunches se mutan durante el algoritmo (addAll, removeAll). Una cola
+% basada en equals/hashCode de Set produce falsos negativos en contains tras
+% la mutación. Una cola que decide pertenencia por identidad de referencia
+% (IdentityQueue) evita el bug y permite mutar bunches encolados con seguridad.
+
+
+\subsection{Índice inverso estado destino $\to$ bunches}
+% La estructura targetStateToBunches mapea cada estado destino al conjunto
+% de bunches que lo contienen. Cuando se parte un bloque, esto permite
+% re-encolar sólo los bunches afectados en lugar de re-escanear todo $\Pi_t$.
+
+
+\subsection{Subdivisión sistemática de splitters obsoletos}
+% Cuando un splitter parte el bloque B en R y U, los demás splitters
+% pendientes que apuntaban a B quedan sin un blanco válido. La rutina
+% refineSplitters los subdivide en dos splitters (uno para R, uno para U)
+% preservando marcas según primary/secondary. El paper trata este caso de
+% manera informal.
+
+
+\subsection{SCCs como unidad atómica en split}
+% R arranca con las SCCs enteras de los estados origen de las marcas, no con
+% estados sueltos. Esto refleja una propiedad del algoritmo de Groote: los
+% estados de una misma SCC $\tau$-conexa son siempre branching-equivalentes
+% entre sí, por lo que separarlos en R y U sería incorrecto.
+
+
+\subsection{Detección de bottom states por SCC}
+% Una SCC se considera bottom si ninguno de sus estados tiene una transición
+% $\tau$ saliente que termine en otra SCC del mismo bloque. Trabajar a nivel
+% de SCC en lugar de estado a estado mejora tanto la corrección semántica
+% como la eficiencia.
+
+
+\subsection{Hashing de bloques en tiempo constante}
+% El hashCode de Set<Long> es $O(n)$ y domina el tiempo de Fase 2 cuando los
+% bloques son grandes. Asignar un identificador entero por bloque
+% (blockIdMap) permite indexar las slices por Pair<String, Integer> y reduce
+% el costo de hashing a $O(1)$.
+
+
+\subsection{Restabilización en ambas direcciones}
+% Tras un split en R y U, el paper sólo contempla nuevas $\tau$ no-inertes
+% en sentido R \to U. En MTSs reales también aparecen en sentido U \to R.
+% La cola newFrontiers propaga la cascada en ambas direcciones, agendando
+% pares (R, U) y (U, R) hasta agotar las nuevas no-inertes generadas.
+
+
+\section{Adaptaciones al contexto composicional}
+
+\subsection{Estado de error como bloque inicial separado}
+% El estado de error ($-1$) se trata como un bloque inicial propio en $\Pi_s$.
+% Mezclarlo con Bvis o Binvis es semánticamente incorrecto: en el contexto
+% de DCS el estado de error no es equivalente a ningún estado de operación
+% normal.
+
+
+\subsection{Self-loops $\tau$ controlables}
+% Si un self-loop $\tau$ corresponde a una acción controlable, en el MTS
+% minimizado se renombra a c\_<acción> y se registra en translatorControllable.
+% Sin esta intervención la acción se perdería al colapsar el self-loop.
+
+
+\subsection{Initiating actions de fluents fuera de $\tau$}
+% Una acción que dispara un fluent modifica el valor del fluent y por lo
+% tanto distingue estados desde la lógica del sistema. Tratarla como $\tau$
+% haría que el algoritmo colapse estados que el modelo considera distintos,
+% por lo que las initiating actions se sacan de tauLabels antes del bucle.
+
+
+\subsection{Reuso de partición precomputada}
+% La API buildMinimisedMTSFromPartition permite construir el MTS minimizado
+% a partir de una partición ya calculada, sin recomputar la equivalencia.
+% Es necesaria para que el flujo composicional pueda intercalar cómputos y
+% reutilizar resultados.
+
+
+\subsection{Eventos controlables, no-controlables y estados marcados}
+% El algoritmo del paper opera sobre LTS "puros". Acá hay que preservar
+% durante la minimización la información extra que aporta el contexto:
+% qué eventos son controlables y cuáles no, y qué estados están marcados.
+
+
+\section{Validación de correctitud}
+
+\subsection{Estrategia}
+% ¿Comparaste salidas con WSOE en casos chicos? ¿Verificaste alguna
+% propiedad invariante (por ejemplo, que el LTS minimizado sea
+% branching-bisimilar al original)? ¿Probaste sobre los casos del paper
+% composicional?
+
+
+\subsection{Tests automatizados}
+% ¿Hay tests JUnit? ¿Cuántos casos? ¿Dónde viven en el repo?
+
+
+\subsection{Casos de borde cubiertos}
+% $\tau$-loops, MTSs sin transiciones invisibles, bloque error, fluents,
+% bloques con un único estado, transiciones controlables que se vuelven
+% self-loops tras la minimización.
