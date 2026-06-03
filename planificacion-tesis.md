@@ -36,7 +36,8 @@ Tomada como molde la tesis de ejemplo previa (exploración on-the-fly de RA) que
 ### Cap. 3 — Branching bisimilarity
 
 - 3.1 Definición formal.
-- 3.2 Algoritmo O(m log n) de Groote et al.: ideas principales, estructuras (splitters, bloques), invariantes.
+- 3.2 Relación con otras equivalencias (weak, observational, WSOE) — clave para justificar la sustitución del Cap. 4.
+- 3.3 Algoritmo O(m log n) de Groote et al.: ideas principales, estructuras (splitters, bloques), invariantes.
 
 ### Cap. 4 — Equivalencia entre WSOE y branching bisimilarity (capítulo teórico)
 

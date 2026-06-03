@@ -19,7 +19,7 @@ echo "→ Subiendo a Overleaf..."
 while IFS= read -r file; do
   # Saltar archivos que no deberían ir a Overleaf
   case "$file" in
-    .git*|venv/*|versiones/*|docs/*|*.sh|README.md|sync-from-overleaf.sh|sync-to-overleaf.sh)
+    .git*|venv/*|versiones/*|docs/*|*.sh|*.py|*.md|README.md|sync-from-overleaf.sh|sync-to-overleaf.sh)
       echo "  - skip: $file"
       continue
       ;;
@@ -27,7 +27,7 @@ while IFS= read -r file; do
 
   if [ -f "$file" ]; then
     echo "  ↑ $file"
-    cat "$file" | pyoverleaf write "$PROJECT/$file"
+    cat "$file" | ./venv/bin/python3 overleaf_write.py "$PROJECT/$file"
   fi
 done <<< "$FILES"
 
