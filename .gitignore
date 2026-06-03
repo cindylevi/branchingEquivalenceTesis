@@ -9,3 +9,4 @@ venv/
 *.bbl
 *.blg
 tesis.zip
+.DS_Store

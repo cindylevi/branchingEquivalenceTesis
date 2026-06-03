@@ -1,0 +1,38 @@
+DEFAULT = Q0,
+	Q0	= (phil[2..3].{arise, sitdown} -> Q0
+		  |phil[3].right.get -> Q1
+		  |phil[2].right.get -> Q16),
+	Q1	= (phil[2].{arise, sitdown} -> Q1
+		  |phil[2].right.get -> Q2
+		  |phil[3].left.get -> Q6),
+	Q2	= (phil[2].left.get -> Q3),
+	Q3	= (phil[2].eat -> Q4),
+	Q4	= (phil[2].left.put -> Q5),
+	Q5	= (phil[2].right.put -> Q1),
+	Q6	= (phil[2].{arise, sitdown} -> Q6
+		  |phil[3].eat -> Q7),
+	Q7	= (phil[2].{arise, sitdown} -> Q7
+		  |phil[3].left.put -> Q8),
+	Q8	= (phil[3].right.put -> Q0
+		  |phil[2].{arise, sitdown} -> Q8
+		  |phil[2].right.get -> Q9),
+	Q9	= (phil[2].left.get -> Q10
+		  |phil[3].right.put -> Q16),
+	Q10	= (phil[2].eat -> Q11
+		  |phil[3].right.put -> Q15),
+	Q11	= (phil[2].left.put -> Q12
+		  |phil[3].right.put -> Q14),
+	Q12	= (phil[2].right.put -> Q8
+		  |phil[3].right.put -> Q13),
+	Q13	= (phil[2].right.put -> Q0
+		  |phil[3].right.get -> Q5
+		  |phil[3].{arise, sitdown} -> Q13),
+	Q14	= (phil[3].right.get -> Q4
+		  |phil[2].left.put -> Q13
+		  |phil[3].{arise, sitdown} -> Q14),
+	Q15	= (phil[3].right.get -> Q3
+		  |phil[2].eat -> Q14
+		  |phil[3].{arise, sitdown} -> Q15),
+	Q16	= (phil[3].right.get -> Q2
+		  |phil[2].left.get -> Q15
+		  |phil[3].{arise, sitdown} -> Q16).

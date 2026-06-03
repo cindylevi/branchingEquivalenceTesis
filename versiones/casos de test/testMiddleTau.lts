@@ -1,0 +1,9 @@
+ToMinimise = A1,
+A1 = (a -> A2),
+A2 = (tau1 -> A3),
+A3 = (b -> A4),
+
+A5 = (a -> A6),
+A6 = (b -> A4),
+
+A4 = STOP.
