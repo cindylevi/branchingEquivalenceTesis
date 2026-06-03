@@ -7,8 +7,11 @@ echo "→ Trayendo últimos cambios de GitHub..."
 git pull
 
 echo "→ Detectando archivos modificados..."
-# Archivos cambiados en el último commit (respecto al anterior)
-FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
+# Commit base: si se pasa como argumento, se usa ese; si no, el commit anterior (HEAD~1).
+BASE="${1:-HEAD~1}"
+echo "  (comparando $BASE..HEAD)"
+# Archivos cambiados entre el commit base y HEAD
+FILES=$(git diff --name-only "$BASE" HEAD 2>/dev/null || git ls-files)
 
 if [ -z "$FILES" ]; then
   echo "✓ No hay archivos para subir"
