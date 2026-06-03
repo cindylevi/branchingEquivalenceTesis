@@ -1,327 +1,72 @@
-\chapter{Exploración \textit{on-the-fly}}
+\chapter{Branching bisimilarity}
 
-El problema de síntesis de controlador tiene una solución clásica que compone toda la planta para luego explorarla. Este enfoque tiene un límite de escalabilidad en el cual la composición de la planta llega al límite de tiempo o memoria y nunca llega a producirse la exploración. Esto se debe al hecho de que al componer distintos autómatas, la cantidad de estados de la composición es exponencial respecto de los estados en los componentes. 
+% =====================================================================
+% ESTRUCTURA OBJETIVO DE ESTE CAPÍTULO (ver planificacion-tesis.md)
+%   3.1 Definición formal.
+%   3.2 Relación con otras equivalencias (weak, observational, WSOE)
+%       -> clave para justificar la sustitución del Cap. 4.
+%   3.3 Algoritmo O(m log n) de Groote et al. (2019):
+%       ideas principales, estructuras (splitters, bloques), invariantes.
+%
+% Papers de referencia:
+%   - Groote, Jansen, Keiren, Wijs (2019), arXiv:1909.10824  -> \cite{groote2019}
+%     (copia local en Papers/jansen.pdf)
+% =====================================================================
 
-De esta forma es que se presenta en \cite{Ciolek} la \textit{exploración on-the-fly}, la cual clasifica estados como ganadores o perdedores durante la composición. Haremos una breve presentación del enfoque para que sirva como base para la definición y posterior análisis de las etapas involucradas en el algoritmo de exploración. Para esto primero haremos unas definiciones acerca de lo que significa la exploración \textit{parcial} de la planta.
+% TODO(intro): párrafo puente desde el Cap. 2. Recordar que en el flujo
+% composicional se minimiza entre composiciones usando una noción de
+% equivalencia (WSOE, definida en 2.4) y que el costo de esa minimización
+% es el cuello de botella. Anunciar que branching bisimilarity es la
+% equivalencia candidata a reemplazarla y que este capítulo la define,
+% la ubica frente a las equivalencias clásicas y presenta el algoritmo
+% eficiente que la calcula.
 
-\vspace{0.4cm}
+\section{Definición formal}
 
-\noindent \textbf{Definición} (\textit{Exploración \textit{parcial}}): Sea $E = (S_E, A_{E}, \D_E, \init{e}, M_E)$. Decimos que $ES$ es una exploración parcial de $E \ (ES \subseteq E)$ si $S_{ES} \subseteq S_E$ y $ES = (S_{ES}, A_{ES}, \D_{ES}, \init{e}, M_{E} \cap S_{ES})$ donde $\D_{ES} \subseteq (\D_E \cap (S_{ES}$ x $A_E$ x $S_{ES}))$.
+% TODO(3.1):
+%  - Definir transiciones internas / no observables (acción tau) sobre el
+%    LTS ya definido en el Cap. 2; introducir notación si hace falta
+%    (reusar \step, \walk, \hop de commands.tex en lugar de inventar).
+%  - Definición de branching bisimulation entre dos estados: condición de
+%    matching que permite intercalar pasos tau preservando el estado
+%    intermedio (la diferencia clave con weak bisimulation).
+%  - Branching bisimilarity como la mayor branching bisimulation; mencionar
+%    que es relación de equivalencia.
+%  - (Opcional) variante divergence-sensitive si se usa en el contexto
+%    composicional; aclarar cuál se adopta y por qué.
+%  - Ejemplo mínimo: dos LTS branching-bisimilares y un par que NO lo es
+%    pero sí es weak-bisimilar (motiva 3.2).
 
-\vspace{.7cm}
+\section{Relación con otras equivalencias}
 
-El algoritmo de exploración \textit{on-the-fly} explora incrementalmente el espacio de estados de $E$ logrando una estructura de exploración parcial $ES$ y agregando de a una transición.
+% TODO(3.2): este es el puente conceptual hacia el Cap. 4.
+%  - Ubicar branching bisimilarity en la jerarquía: strong > branching >
+%    weak / observational. Dar la intuición de por qué branching es más
+%    fina que weak (preserva el potencial de los estados intermedios).
+%  - Relación con observational equivalence.
+%  - Relación con WSOE (la noción del paper composicional, definida en 2.4):
+%    adelantar la afirmación que el Cap. 4 demuestra formalmente y dar la
+%    intuición de por qué coinciden en el contexto de control.
+%  - Cerrar motivando: si coinciden en lo que importa para síntesis, se
+%    puede sustituir WSOE por branching bisimilarity y ganar el algoritmo
+%    eficiente de 3.3.
 
-Buscaremos de esta forma cortar la exploración de una rama de la planta que ya se sabe perdedora o ganadora, reduciendo así la memoria y tiempo necesarios.Además, si el estado inicial fuera marcado como ganador o perdedor antes de la composición completa de la planta, podríamos obviar lo que resta del proceso de composición.
+\section{\texorpdfstring{Algoritmo $O(m \log n)$}{Algoritmo O(m log n)} de Groote et al.}
 
-En el Listing \ref{lst:dcs.otfesquema} mostramos la estructura básica de este método. Trabajando sobre la parte de la planta compuesta hasta el momento (estructura explorada, ES ), se expande ES consiguiendo nueva información hasta que sea seguro si el estado inicial es ganador o perdedor en E. Al llegar a esta conclusión se retorna el controlador para ē en E o se notifica que no es controlable.
-
-\lstset{numbers=none, numberstyle=\tiny, stepnumber=1, numbersep=5pt}
-\begin{lstlisting}[language={pseudocode},label={lst:dcs.otfesquema},caption={Esquema de algoritmo on-the-fly.},float=ht, frame=single]
- function OTF-Exploration($E, AE^C$):
-   $\initial$ = $\<\init{e}^0,\ldots,\init{e}^n\>$
-   $Goals = Errors = \emptyset$
-   $\structure = \{ \initial \}$
-   while $\initial \not\in \Errors \cup \Goals$:
-     $(e,\l,e')$ = expandNext($\heuristic$) (*@\label{line:expand}@*)
-     $S_{\structure'} = S_\structure\cup  \{ e' \}$
-     $expandES(\structure, (e,\l,e'))$
-
-     if $e' \in \Errors $: (*@\label{line:isLosing}@*)
-       propagateError($\{e'\}$)
-     else if $e' \in \Goals$: (*@\label{line:isWinning}@*)
-       propagateGoal($\{e'\}$)
-     else if $isLoop(e, e')$: 
-       if $newWinningLoop(e, e'):$
-         $propagateGoal(e')$
-       else if $newLosingLoop(e, e'):$
-         $propagateError(e')$
- 
-   if $\initial \in \Goals$:
-     return $buildController(Goals)$
-   else:
-     return UNREALIZABLE     
-\end{lstlisting}
-
-Cada una de las partes descriptas generalmente en el Listing anterior tiene muchas variantes posibles que determinan condiciones sobre: cómo se expanden las transiciones, cómo se computan nuevos ganadores y perdedores, etc. En particular, nuestro enfoque consiste en ir agregando una transición a la vez a la parte conocida de la planta, y en cada paso ver si esta nueva transición permite concluir que un estado es ganador o perdedor. Si algún nuevo estado se clasifica como ganador o perdedor, se propaga esta información a sus antecesores, posiblemente marcándolos a su vez como ganadores o perdedores respectivamente.
-
-\section{Agnosticismo a la heurística}
-Una distinción clave del algoritmo on-the-fly es que está dividido en dos partes. Por un lado se tiene el algoritmo de exploración responsable de que al final se llegue al resultado correcto, por el otro tenemos una heurística que le brinda la próxima transición a explorar.
-
-Ese algoritmo de exploración no depende de la heurística ya que la misma no garantiza siempre elegir el mejor camino posible, sino solo la mejor aproximación que encuentre. Este aspecto está demostrado y comentado ampliamente en \cite{DuranZanollo}. El foco del presente trabajo estará puesto en entender las fases por la que transcurre el algoritmo DCS y el peso que tienen en las distintas heurísticas.
-
-\section{Algunas heurísticas utilizadas}
-
-Si bien mencionamos que el algoritmo es agnóstico a la heurística, nos parece pertinente realizar algunos comentarios al respecto de las heurísticas que utilizaremos en las siguientes secciones para el análisis y experimentación. Por un lado nos referimos a la heurística llamada \textit{BFS} cuyo comportamiento es el clásico en la exploración de estructuras como grafos o autómatas.
-
-Por otro lado, también nos vamos a referir a la heurística \textit{RA} (Ready Abstraction) presentada ampliamente en \cite{Ciolek} y \cite{paperOTF}. Esta heurística viene inducida por una abstracción que hacemos sobre la planta que nos permite estimar el número de pasos requeridos para alcanzar un estado marcado (desde cualquier otro estado). La abstracción representa una versión reducida del espacio total de estados que deshecha la suficiente información como para evitar el problema mencionado anteriormente como \textit{explosión de estados}, pero a la vez preserva los detalles suficientes como para hacer una buena estimación. Por lo tanto, podemos notar que el objetivo de la heurística está relacionado con conocer, dado un estado que componemos de la planta, la estimación de \textit{cuan cerca} se encuentra de un estado marcado.
-
-\section{Un ejemplo de ejecución}
-
-Para visualizar de forma clara el funcionamiento y las ventajas de la exploración on-the-fly, se muestra a continuación una ejecución posible sobre una planta ejemplo. 
-
-Además vamos a establecer una convención que nos permita interpretar este tipo de gráficas con las que representamos a los LTS. Esto lo haremos mediante un código de colores que nos servirán para diferenciar algunas características de cada estado representado con un círculo con una etiqueta para nombrarlo adentro.
-\medskip
-Describiremos a continuación el código mediante el cual se representarán los siguientes aspectos para calificar estados y transiciones:
-
-\begin{itemize}
-    \item Los estados \textbf{coloreados en violeta} y contienen una \textbf{M} en su interior identifican a los que consideramos como \textbf{marcados} en la planta.
-    \item El estado \textbf{coloreado en lila} y que contiene una \textbf{I} en su interior representa al estado inicial del cual parte la exploración.
-    \item Los estados \textbf{coloreados en un celeste claro} representan estados que ya fueron explorados mediante una transición.
-    \item Los estados y las transiciones \textbf{coloreadas en amarillo} representan estados y transiciones que no fueron exploradas.
-    \item Las flechas punteadas representan \textbf{transiciones no controlables} entre estados.
-    \item Las flechas sólidas representan \textbf{transiciones controlables} entre estados.
-\end{itemize}
-
-Usaremos estas convenciones a lo largo del trabajo aclarando y ampliando oportunamente las referencias cuando haya que destacar aspectos adicionales sobre los estados o las transiciones.
-
-Volviendo al ejemplo que queremos proponer, suponemos que dados ciertos LTS calculamos su composición y llegamos a la planta de la figura \ref{fig:DCS1} en la cual plantearemos una exploración donde las transiciones se exploran en orden creciente en cuanto al número que tienen definido (c1, u2, u3, c4, etc).
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.65\textwidth]{capitulos/cap3/DCS1.png}
-    \caption{Ejemplo de planta compuesta completa}
-    \label{fig:DCS1}
-\end{figure}
-
-Al iniciar el algoritmo no veremos la planta completa sino que partimos desde el estado inicial $e0$, desde el cual expandimos la primer transición, en este caso \textbf{c1}. Como llega a un estado sin explorar (e1) y este estado no representa un estado \textit{deadlock}, no hay información para procesar, por lo cual tenemos que seguir explorando. Incluso
-si llegamos a un estado explorado (no deadlock) no va a haber nueva información si no
-tenemos un loop. La intuición será que no va a haber nuevos ganadores hasta que se pueda llegar a un marcado infinitas veces, por ende necesita como mínimo  que haya un ciclo. Entonces hasta ahora llevamos explorado lo mostrado en la figura \ref{fig:DCS2}.
-
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.4\textwidth]{capitulos/cap3/DCS2.png}
-    \caption{Primeros pasos de la exploración}
-    \label{fig:DCS2}
-\end{figure}
-\FloatBarrier
-La exploración continúa por la transición \textbf{C5} mediante la cual cerramos un loop \textbf{[e1, e3]}, pero el estado \textbf{e3} puede ser forzado a algo no explorado usando la transición no controlable \textbf{u8}, entonces todavía no podemos sacar una conclusión. El estado de la exploración hasta ese momento se puede ver reflejado en la figura \ref{fig:DCS3}.
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.4\textwidth]{capitulos/cap3/DCS3.png}
-    \caption{Momento de la exploración donde se encuentra un ciclo sin conclusiones}
-    \label{fig:DCS3}
-\end{figure}
-
-Si continuamos explorando por la transición \textbf{c6} y llegamos al estado marcado \textbf{M}, podríamos decir que es ganador pero necesitamos siempre poder llegar a este estado marcado, por ende seguimos sin tener nueva información hasta explorar la transición \textbf{c7} mediante la cual se cierra el ciclo \textbf{[e2, M]}. Este ciclo tiene un estado marcado (estado M) y el estado \textbf{e2} no puede ser forzado a transicionar mediante una transición no controlable, ya que el resto de sus transiciones son controlables; por ende obtenemos nuestros primeros estados ganadores (e2 y M). A continuación debemos propagar esta nueva información llegando a marcar al estado \textbf{e1} como \textit{ganador}, porque puede \textit{controlablemente} llegar al ciclo \textbf{[e2, M]}. De todas formas todavía no hay conclusión sobre el estado inicial debido a que puede ser forzado a transicionar a un estado sin explorar. Este momento de la exploración se ve reflejado en la figura \ref{fig:DCS4}.
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.5\textwidth]{capitulos/cap3/DCS4.png}
-    \caption{Se encuentran estados ganadores (G) y se propaga (PG)}
-    \label{fig:DCS4}
-\end{figure}
-
-Proseguimos con la transición \textbf{u8} y llegamos a explorar el estado \textbf{e5}, que representa un \textit{estado deadlock}, por ende es etiquetado como \textit{error} directamente. 
-
-Propagando esta información marcamos los estados \textbf{e3} y \textbf{I} como errores, obteniendo información concluyente sobre el estado inicial. De esta manera podemos ver claramente que ya no es necesario seguir explorando y el algoritmo nos informa que no existe controlador para la planta. El estado de exploración final de la planta se ve en la figura \ref{fig:DCS5}.
-
-\FloatBarrier
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=.5\textwidth]{capitulos/cap3/DCS5.png}
-    \caption{Se encuentra Error(E) y propaga(EP) hasta inicial dejando de explorar}
-    \label{fig:DCS5}
-\end{figure}
-
-Notar que mediante esta exploración no analizamos las demás transiciones de los estados \textbf{e2} ni \textbf{e3} ya que, en el caso de \textbf{e2} \textit{gana} por la rama que exploramos y el resto son transiciones controlables, y en el caso de \textbf{e3} \textit{pierde} por una transición no controlable.
-
-Es decir que \textbf{e2} puede \textit{ganar controlablemente} y \textbf{e3} es forzado a perder sin importar la forma del resto de la planta. Si bien el algoritmo es agnóstico a la heurística, podemos ver que la decisión de que transiciones exploramos están relacionadas con la heurística que elijamos para guiar la exploración. Este último aspecto será analizado en los siguientes capítulos.
-
-
-
-
-
-% \lstset{escapeinside={(*@}{@*)}}
-% \lstset{numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt}
-% \begin{lstlisting}[language={pseudocode},label={lst:dcs},caption={On-the-fly
-%  directed exploration procedure.},float=ht, frame=single]
-%  function DCS($\E {=} (E, A_E^C {,S_E^I})$,$\:\heuristic$):
-%   $\initial$ = $\<\init{e}^0,\ldots,\init{e}^n\>$
-%   $\structure = \trimlst{(\{ \initial \}, A_E, \emptyset, \initial, M_E \cap \{\initial\})}$
-%   $\Goals = \Errors = \Witness = \emptyset$
-%   (*@{if (isLoosing($\initial$)):}@*)(*@\label{line:initialDead}@*)
-%      ${\Errors = \{\initial\}}$
-%   (*@{else if 
-%     (isWinning($\initial$)):}@*)(*@\label{line:initialDeadMarked}@*)
-%      ${\Goals = \{\initial\}}$
-%   ${\NONE = \{\initial\} \setminus \Goals \setminus \Errors}$
-%   while $\initial \not\in \Errors \cup \Goals$:
-%      $(e,\l,e')$ = expandNext($\heuristic$) (*@\label{line:expand}@*)
-%      $S_{\structure'} = S_\structure\cup  \{ e' \}$
-%      $\structure' = \trimlst{(S_{\structure'} , A_E, \D_\structure \cup \{ e \step{\l}{} e' 
-%      \}, \initial, M_E \cap S_{\structure'} )}$
-%      if $e' \in \Errors $: (*@\label{line:isLosing}@*)
-%       propagateError($\{e'\}$)
-%      else if $e' \in \Goals$: (*@\label{line:isWinning}@*)
-%       propagateGoal($\{e'\}$)
-%      else if $\exists w \ldot e' \runw{w}{\structure'} e$: (*@\label{line:isLoop}@*)
-%       $\SCC$ = getMaxLoop($e$,$e'$) (*@\label{line:getMaxLoop}@*)
-%       if canBeWinningLoop($\SCC$): (*@\label{line:CanBeWinning}@*)
-%          C = findNewGoalsIn($\SCC$) (*@\label{line:lookingForWinner}@*)
-%          (*@\Review{$\Witness = \Witness \cup (C \cap M_{\structure'})$}@*)
-%          $\Goals = \Goals \cup C$
-%          $\NONE = \NONE \setminus C$
-%          propagateGoal(C)   (*@\label{line:propagateGoal2}@*)
-%       else:    (*@\label{line:CanBeLosing}@*)
-%          P = findNewErrorsIn($\SCC$)
-%          $\Errors = \Errors \cup \Review{P}$
-%          $\NONE = \NONE \setminus \Review{P}$
-%          propagateError(P) (*@\label{line:propagateError2}@*)
-%      $\structure = \structure'$
- 
-%   if $\initial \in \Goals$:
-%     (*@\Review{$r = rankStates(\structure, 
-%     {\Witness})$}@*)(*@\label{line:controller-start}@*)              
-%     return $\sigma : A_E^* \into 2^{A_E}$ s.t.    $\l \in 
-%     \sigma(w) \iff$
-%             $\exists e \ldot [\initial \runw{w}{\structure} e    
-%   \step{\l}{\structure} e' 
-%   \wedge e' \in    \Goals  \ \wedge $  
-%               $\ (l \in A^U_E  \vee \l =   bestControllable(e, 
-%               r,\structure) ) ] 
-%                 $(*@\label{line:controller-end}@*)
-%   else:
-%     return UNREALIZABLE     
-% \end{lstlisting}  
-
-
-% \lstset{numbers=none, numberstyle=\tiny, stepnumber=1, numbersep=5pt}
-% \begin{lstlisting}[language={pseudocode},label={lst:dcs.propagate},caption={Status
-%  propagation procedures.},float=ht, frame=single]
-%  function propagateGoal($newGoals$):
-%   $C' = \emptyset$; $C$ = ancestorsNone($newGoals$)
-%   while (*@\Review{$C'$}@*)$\neq C$:
-%      $C' = C$
-%      $C=C \setminus \{ s \in C \mid$
-%       forcedTo($s, S_{\unexploredToBottom{\structure'}}\setminus (C \cup \Goals),\unexploredToBottom{\structure'}$) $\vee$
-%       $ \neg$canReachGoalIn($s, C,\unexploredToBottom{\structure'}$)$\}$
-%   $\Goals = \Goals \cup C$
-%   $\NONE = \NONE \setminus C$
-
-%  procedure propagateError($newErrors$):
-%   $C' = \emptyset$; $C$ = ancestorsNone($newErrors$)
-%   while $C' \neq C$:
-%      $C' = C$
-%      $NewErrors = \{ s \in C \mid$ 
-%       forcedTo($s,\Errors,\unexploredToTop{\structure'}$) $\vee$
-%       $ \neg$canReachGoalIn($s, C, \unexploredToTop{\structure'}$)$\}$
-%      $C=C \setminus NewErrors$
-%      $\Errors = \Errors\ \cup NewErrors$
-%      $\NONE = \NONE \setminus NewErrors$
-% \end{lstlisting}
-
-
-% \begin{lstlisting}[language={pseudocode},label={lst:dcs.gather}, caption={Status confirmation}, float=ht, frame=single]
-%  function findNewGoalsIn($\SCC$):
-%   $C = \SCC$; $C' = \emptyset$
-%   while $C' \neq  C:$
-%      $C' = C$; $C'' = \emptyset$
-%      while $C'' \neq C:$
-%      	$C'' = C$
-%      	$C=C \setminus \{ s \in C \mid$ 
-%             forcedTo($s, S_{\unexploredToBottom{\structure'}}\setminus (C \cup \Goals),\unexploredToBottom{\structure'}$) $\vee$
-%             $(\nexists s' \in C , \exists \l \ldot s' \step{\l}{\structure'} s)\}$	
-%      $C = C \setminus \{ s \in C \mid \neg$canReachGoalOrMarkedIn($s, C$)$\}$
-%   return C
-  
-%  function findNewErrorsIn($\SCC$):
-%   if (${\exists \l\!, s, s'\ldot s \in \SCC \, \wedge\,}\trimlst{s 
-%   \step{{\l}}{\unexploredToTop{\structure'}}  s'} 
-%   \wedge ({s' \notin \SCC \cup \Errors})$): 
-%      return $\emptyset$
-%   else: 
-%      return $\SCC$
-% \end{lstlisting}
-
-% \begin{lstlisting}[language={pseudocode},label={lst:dcs.aux},caption={Auxiliary 
-% procedures.},float=ht, frame=single]
-%  procedure expandNext($\heuristic$):
-%   let $\trimlst{(e,\l,e') \ldot e\in S_\structure \wedge e\step{\l}{E} e' \wedge   
-%   \neg (e\step{\l}{\structure} e')\wedge e \in \NONE \wedge}$ 
-%       $\trimlst{\forall (s,\l',s') \ldot  s\in S_\structure \wedge s\step{\l}{E} s' \wedge 
-%       \neg (s\step{\l}{\structure} s') \wedge s \in \NONE}$ 
-%          $\implies \trimlst{\heuristic(e, \l, e') >=\heuristic(s, \l',   s'))}$
-%   (*@{if (isLoosing(e')):}@*)(*@\label{line:foundDead}@*)
-%      ${\Errors = \Errors \cup \{e'\}}$
-%   (*@{else if 
-%       (isWinning($e'$)):}@*)(*@\label{line:initialDeadMarked}@*)
-%      ${\Goals = \Goals \cup \{e'\}}$
-%   if $e'\notin \Errors \cup \Goals$:
-%      $\NONE = \NONE \cup \{e'\}$
-%   return $(e,\l,e')$
- 
-%  function ancestorsNone(targets):
-%   return $\{ \, e \in \Review{\structure'} \mid \exists e' \in targets \ldot \exists w \ldot \trimlst{e \runw{w}{\Review{\structure'}} e'} \wedge$
-%           $ \nexists s \in \Review{w(e)} \ldot \Review{s \neq e' \wedge } s \in \Goals \cup \Errors \}$
-   
-%  function canBeWinningLoop(loop):
-%   return $(\marked{loop}{\Review{\structure'}}) \vee$ 
-%           $(\exists s \in loop \ldot $canReachInOneStep($s,\Goals$)$)$
-   
-%  function getMaxLoop($e$,$e'$):
-%   return $\{s \mid \exists w, w' \ldot \trimlst{e \runw{w}{\structure'} s} \wedge \trimlst{s \runw{w'}{\structure'} e'} \wedge$ 
-%           $\nexists s' \Review{\ldot (s' \in w(e) \vee s' \in w'(s)) \wedge} s' \neq e' \wedge $
-%           $s' \in \Goals \cup \Errors \}$
-    
-%  function forcedTo($s,Dest,Z$):
-%     return $(\exists \l_u \in A_Z^U \ldot \exists e \in Dest \ldot \trimlst{s 
-%     \step{\l_u}{Z} e})\ \vee$
-%       $(                     (A^C_Z \neq \emptyset)  \wedge 
-%       \forall \l \in A_Z {\setminus A_Z^D} \ldot  (\trimlst{s 
-%       \step{\l}{Z} e} 
-%               \Rightarrow e \in Dest)
-%               )$ 
-   
-%  function canReachGoalOrMarkedIn($s, C$)
-%     return $\trimlst{\exists w{, s'} \ldot s \runw{w}{\unexploredToBottom{\structure'}} s' 
-%   \  \wedge\ }$staysIn$(s,w,C) \wedge$
-%           $($canReachInOneStep$(s', \Goals) \vee s'\in\M_{\structure'})$
-
-%  function canReachGoalIn($s, C, Z$)
-%     return $\trimlst{\exists w{, s'}\ldot s \runw{w}{Z} s'  
-%     \  \wedge 
-%     }$staysIn$(s,w,C) \wedge$ 
-%           canReachInOneStep$(s',\Goals)$
-           
-%  function staysIn($s, w, C$)
-%     return $\trimlst{\forall w', w'', c \ldot [(w'w''=w \wedge 
-%     |w'|>0 \wedge  s 
-%     \runw{w'}{\structure'} c)}$
-%                     $\implies c \in  C]$                     
-
-%  function canReachInOneStep($s, Targets$)
-%     return $\exists l{, s'} \ldot s \step{\l}{\structure'} s' 
-%     \wedge s' \in Targets$
-
-%  function isLoosing($s$)
-%     return ${(\enabled{E}{s} = \emptyset \wedge s \not\in 
-%     M_E) \vee s \in 
-%     S_E^I}$
-
-%  function isWinning($s$)
-%     return ${\enabled{E}{s} = \emptyset \wedge s \in M_E 
-%     \wedge s 
-%     \not\in S_E^I}$
-% \end{lstlisting}
-
-% \begin{lstlisting}[language={pseudocode},label={lst:dcs.aux},caption={Ranking
-%  procedures.},float=ht, frame=single]
-%  function rankStates($\structure$, ${\Witness}$)
-%     $r = 0$; $W' = \Witness$; $W = \emptyset$
-%     while $W' \neq \emptyset:$
-%     	$\forall w \in W', $rank$(w) = r$
-%         $W = W \cup W'$
-%         $W'= \{ s \in (\Goals \setminus W) \mid \exists s' \in W \ldot s \step{}{\structure} s'\}$
-%         $r = r + 1$
-%     return rank
-
-%  function bestControllable($e, r, \structure$)         
-%   return $\l \in A^C_E \ldot e \step{\l}{\structure} e' \wedge \nexists \l' \in A^C_E \ldot $
-%                       $e \step{\l'}{\structure} e'', r(e'') \leq r(e')$
-           
-% \end{lstlisting}
-
-\vspace{5cm}
+% TODO(3.3): basado en \cite{groote2019} (Papers/jansen.pdf).
+%  - Idea general: partition refinement. Partir de una partición inicial
+%    de los estados en bloques y refinarla hasta el punto fijo.
+%  - Estructuras de datos clave: bloques, partición refinable, splitters,
+%    y la maquinaria que da la cota O(m log n) (estrategia "process the
+%    smaller half" / constellations-bloques del paper).
+%  - Invariantes que mantiene el refinamiento (estabilidad de bloques
+%    respecto de los splitters) y por qué garantizan correctitud.
+%  - Complejidad: enunciar O(m log n) (m transiciones, n estados) y
+%    contrastar con la complejidad de la minimización por WSOE vista en
+%    2.4 -> ESTE es el argumento de escalabilidad de toda la tesis.
+%  - El pseudocódigo extendido va al Apéndice; acá solo las ideas y
+%    estructuras principales (usar el lstdefinelanguage 'pseudocode' de
+%    tesis.tex si se incluye algún fragmento).
+%  - Nota: la adaptación concreta de este algoritmo al contexto
+%    composicional (eventos controlables/no-controlables, estados
+%    marcados) y su implementación se tratan en el Cap. 5.

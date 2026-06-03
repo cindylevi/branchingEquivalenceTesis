@@ -1,4 +1,21 @@
 \chapter{Introducción}
+
+% =====================================================================
+% ESTRUCTURA OBJETIVO DE LA INTRODUCCIÓN (tema NUEVO de la tesis).
+% NO BORRAR lo de abajo: gran parte del arranque sobre síntesis de
+% controladores se reusa casi tal cual. Lo que hay que reescribir es el
+% giro hacia "on-the-fly / heurística RA" (tema de la tesis-molde) y la
+% guía de lectura, que apuntan a los capítulos viejos.
+%
+% Orden buscado:
+%   1) Síntesis automática de controladores y por qué importa.   [REUSABLE: párrafos siguientes]
+%   2) Composicionalidad: por qué se minimiza entre composiciones. [parte reusable, ver línea ~34]
+%   3) El cuello de botella: WSOE en el paper composicional.       [FALTA -> \cite{compositional}]
+%   4) Propuesta: reemplazar WSOE por branching bisimilarity con
+%      el algoritmo eficiente de Groote et al. (2019).            [FALTA -> \cite{groote2019}]
+%   5) Aportes y guía de lectura (a la estructura NUEVA: caps 2-7).[REESCRIBIR guía de lectura]
+% =====================================================================
+
 % \section{Introducción}
 {\begin{small}%
 \begin{flushright}%
@@ -35,10 +52,31 @@ Por último cabe destacar que el modelado de un sistema complejo resulta prácti
 
 Tradicionalmente la forma de resolver el problema consiste en tomar estos autómatas independientes, realizar la composición y obtener el autómata completo para que sea analizado por el programa para sintetizar el controlador. Sin embargo, cuando el problema a resolver escala en tamaño de estados y transiciones de forma abrupta el autómata compuesto se vuelve demasiado grande, haciendo imposible su análisis y en ocasiones resultando imposible también el proceso de composición.
 
+% TODO(giro): DESDE ACÁ el texto pertenece a la tesis-molde (on-the-fly /
+% heurística RA) y debe REEMPLAZARSE por el hilo nuevo:
+%   - Cuello de botella: la minimización por WSOE en el flujo composicional
+%     (Pousseur-Uchitel) escala mal -> \cite{compositional}, \cite{wsoe}.
+%   - Propuesta: reemplazar WSOE por branching bisimilarity usando el
+%     algoritmo O(m log n) de Groote et al. -> \cite{groote2019}.
+%   - Aportes de esta tesis (demo teórica de equivalencia + implementación
+%     en MTSA + experimentación) y guía de lectura a la estructura nueva.
+% Lo de abajo se conserva como material a reescribir, no como texto final.
 En este contexto surge el enfoque de exploración \textit{on-the-fly}, en donde la composición se construye a medida que se van explorando transiciones mediante las cuales intentamos resolver el problema de síntesis evitando, en la medida de lo posible, la composición de todo el modelo. Este enfoque fue presentado por primera vez en la tesis doctoral de Daniel Ciolek \cite{Ciolek} y luego profundizado en la tesis de Licenciatura de Matías Durán y Florencia Zanollo \cite{DuranZanollo} cuyo trabajo resulto publicado \cite{paperOTF}.
 
-Basándonos en este trabajo, en esta tesis analizaremos el comportamiento del algoritmo de exploración del autómata compuesto que describimos anteriormente. Vamos a definir y describir ciertas fases o etapas relevantes del proceso, buscando experimentar el desempeño de las heurísticas existentes y que posibilidades de mejora existen en base a esta información. 
+Basándonos en este trabajo, en esta tesis analizaremos el comportamiento del algoritmo de exploración del autómata compuesto que describimos anteriormente. Vamos a definir y describir ciertas fases o etapas relevantes del proceso, buscando experimentar el desempeño de las heurísticas existentes y que posibilidades de mejora existen en base a esta información.
 
+% TODO(guía de lectura): REESCRIBIR a la estructura NUEVA de capítulos:
+%   Cap. 2  Antecedentes (LTS, control safe/non-blocking, síntesis
+%           composicional, WSOE).
+%   Cap. 3  Branching bisimilarity (definición, relación con otras
+%           equivalencias, algoritmo O(m log n) de Groote et al.).
+%   Cap. 4  Equivalencia entre WSOE y branching bisimilarity (teorema +
+%           demostración) -> aporte teórico central.
+%   Cap. 5  Adaptación e implementación en MTSA.
+%   Cap. 6  Experimentación y resultados (WSOE vs branching bisimilarity).
+%   Cap. 7  Conclusiones.
+% Los párrafos de abajo describen la estructura VIEJA (caps. 3-6 del molde)
+% y deben reemplazarse.
 En el capítulo 2 presentaremos los antecedentes y definiciones necesarias alrededor del problema de síntesis de controladores. Luego en el capítulo 3 presentaremos la idea básica de exploración \textit{on-the-fly} junto con una descripción del enfoque y pseudocódigo asociado como paso necesario para encarar el análisis posterior.
 
 Habiendo presentado las intuiciones del algoritmo, en el capítulo 4 avanzamos en la definición y análisis de las fases de exploración involucradas. En ese capítulo realizamos las definiciones necesarias y hacemos una experimentación acerca del peso de estas fases utilizando la heurística RA definida en \cite{Ciolek} y comparándola con heurísticas tradicionales.

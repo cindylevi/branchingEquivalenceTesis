@@ -1,5 +1,26 @@
 \chapter{Antecedentes}
 
+% =====================================================================
+% ESTRUCTURA OBJETIVO DEL CAP. 2 (tema NUEVO). NO BORRAR lo existente:
+% 2.1 y 2.2 ya están cubiertos y se reusan casi tal cual.
+%
+%   2.1 LTS, autómatas y composición paralela.
+%       -> YA ESTÁ: \subsection{Autómatas y composición paralela}.
+%   2.2 Problema de control: safe y non-blocking.
+%       -> YA ESTÁ: \subsection{Controlador}.
+%   2.3 Síntesis composicional (Mohajerani-Malik-Fabian, Chalmers): la
+%       noción de equivalencia que usa el paper composicional.
+%       -> FALTA agregar. \cite{wsoe}, \cite{compositional}.
+%   2.4 WSOE: definición, algoritmo de minimización, complejidad y por
+%       qué escala mal (es el cuello de botella que la tesis ataca).
+%       -> FALTA agregar. \cite{wsoe}. La complejidad de acá se contrasta
+%          con el O(m log n) de branching bisimilarity en 3.3.
+%
+% Nota: el \section{Un ejemplo concreto} (TravelAgency) más abajo apunta
+% al "capítulo 4" para el benchmark; en la estructura nueva la
+% experimentación es el Cap. 6 -> actualizar esa referencia.
+% =====================================================================
+
 En este capítulo agregaremos algunas definiciones y explicaciones necesarias para poder avanzar con la definición y análisis formal del problema composicional de síntesis de controladores.
 
 \section{Definiciones utilizadas}
@@ -77,6 +98,21 @@ Por esto es que a lo largo de este trabajo analizaremos detenidamente la estruct
 
 Los ciclos también son esenciales para encontrar los estados perdedores, ya que la única forma de que un estado sea perdedor es que no pueda alcanzar un estado ganador. En otras palabras, los estados perdedores son aquellos que forman parte de un loop que no tiene estados marcados ni transiciones salientes, asímismo los que llevan a un deadlock.
 
+
+% =====================================================================
+% TODO(2.3): \section{Síntesis composicional} -- AGREGAR.
+%   - Marco de Mohajerani / Malik / Fabian (Chalmers): minimización entre
+%     composiciones para evitar la explosión de estados. \cite{wsoe}.
+%   - Cuál es la noción de equivalencia que habilita esa minimización y
+%     cómo la usa el paper composicional. \cite{compositional}.
+%
+% TODO(2.4): \section{WSOE (Weak Synthesis Observational Equivalence)} -- AGREGAR.
+%   - Definición de WSOE. \cite{wsoe}.
+%   - Algoritmo de minimización por WSOE y su complejidad.
+%   - Por qué escala mal -> motiva el reemplazo por branching bisimilarity
+%     (Cap. 3) y la demo de equivalencia (Cap. 4). Contrastar esta
+%     complejidad con el O(m log n) del algoritmo de Groote et al.
+% =====================================================================
 
 \section{Un ejemplo concreto}
 
