@@ -4,7 +4,9 @@ set -e
 PROJECT="BranchingEquivalenceThesis"
 
 echo "→ Bajando de Overleaf..."
-pyoverleaf download-project "$PROJECT" _tmp.zip
+# Usamos overleaf_download.py en vez de `pyoverleaf download-project` porque en
+# macOS el CLI se rompe al leer las cookies de Safari (TCC). Ver overleaf_write.py.
+./venv/bin/python3 overleaf_download.py "$PROJECT" _tmp.zip
 unzip -o _tmp.zip
 rm _tmp.zip
 
