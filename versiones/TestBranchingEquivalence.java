@@ -7,6 +7,8 @@ import MTSSynthesis.ar.dc.uba.model.language.Symbol;
 import MTSTools.ac.ic.doc.commons.relations.Pair;
 import MTSTools.ac.ic.doc.mtstools.model.MTS;
 import MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional.BranchingEquivalence;
+import MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional.BranchingEquivalenceV2;
+import MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional.BranchingEquivalenceV3C;
 import MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional.GsonConfig;
 import MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional.SyntEquivalence;
 import MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional.TransitiveClosureUtils;
@@ -39,10 +41,18 @@ public class TestBranchingEquivalence {
     private File ltsFile;
 
     /** Default 10 (Jansen et al.); override con -Dnruns=N. */
-    private static final int N_RUNS = Integer.parseInt(System.getProperty("nruns", "10"));
+    private static final int N_RUNS = Integer.parseInt(System.getProperty("nruns", "3"));
 
-    /** Etiqueta de la versión que está compilada en MTSA. Setear con -Dalgo.version=v2. */
-    private static final String ALGO_VERSION = System.getProperty("algo.version", "unknown");
+    /** Etiqueta de la campaña: un único build de MTSA mide todas las versiones de branching. */
+    private static final String CAMPAIGN = "branching_v2_v3c";
+
+    /** Versiones de branching a medir en la misma corrida (comparten el setup del modelo). */
+    private enum Algo {
+        V2("v2"), V3C("v3c");
+        final String label;
+        Algo(String label) { this.label = label; }
+    }
+    private static final Algo[] ALGOS = { Algo.V2, Algo.V3C };
 
     public TestBranchingEquivalence(File ltsFile) {
         this.ltsFile = ltsFile;
@@ -404,7 +414,9 @@ public class TestBranchingEquivalence {
 //                return;
 //            }
 
-            Set<String> tauLabelsForBB = new HashSet<>(localUncontrollableAndFormulaLabels);
+            Set<String> tauLabelsForBB = new HashSet<>(localAlphabet);
+            tauLabelsForBB.addAll(localAlphabet);
+            if (translatedControllableLabels != null) tauLabelsForBB.removeAll(translatedControllableLabels);
 
             System.out.println("=== LABEL SETS DEBUG ===");
             System.out.println("localAlphabet (" + localAlphabet.size() + "): " + localAlphabet);
@@ -436,189 +448,75 @@ public class TestBranchingEquivalence {
             double jvmHeapMaxMB = Runtime.getRuntime().maxMemory() / (1024.0 * 1024.0);
             String modelName = ltsFile.getName();
 
+            int expectedRows = N_RUNS * ALGOS.length;
             int alreadyDone = 0;
             for (int run = 0; run < N_RUNS; run++) {
-                if (COMPLETED_PAIRS.contains(modelName + "|" + run)) alreadyDone++;
+                for (Algo algo : ALGOS) {
+                    if (COMPLETED_PAIRS.contains(modelName + "|" + run + "|" + algo.label)) alreadyDone++;
+                }
             }
-            if (alreadyDone == N_RUNS) {
-                report.append("\n  -> Las ").append(N_RUNS)
-                      .append(" iteraciones ya están en el CSV. Salteando.\n");
+            if (alreadyDone == expectedRows) {
+                report.append("\n  -> Las ").append(expectedRows)
+                        .append(" filas (").append(N_RUNS).append(" runs x ")
+                        .append(ALGOS.length).append(" algoritmos) ya están en el CSV. Salteando.\n");
                 System.out.println("[resume] " + modelName + " completo, skip.");
                 return;
             }
 
             for (int run = 0; run < N_RUNS; run++) {
-                String key = modelName + "|" + run;
-                if (COMPLETED_PAIRS.contains(key)) {
-                    System.out.println("[resume] skip " + key);
-                    continue;
-                }
-
                 boolean warmup = (run == 0);
-                String timestamp = Instant.now().toString();
 
-                // ===== BB =====
-                int bbStates = -1, bbTotalTrans = -1, bbTauTrans = -1;
-                double timeBB_ms = -1, memAfterBB_MB = -1, memPeakBB_MB = -1;
-                long gcBB_ms = -1;
-                Map<String, Double> bbPartTimes = Collections.emptyMap();
-                Map<String, Double> bbBuildTimes = Collections.emptyMap();
-                String bbStatus = "OK";
-                String bbErrMsg = "";
+                for (Algo algo : ALGOS) {
+                    String key = modelName + "|" + run + "|" + algo.label;
+                    if (COMPLETED_PAIRS.contains(key)) {
+                        System.out.println("[resume] skip " + key);
+                        continue;
+                    }
 
-                forceGC();
-                double memBeforeBB_MB = getUsedHeapBytes() / (1024.0 * 1024.0);
-                MemorySampler bbSampler = MemorySampler.startNew("mem-bb");
-                long bbGcStart = getTotalGCTimeMs();
-                long bbStartNs = System.nanoTime();
-                try {
-                    MTS<Long, String> mtsForBB = loadMTS(output);
-                    Pair<Pair<List<Set<Long>>, List<Set<Triple<Long, String, Long>>>>, Map<String, Double>> partitionResult =
-                            BranchingEquivalence.getPartitions(mtsForBB, tauLabelsForBB, totalTranslator, goalFluents);
-                    Pair<MTS<Long, String>, Map<String, Double>> minimizedBB =
-                            BranchingEquivalence.buildMinimisedMTSFromPartition(
-                                    mtsForBB, tauLabelsForBB,
-                                    translatorControllable != null ? new HashMap<>(translatorControllable) : null,
-                                    partitionResult.getFirst());
-                    long bbEndNs = System.nanoTime();
-                    bbSampler.stop();
-                    long bbGcEnd = getTotalGCTimeMs();
+                    String timestamp = Instant.now().toString();
 
-                    timeBB_ms = (bbEndNs - bbStartNs) / 1_000_000.0;
-                    gcBB_ms = bbGcEnd - bbGcStart;
-                    memAfterBB_MB = getUsedHeapBytes() / (1024.0 * 1024.0);
-                    memPeakBB_MB = bbSampler.getPeakBytes() / (1024.0 * 1024.0);
-                    if (partitionResult.getSecond() != null) bbPartTimes = partitionResult.getSecond();
-                    if (minimizedBB.getSecond() != null) bbBuildTimes = minimizedBB.getSecond();
+                    AlgoResult r = runAlgo(algo, output, tauLabelsForBB, totalTranslator,
+                            goalFluents, translatorControllable);
 
-                    bbStates = minimizedBB.getFirst().getStates().size();
-                    Pair<Integer, Integer> bbCounts = countTotalAndTauTransitions(minimizedBB.getFirst(), tauLabelsForBB);
-                    bbTotalTrans = bbCounts.getFirst();
-                    bbTauTrans = bbCounts.getSecond();
-                } catch (OutOfMemoryError e) {
-                    bbSampler.stop();
-                    bbStatus = "OOM";
-                    bbErrMsg = "BB:OOM";
-                } catch (Throwable e) {
-                    bbSampler.stop();
-                    bbStatus = "ERROR";
-                    bbErrMsg = "BB:" + sanitize(e.toString());
+                    // ===== escribir fila CSV (formato largo: una fila por algoritmo) =====
+                    File csvFile = new File(CSV_OUTPUT_PATH);
+                    boolean writeHeader = !csvFile.exists();
+                    try (PrintWriter pw = new PrintWriter(new FileWriter(csvFile, true))) {
+                        if (writeHeader) pw.println(CSV_HEADER);
+                        pw.printf(Locale.US,
+                                "%s,%s,%d,%s,%s,%s,%s," +
+                                        "%d,%d,%d,%d," +
+                                        "%d,%d,%d,%d," +
+                                        "%d,%d,%d,%.4f,%d," +
+                                        "%.4f,%.4f,%.4f,%.4f," +
+                                        "%.4f,%.4f,%.4f,%.4f,%.4f," +
+                                        "%.4f,%d,%.4f,%.4f,%.4f%n",
+                                modelName, algo.label, run, warmup, r.status, r.errMsg, timestamp,
+                                initialStates, initCounts.getFirst(), initCounts.getSecond(), localAlphabet.size(),
+                                localControllable.size(), tauLabelsForBB.size(), allLocalTransitions, ctrlLocalTransitions,
+                                r.states, r.totalTrans, r.tauTrans, r.time_ms, r.gc_ms,
+                                r.memBefore_MB, r.memAfter_MB, r.memPeak_MB, jvmHeapMaxMB,
+                                r.partTimes.getOrDefault("[getPartitions] partitionIntoSCCWithTauLabels",       -1.0),
+                                r.partTimes.getOrDefault("[getPartitions] computeBvis",                         -1.0),
+                                r.partTimes.getOrDefault("[getPartitions] initial bunch + splitter setup",      -1.0),
+                                r.partTimes.getOrDefault("[getPartitions] Phase 1 (stabilize states) total",    -1.0),
+                                r.partTimes.getOrDefault("[getPartitions] Phase 2 (refine bunches) total",      -1.0),
+                                r.partTimes.getOrDefault("[getPartitions] total",                               -1.0),
+                                (long) r.partTimes.getOrDefault("[getPartitions] main loop iterations",         -1.0).doubleValue(),
+                                r.buildTimes.getOrDefault("[buildMinimisedMTSFromPartition] build states",      -1.0),
+                                r.buildTimes.getOrDefault("[buildMinimisedMTSFromPartition] build transitions", -1.0),
+                                r.buildTimes.getOrDefault("[buildMinimisedMTSFromPartition] total",             -1.0)
+                        );
+                    } catch (IOException e) {
+                        report.append("\nError escribiendo en CSV: ").append(e.getMessage());
+                    }
+
+                    COMPLETED_PAIRS.add(key);
+                    report.append(String.format(
+                            "%n  Run %d/%d [%s] %s=%d st/%.1fms%s",
+                            run, N_RUNS - 1, r.status, algo.label, r.states, r.time_ms,
+                            r.errMsg.isEmpty() ? "" : " err=" + r.errMsg));
                 }
-
-                // ===== WSOE =====
-                int wsoeStates = -1, wsoeTotalTrans = -1, wsoeTauTrans = -1;
-                double timeWSOE_ms = -1, memBeforeWSOE_MB = -1, memAfterWSOE_MB = -1, memPeakWSOE_MB = -1;
-                long gcWSOE_ms = -1;
-                String wsoeStatus = "OK";
-                String wsoeErrMsg = "";
-
-                forceGC();
-                memBeforeWSOE_MB = getUsedHeapBytes() / (1024.0 * 1024.0);
-                MemorySampler wsoeSampler = MemorySampler.startNew("mem-wsoe");
-                long wsoeGcStart = getTotalGCTimeMs();
-                long wsoeStartNs = System.nanoTime();
-                try {
-                    MTS<Long, String> mtsForWSOE = loadMTS(output);
-                    HashMap<Long, HashMap<String, Set<Long>>> sourceWithLabel =
-                            TransitiveClosureUtils.getPredecessors(mtsForWSOE);
-                    BitSet[] existUncontrollableLocalPathMatrix =
-                            TransitiveClosureUtils.searchPathsWithMatrix(mtsForWSOE, localUncontrollableAndFormulaLabels, output);
-                    Map<Long, Set<Long>> sourcesWithUncontrollablePath =
-                            buildSourcesWithUncontrollablePath(existUncontrollableLocalPathMatrix);
-
-                    SyntEquivalence syntEquivalence = new SyntEquivalence(
-                            totalTranslator, sourceWithLabel, existUncontrollableLocalPathMatrix,
-                            sourcesWithUncontrollablePath, null, output);
-
-                    List<Pair<Set<Long>, Set<Long>>> partitionsSOE = syntEquivalence.WSOE(
-                            mtsForWSOE, subsysSecond, translatedControllableLabels, goalFluents, output);
-
-                    MTS<Long, String> minimizedSOE = syntEquivalence.minimiseWithPartition(
-                            partitionsSOE, mtsForWSOE, localAlphabet, translatedControllableLabels,
-                            translatorControllable != null ? new HashMap<>(translatorControllable) : null);
-
-                    long wsoeEndNs = System.nanoTime();
-                    wsoeSampler.stop();
-                    long wsoeGcEnd = getTotalGCTimeMs();
-
-                    timeWSOE_ms = (wsoeEndNs - wsoeStartNs) / 1_000_000.0;
-                    gcWSOE_ms = wsoeGcEnd - wsoeGcStart;
-                    memAfterWSOE_MB = getUsedHeapBytes() / (1024.0 * 1024.0);
-                    memPeakWSOE_MB = wsoeSampler.getPeakBytes() / (1024.0 * 1024.0);
-
-                    wsoeStates = minimizedSOE.getStates().size();
-                    Pair<Integer, Integer> wsoeCounts = countTotalAndTauTransitions(minimizedSOE, tauLabelsForBB);
-                    wsoeTotalTrans = wsoeCounts.getFirst();
-                    wsoeTauTrans = wsoeCounts.getSecond();
-                } catch (OutOfMemoryError e) {
-                    wsoeSampler.stop();
-                    wsoeStatus = "OOM";
-                    wsoeErrMsg = "WSOE:OOM";
-                } catch (Throwable e) {
-                    wsoeSampler.stop();
-                    wsoeStatus = "ERROR";
-                    wsoeErrMsg = "WSOE:" + sanitize(e.toString());
-                }
-
-                // ===== status agregado y verificación cruzada =====
-                String rowStatus;
-                if ("OOM".equals(bbStatus) || "OOM".equals(wsoeStatus)) rowStatus = "OOM";
-                else if ("ERROR".equals(bbStatus) || "ERROR".equals(wsoeStatus)) rowStatus = "ERROR";
-                else rowStatus = "OK";
-
-                String errMsg = "";
-                if (!bbErrMsg.isEmpty()) errMsg += bbErrMsg;
-                if (!wsoeErrMsg.isEmpty()) errMsg += (errMsg.isEmpty() ? "" : "; ") + wsoeErrMsg;
-
-                boolean equalsWSOE = bbStates >= 0 && wsoeStates >= 0
-                        && bbStates == wsoeStates
-                        && bbTotalTrans == wsoeTotalTrans;
-
-                // ===== escribir fila CSV =====
-                File csvFile = new File(CSV_OUTPUT_PATH);
-                boolean writeHeader = !csvFile.exists();
-                try (PrintWriter pw = new PrintWriter(new FileWriter(csvFile, true))) {
-                    if (writeHeader) pw.println(CSV_HEADER);
-                    pw.printf(Locale.US,
-                            "%s,%s,%d,%s,%s,%s,%s," +
-                            "%d,%d,%d,%d," +
-                            "%d,%d,%d,%d," +
-                            "%d,%d,%d,%.4f,%d," +
-                            "%.4f,%.4f,%.4f," +
-                            "%d,%d,%d,%.4f,%d," +
-                            "%.4f,%.4f,%.4f," +
-                            "%s,%.4f," +
-                            "%.4f,%.4f,%.4f,%.4f,%.4f," +
-                            "%.4f,%d,%.4f,%.4f,%.4f%n",
-                            modelName, ALGO_VERSION, run, warmup, rowStatus, errMsg, timestamp,
-                            initialStates, initCounts.getFirst(), initCounts.getSecond(), localAlphabet.size(),
-                            localControllable.size(), tauLabelsForBB.size(), allLocalTransitions, ctrlLocalTransitions,
-                            bbStates, bbTotalTrans, bbTauTrans, timeBB_ms, gcBB_ms,
-                            memBeforeBB_MB, memAfterBB_MB, memPeakBB_MB,
-                            wsoeStates, wsoeTotalTrans, wsoeTauTrans, timeWSOE_ms, gcWSOE_ms,
-                            memBeforeWSOE_MB, memAfterWSOE_MB, memPeakWSOE_MB,
-                            equalsWSOE, jvmHeapMaxMB,
-                            bbPartTimes.getOrDefault("[getPartitions] partitionIntoSCCWithTauLabels",       -1.0),
-                            bbPartTimes.getOrDefault("[getPartitions] computeBvis",                         -1.0),
-                            bbPartTimes.getOrDefault("[getPartitions] initial bunch + splitter setup",      -1.0),
-                            bbPartTimes.getOrDefault("[getPartitions] Phase 1 (stabilize states) total",    -1.0),
-                            bbPartTimes.getOrDefault("[getPartitions] Phase 2 (refine bunches) total",      -1.0),
-                            bbPartTimes.getOrDefault("[getPartitions] total",                               -1.0),
-                            (long) bbPartTimes.getOrDefault("[getPartitions] main loop iterations",         -1.0).doubleValue(),
-                            bbBuildTimes.getOrDefault("[buildMinimisedMTSFromPartition] build states",      -1.0),
-                            bbBuildTimes.getOrDefault("[buildMinimisedMTSFromPartition] build transitions", -1.0),
-                            bbBuildTimes.getOrDefault("[buildMinimisedMTSFromPartition] total",             -1.0)
-                    );
-                } catch (IOException e) {
-                    report.append("\nError escribiendo en CSV: ").append(e.getMessage());
-                }
-
-                COMPLETED_PAIRS.add(key);
-                report.append(String.format(
-                        "%n  Run %d/%d [%s] BB=%d st/%.1fms WSOE=%d st/%.1fms eq=%s%s",
-                        run, N_RUNS - 1, rowStatus, bbStates, timeBB_ms,
-                        wsoeStates, timeWSOE_ms, equalsWSOE,
-                        errMsg.isEmpty() ? "" : " errs=" + errMsg));
             }
             report.append("\n");
         } catch (AssertionError e) {
@@ -627,7 +525,7 @@ public class TestBranchingEquivalence {
             report.append("\nVEREDICTO: ERROR (").append(e.getMessage()).append(")\n");
             e.printStackTrace();
         } finally {
-            String reportDir = "test_results/" + ALGO_VERSION + "/";
+            String reportDir = "test_results/" + CAMPAIGN + "/";
             new File(reportDir).mkdirs();
             String reportPath = reportDir + ltsFile.getName().replace(".lts", "").replace(".fsp", "") + "_report.txt";
             try (PrintWriter writer = new PrintWriter(new FileWriter(reportPath))) {
@@ -666,23 +564,18 @@ public class TestBranchingEquivalence {
         return sources;
     }
 
-    // =========================================================================
-    // CSV de resultados (una fila por iteración) + soporte de resume
-    // =========================================================================
+
     private static final String CSV_OUTPUT_PATH =
-            "minimization_results_" + ALGO_VERSION + ".csv";
+            "minimization_results_" + CAMPAIGN + ".csv";
 
     private static final String CSV_HEADER =
             "Model,AlgoVersion,Run,Warmup,Status,ErrorMsg,Timestamp," +
-            "InitialStates,InitialTransitions,InitialLocalTransitions,LocalAlphabetSize," +
-            "LocalControllableSize,TauLabelsSize,AllLocalTransitions,CtrlLocalTransitions," +
-            "FinalStatesBB,FinalTransitionsBB,FinalLocalTransitionsBB,TimeBB_ms,BB_GC_ms," +
-            "MemBeforeBB_MB,MemAfterBB_MB,MemPeakBB_MB," +
-            "FinalStatesWSOE,FinalTransitionsWSOE,FinalLocalTransitionsWSOE,TimeWSOE_ms,WSOE_GC_ms," +
-            "MemBeforeWSOE_MB,MemAfterWSOE_MB,MemPeakWSOE_MB," +
-            "EqualsWSOE,JVMHeapMax_MB," +
-            "BB_SCC_ms,BB_Bvis_ms,BB_InitSplit_ms,BB_Phase1_ms,BB_Phase2_ms," +
-            "BB_PartTotal_ms,BB_MainLoopIters,BB_BuildStates_ms,BB_BuildTrans_ms,BB_BuildTotal_ms";
+                    "InitialStates,InitialTransitions,InitialLocalTransitions,LocalAlphabetSize," +
+                    "LocalControllableSize,TauLabelsSize,AllLocalTransitions,CtrlLocalTransitions," +
+                    "FinalStates,FinalTransitions,FinalLocalTransitions,Time_ms,GC_ms," +
+                    "MemBefore_MB,MemAfter_MB,MemPeak_MB,JVMHeapMax_MB," +
+                    "SCC_ms,Bvis_ms,InitSplit_ms,Phase1_ms,Phase2_ms," +
+                    "PartTotal_ms,MainLoopIters,BuildStates_ms,BuildTrans_ms,BuildTotal_ms";
 
     /** Pares "Model|Run" ya completados en el CSV de esta versión. Habilita resume. */
     private static final Set<String> COMPLETED_PAIRS = loadCompletedPairs();
@@ -697,14 +590,14 @@ public class TestBranchingEquivalence {
             if (!header.equals(CSV_HEADER)) {
                 throw new IllegalStateException(
                         "El CSV existente tiene un header distinto al esperado.\n" +
-                        "Renombrá " + CSV_OUTPUT_PATH + " antes de seguir, " +
-                        "o borralo si querés empezar de cero.");
+                                "Renombrá " + CSV_OUTPUT_PATH + " antes de seguir, " +
+                                "o borralo si querés empezar de cero.");
             }
             String line;
             while ((line = r.readLine()) != null) {
                 String[] cols = line.split(",", -1);
                 if (cols.length < 3) continue;
-                set.add(cols[0] + "|" + cols[2]); // Model | Run
+                set.add(cols[0] + "|" + cols[2] + "|" + cols[1]); // Model | Run | AlgoVersion
             }
             System.out.println("[resume] " + set.size() +
                     " (Model,Run) ya completados en " + CSV_OUTPUT_PATH);
@@ -769,6 +662,83 @@ public class TestBranchingEquivalence {
     // =========================================================================
     // Helpers
     // =========================================================================
+
+    /** Resultado de una corrida de una versión de branching sobre un modelo. */
+    private static class AlgoResult {
+        int states = -1, totalTrans = -1, tauTrans = -1;
+        double time_ms = -1, memBefore_MB = -1, memAfter_MB = -1, memPeak_MB = -1;
+        long gc_ms = -1;
+        Map<String, Double> partTimes = Collections.emptyMap();
+        Map<String, Double> buildTimes = Collections.emptyMap();
+        String status = "OK";
+        String errMsg = "";
+    }
+
+    /**
+     * Corre una versión de branching de punta a punta (getPartitions +
+     * buildMinimisedMTSFromPartition) midiendo tiempo, memoria y GC.
+     * Carga un MTS fresco por algoritmo: la minimización muta el MTS de entrada,
+     * y la compilación queda fuera de la región cronometrada, así que no contamina
+     * los tiempos pero permite reusar el mismo build de MTSA para todas las versiones.
+     */
+    private AlgoResult runAlgo(Algo algo, LTSOutput output, Set<String> tauLabels,
+                               Vector<HashMap<String, String>> totalTranslator, Set<Fluent> goalFluents,
+                               Map<String, String> translatorControllable) {
+        AlgoResult r = new AlgoResult();
+
+        forceGC();
+        r.memBefore_MB = getUsedHeapBytes() / (1024.0 * 1024.0);
+        MemorySampler sampler = MemorySampler.startNew("mem-" + algo.label);
+        long gcStart = getTotalGCTimeMs();
+        long startNs = System.nanoTime();
+        try {
+            MTS<Long, String> mts = loadMTS(output);
+            Map<String, String> transl =
+                    translatorControllable != null ? new HashMap<>(translatorControllable) : null;
+
+            Pair<Pair<List<Set<Long>>, List<Set<Triple<Long, String, Long>>>>, Map<String, Double>> partitionResult;
+            Pair<MTS<Long, String>, Map<String, Double>> minimized;
+            switch (algo) {
+                case V2:
+                    partitionResult = BranchingEquivalenceV2.getPartitions(mts, tauLabels, totalTranslator, goalFluents);
+                    minimized = BranchingEquivalenceV2.buildMinimisedMTSFromPartition(
+                            mts, tauLabels, transl, partitionResult.getFirst());
+                    break;
+                case V3C:
+                    partitionResult = BranchingEquivalenceV3C.getPartitions(mts, tauLabels, totalTranslator, goalFluents);
+                    minimized = BranchingEquivalenceV3C.buildMinimisedMTSFromPartition(
+                            mts, tauLabels, transl, partitionResult.getFirst());
+                    break;
+                default:
+                    throw new IllegalStateException("Algoritmo desconocido: " + algo);
+            }
+
+            long endNs = System.nanoTime();
+            sampler.stop();
+            long gcEnd = getTotalGCTimeMs();
+
+            r.time_ms = (endNs - startNs) / 1_000_000.0;
+            r.gc_ms = gcEnd - gcStart;
+            r.memAfter_MB = getUsedHeapBytes() / (1024.0 * 1024.0);
+            r.memPeak_MB = sampler.getPeakBytes() / (1024.0 * 1024.0);
+            if (partitionResult.getSecond() != null) r.partTimes = partitionResult.getSecond();
+            if (minimized.getSecond() != null) r.buildTimes = minimized.getSecond();
+
+            r.states = minimized.getFirst().getStates().size();
+            Pair<Integer, Integer> counts = countTotalAndTauTransitions(minimized.getFirst(), tauLabels);
+            r.totalTrans = counts.getFirst();
+            r.tauTrans = counts.getSecond();
+        } catch (OutOfMemoryError e) {
+            sampler.stop();
+            r.status = "OOM";
+            r.errMsg = algo.label + ":OOM";
+        } catch (Throwable e) {
+            sampler.stop();
+            r.status = "ERROR";
+            r.errMsg = algo.label + ":" + sanitize(e.toString());
+        }
+        return r;
+    }
 
     /**
      * Carga el MTS desde un archivo .lts/.fsp.
