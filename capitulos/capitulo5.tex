@@ -7,8 +7,7 @@
 
 
 \section{Introduccion}
-La herramienta MTSA \cite{mtsa} es el framework de desarrollo realizado en Java para varias iniciativas de LaFHIS en el contexto de la investigación sobre LTSs. Es por eso que tanto el algoritmo composicional presentado por Uchitel y Gagliardi \#AGREGAR CITA\# como la versión de WSOE utilizada para la composicionalidad fueron implementados en esta herramienta. Era entonces natural realizar el desarrollo del algoritmo de Branching Equivalence sobre el mismo framework. A su vez, nos permitirá comparar de forma más verídica ambos algoritmos, realizando pruebas de Benchmarks tanto para tiempos de ejecución como para el uso de memoria.
-\color{holaaa}
+La herramienta MTSA \cite{mtsa} es el framework de desarrollo realizado en Java para varias iniciativas de LaFHIS en el contexto de la investigación sobre LTSs. Es por eso que tanto el algoritmo composicional presentado por Uchitel y Gagliardi \todo{agregar cita} como la versión de WSOE utilizada para la composicionalidad fueron implementados en esta herramienta. Era entonces natural realizar el desarrollo del algoritmo de Branching Equivalence sobre el mismo framework. A su vez, nos permitirá comparar de forma más verídica ambos algoritmos, realizando pruebas de Benchmarks tanto para tiempos de ejecución como para el uso de memoria.
 En primer lugar, se realizó la implementación del algoritmo de Branching Equivalence en el archivo BranchingEquivalence.java, creado en mtstools/DCS/Compositional/ ya que bajo este módulo están las herramientas utilizadas por el algoritmo composicional.
 
 A su vez, en CompositionalApproach.java se reemplazó la llamada original al algoritmo de WSOE por la llamada a la nueva función que utiliza el algoritmo de Groote y Jansen, reemplazando también los preprocesamientos necesarios para los algoritmos que se hacen en algunos casos fuera de las funciones principales.
