@@ -1,12 +1,6 @@
 \chapter{Implementación del algoritmo}
 
-% Capítulo descriptivo: dónde encaja el algoritmo en el flujo composicional,
-% cómo se construyó, qué decisiones de diseño se tomaron por sobre lo que
-% deja abierto el paper, qué adaptaciones requirió el contexto de síntesis
-% de controladores, y cómo se validó la correctitud.
-
-
-\section{Introduccion}
+\section{Introducción}
 La herramienta MTSA \cite{mtsa} es el framework de desarrollo realizado en Java para varias iniciativas de LaFHIS en el contexto de la investigación sobre LTSs. Es por eso que tanto el algoritmo composicional presentado por Uchitel y Gagliardi \todo{agregar cita} como la versión de WSOE utilizada para la composicionalidad fueron implementados en esta herramienta. Era entonces natural realizar el desarrollo del algoritmo de Branching Equivalence sobre el mismo framework. A su vez, nos permitirá comparar de forma más verídica ambos algoritmos, realizando pruebas de Benchmarks tanto para tiempos de ejecución como para el uso de memoria.
 En primer lugar, se realizó la implementación del algoritmo de Branching Equivalence en el archivo BranchingEquivalence.java, creado en mtstools/DCS/Compositional/ ya que bajo este módulo están las herramientas utilizadas por el algoritmo composicional.
 
@@ -28,17 +22,17 @@ En primer lugar, la modalidad de desarrollo fue implementar la lógica del algor
 
 \section{Primer desarrollo del algoritmo}
 
-Como fue explicado en el capítulo 3, el algoritmo de Groote y Jansen mantiene dos estructuras de refinamiento: una partición de estados $\Pi_s$ y una partición de transiciones $\Pi_t$. En $\Pi_s$ se encuentran los "bloques" de estados estables tal que si dos estados están en distintos bloques entonces NO son branching equivalent. En $\Pi_t$ se encuentran los "bunches" de transiciones no-inertes, es decir, las transiciones que pueden distinguir estados. Ambas estructuras se refinan a la par: cada vez que un bloque de estados se parte en dos, se actualizan los bunches para reflejar el nuevo bloque, y cada vez que un bunch se parte en slices por (acción, bloque destino), se generan nuevos splitters para estabilizar los bloques afectados. El proceso continúa hasta llegar al punto fijo donde no quedan ni splitters pendientes ni bunches por refinar: las clases de equivalencia son entonces los bloques finales de $\Pi_s$.
+Como fue explicado en el capítulo 3, el algoritmo de Groote y Jansen mantiene dos estructuras de refinamiento: una partición de estados $\Pi_s$ y una partición de transiciones $\Pi_t$. En $\Pi_s$ se encuentran los "bloques" de estados estables tal que si dos estados están en distintos bloques entonces \textbf{no} son Branching Equivalent. En $\Pi_t$ se encuentran los "bunches" de transiciones no-inertes, es decir, las transiciones que pueden distinguir estados. Ambas estructuras se refinan a la par: cada vez que un bloque de estados se parte en dos, se actualizan los bunches para reflejar el nuevo bloque, y cada vez que un bunch se parte en slices por (acción, bloque destino), se generan nuevos splitters para estabilizar los bloques afectados. El proceso continúa hasta llegar al punto fijo donde no quedan ni splitters pendientes ni bunches por refinar: las clases de equivalencia son entonces los bloques finales de $\Pi_s$.
 
 La idea para esta primera implementación fue mantener la estructura del paper, donde el loop principal itera sobre cada conjunto de transiciones no triviales que están en $\Pi_t$, tomando un subconjunto chico de transiciones. Este subconjunto de transiciones, es separado de su bunch original y añadido a $\Pi_t$ como un nuevo bunch. Luego, se deben refinar los bloques de $\Pi_s$ para que queden estables respecto al nuevo conjunto de transiciones obtenido.
 
 Una decisión importante para esta primera versión fue la elección de las estructuras de datos a utilizar, ya que inciden en la complejidad final de la implementación. En esta primera versión, buscando en primer lugar comprender la lógica en sí del algoritmo y poder verificar su correctitud, se eligieron estructuras de datos simples y nativas, lo más similar posible a las del paper. 
 
-$\Pi_s$ se implementó como \lstinline|List<Set<Long>>|, es decir una lista de conjuntos de estados. Cada \lstinline|Set<Long>| representa un bloque de estados.
-$\Pi_t$ se implementó como \lstinline|List<Set<Triple<Long, String, Long>>>|, es decir una lista de conjuntos de transiciones. Cada \lstinline|Set<Triple<Long, String, Long>>| representa un bunch de transiciones no-inertes.
+$\Pi_s$ se implementó como \texttt{List$<$Set$<$Long$>$$>$}, es decir una lista de conjuntos de estados. Cada \texttt{Set$<$Long$>$} representa un bloque de estados.
+$\Pi_t$ se implementó como \texttt{List$<$Set$<$Triple$<$Long, String, Long$>$$>$$>$}, es decir una lista de conjuntos de transiciones. Cada \texttt{Set$<$Triple$<$Long, String, Long$>$$>$} representa un bunch de transiciones no-inertes.
 
-A su vez, se debió utilizar una estructura \lstinline|Pi_t_cola| para poder iterar sobre los bunches a la vez que se actualizaba la lista de pendientes a refinar.
-Tal como se menciona en el paper de Groote y Jansen, se utiliza también la estructura del \lstinline|splitterList| para almacenar los splitters generados durante el proceso de refinamiento. A su vez, se creó la clase \lstinline|Splitter| para representar cada splitter, que contiene el bloque que se va a partir, el conjunto de transiciones que cruzan bloques y un flag de primary/secondary, un conjunto de transiciones marcadas para identificar que esos bloques son estables y un groupId para identificar qué Splitters se originaron a partir de la misma división inicial.
+A su vez, se debió utilizar una estructura \texttt{Pi\_t\_cola} para poder iterar sobre los bunches a la vez que se actualizaba la lista de pendientes a refinar.
+Tal como se menciona en el paper de Groote y Jansen, se utiliza también la estructura del \texttt{splitterList} para almacenar los splitters generados durante el proceso de refinamiento. A su vez, se creó la clase \texttt{Splitter} para representar cada splitter, que contiene el bloque que se va a partir, el conjunto de transiciones que cruzan bloques y un flag de primary/secondary, un conjunto de transiciones marcadas para identificar que esos bloques son estables y un groupId para identificar qué Splitters se originaron a partir de la misma división inicial.
 
 En primer lugar, el primer preprocesamiento requerido para este algoritmo es eliminar las componentes tau fuertemente conexas. La implementación de este paso usa la lógica del algoritmo de Kosaraju, que tiene una complejidad $O(n + m)$, por lo que cumple con la complejidad prometida por Groote y Jansen.
 Luego, se debe inicializar $\Pi_s$, que arranca con dos bloques ($B_{vis}$ y $B_{invis}$), donde $B_{vis}$ contiene el conjunto de estados desde los cuales se puede alcanzar una transición visible y $B_{invis}$ es su complemento.
@@ -46,15 +40,15 @@ Para realizar esta inicialización, se ejecuta la función \texttt{computeBvis} 
 Por lo tanto, la complejidad resultante de la función es también $O(n + m)$. Finalmente, $B_{vis}$ se inicializa con el conjunto de estados identificados por esta función como visibles y $B_{invis}$ se inicializa con el resto.
 $\Pi_t$ es inicializado con un único bunch que contiene todas las transiciones no-inertes.
 
-Una de las primeras estructuras que también se deben inicializar en el preprocesamiento es el \lstinline|stateToBlockMap|, definido como un mapa \lstinline|Map<Long, Set<Long>>|, que almacena para cada estado a qué bloque de $\Pi_s$ pertenece. Esta estructura es indispensable para poder realizar el seguimiento y las modificaciones rápidas que identifican a cada estado con su bloque, ya que la lógica principal del algoritmo se basa en modificar estos bloques continuamente. A su vez, esta estructura es acompañada por la función \lstinline|updateStateToBlockMap(Map<Long, Set<Long>> map, Set<Long> newBlock1, Set<Long> newBlock2)| que recibe dos bloques nuevos y actualiza el mapa para que cada estado de cada bloque nuevo quede asociado a su bloque correspondiente. 
+Una de las primeras estructuras que también se deben inicializar en el preprocesamiento es el \texttt{stateToBlockMap}, definido como un mapa \texttt{Map$<$Long, Set$<$Long$>$$>$}, que almacena para cada estado a qué bloque de $\Pi_s$ pertenece. Esta estructura es indispensable para poder realizar el seguimiento y las modificaciones rápidas que identifican a cada estado con su bloque, ya que la lógica principal del algoritmo se basa en modificar estos bloques continuamente. A su vez, esta estructura es acompañada por la función \texttt{updateStateToBlockMap(Map$<$Long, Set$<$Long$>$$>$ map, Set$<$Long$>$ newBlock1, Set$<$Long$>$ newBlock2)} que recibe dos bloques nuevos y actualiza el mapa para que cada estado de cada bloque nuevo quede asociado a su bloque correspondiente. 
 
-Luego del preprocesamiento y la inicialización de las estructuras de datos, el código tiene un loop principal que itera sobre los bunches. En cada ciclo, se toma un bunch $T$. Si $T$ es un bunch trivial, es decir que todas sus transiciones con la misma acción $a$ van a un mismo bloque, entonces el bunch $T$ no debe ser refinado. Si $T$ no es trivial, entonces se buscan todos los "slices" de $T$, es decir, se buscan y se separan los subconjuntos de $T$ que tienen la misma acción $a$ y bloque de destino $B'$. Luego, se itera sobre todos los slices de $T$ y se separa el primer slice encontrado que cumpla que es "chico", se lo identifica almacenándolo en la estructura \lstinline|chosenTransitions|. Ahora, lo que queremos hacer es dividir a $T$, separando las \lstinline|chosenTransitions| de $T$ y dejando el resto de $T$ en otra estructura que llamamos \lstinline|newBunch|. Luego, agregamos tanto el \lstinline|chosenTransitions| como el \lstinline|newBunch| a $\Pi_t$ y a la cola de bunches por refinar. Ahora, tenemos dos bunches en $\Pi_t$ que no son estables respecto a ambos bunches, por lo que debemos refinar los bloques de $\Pi_s$ para que lo sean. Para esto, se utiliza la función \lstinline|findSplittableBlocks|, donde se buscan todos los bloques que contienen transiciones en los dos nuevos bunches. Por cada bloque $B$ encontrado, se crea un splitter primario y otro secundario y se guardan en una lista \lstinline|splitterList|. El splitter primario contiene todas las transiciones de \lstinline|chosenTransitions| que salen de $B$, y el splitter secundario contiene todas las transiciones de \lstinline|newBunch| que salen de $B$. A su vez, se debe marcar como transiciones necesarias a reestabilizar todas las transiciones de \lstinline|chosenTransitions|, es decir, las marcas del splitter primario. En esta primera versión, se utiliza un mapa \lstinline|Map<Splitter, Set<Triple<Long, String, Long>>> markings| para almacenar estas marcas, asociando a cada splitter el conjunto de transiciones que fueron marcadas para la reestabilización. Por cada estado que es origen de una transición primaria, debemos identificar si ese estado también tiene una transición secundaria, y marcar a una transición secundaria por cada estado, añadiéndola a \lstinline|markings|, asociadas al splitter secundario. 
+Luego del preprocesamiento y la inicialización de las estructuras de datos, el código tiene un loop principal que itera sobre los bunches. En cada ciclo, se toma un bunch $T$. Si $T$ es un bunch trivial, es decir que todas sus transiciones con la misma acción $a$ van a un mismo bloque, entonces el bunch $T$ no debe ser refinado. Si $T$ no es trivial, entonces se buscan todos los "slices" de $T$, es decir, se buscan y se separan los subconjuntos de $T$ que tienen la misma acción $a$ y bloque de destino $B'$. Luego, se itera sobre todos los slices de $T$ y se separa el primer slice encontrado que cumpla que es "chico", se lo identifica almacenándolo en la estructura \texttt{chosenTransitions}. Ahora, el objetivo es dividir a $T$, separando las \texttt{chosenTransitions} de $T$ y dejando el resto de $T$ en otra estructura que llamada \texttt{newBunch}. Luego, se agrega tanto el \texttt{chosenTransitions} como el \texttt{newBunch} a $\Pi_t$ y a la cola de bunches por refinar. Ahora, se tienen dos bunches en $\Pi_t$ que no son estables respecto a ambos bunches, por lo que se deben refinar los bloques de $\Pi_s$ para que lo sean. Para esto, se utiliza la función \texttt{findSplittableBlocks}, donde se buscan todos los bloques que contienen transiciones en los dos nuevos bunches. Por cada bloque $B$ encontrado, se crea un splitter primario y otro secundario y se guardan en una lista \texttt{splitterList}. El splitter primario contiene todas las transiciones de \texttt{chosenTransitions} que salen de $B$, y el splitter secundario contiene todas las transiciones de \texttt{newBunch} que salen de $B$. A su vez, se debe marcar como transiciones necesarias a reestabilizar todas las transiciones de \texttt{chosenTransitions}, es decir, las marcas del splitter primario. En esta primera versión, se utiliza un mapa \texttt{Map$<$Splitter, Set$<$Triple$<$Long, \allowbreak String, Long$>$$>$$>$ markings} para almacenar estas marcas, asociando a cada splitter el conjunto de transiciones que fueron marcadas para la reestabilización. Por cada estado que es origen de una transición primaria, se debe identificar si ese estado también tiene una transición secundaria, y marcar a una transición secundaria por cada estado, añadiéndola a \texttt{markings}, asociadas al splitter secundario. 
 
-Luego, se itera sobre la \lstinline|splitterList|. Por cada bloque $B$ que se está observando para realizar la partición, se define el conjunto de estados $R$ que son los estados de $B$ que pueden alcanzar inertemente una transición del splitter y el conjunto de estados $U$ que son los que no. Esta división en nuevos bloques $R$ y $U$ se hace a través de una función "split" que se detallará más adelante. Siguiendo la lógica del paper, si el splitter actual era primario, entonces luego del split, el bloque $U$ es estable respecto al bunch \lstinline|chosenTransitions|, por lo que se debe crear un nuevo splitter secundario para el bloque $B$, que solo contiene las transiciones de \lstinline|chosenTransitions| que salen de $R$. Es decir, se reemplaza el splitter secundario de $B$ por el nuevo splitter secundario para $R$. Al realizar el split de $R$ y $U$, las transiciones inertes salientes de $R$ hacia $U$, antes eran inertes pues estaban dentro del bloque $U$, pero ahora debemos identificarlas como no-inertes, ya que ahora cruzan dos bloques separados. Para realizar esta identificación, se utiliza la función \lstinline|findNewNonInertTransitions|. Estas nuevas transiciones no-inertes, conforman un nuevo bunch que se debe agregar a $\Pi_t$. A su vez, tal como se menciona en el paper, $R$ puede haberse vuelto inestable respecto al nuevo bunch creado. Por ello, se vuelve a utilizar la función split para volver a dividir $R$ en dos bloques, $N$ y $R'$. Si $N$ y $R'$ no son vacíos, entonces se reemplaza a $R$ de $\Pi_s$ por $N$ y $R'$. 
+Luego, se itera sobre la \texttt{splitterList}. Por cada bloque $B$ que se está observando para realizar la partición, se define el conjunto de estados $R$ que son los estados de $B$ que pueden alcanzar inertemente una transición del splitter y el conjunto de estados $U$ que son los que no. Esta división en nuevos bloques $R$ y $U$ se hace a través de una función "split" que se detallará más adelante. Siguiendo la lógica del paper, si el splitter actual era primario, entonces luego del split, el bloque $U$ es estable respecto al bunch \texttt{chosenTransitions}, por lo que se debe crear un nuevo splitter secundario para el bloque $B$, que solo contiene las transiciones de \texttt{chosenTransitions} que salen de $R$. Es decir, se reemplaza el splitter secundario de $B$ por el nuevo splitter secundario para $R$. Al realizar el split de $R$ y $U$, las transiciones inertes salientes de $R$ hacia $U$, antes eran inertes pues estaban dentro del bloque $U$, pero ahora es necesario identificarlas como no-inertes, ya que ahora cruzan dos bloques separados. Para realizar esta identificación, se utiliza la función \texttt{findNewNonInertTransitions}. Estas nuevas transiciones no-inertes, conforman un nuevo bunch que se debe agregar a $\Pi_t$. A su vez, tal como se menciona en el paper, $R$ puede haberse vuelto inestable respecto al nuevo bunch creado. Por ello, se vuelve a utilizar la función split para volver a dividir $R$ en dos bloques, $N$ y $R'$. Si $N$ y $R'$ no son vacíos, entonces se reemplaza a $R$ de $\Pi_s$ por $N$ y $R'$. 
 
-Acorde con el análisis hecho en el paper, la estabilidad no se preserva cuando aparecen nuevos estados bottom, por lo que debemos estabilizar al nuevo bloque $N$ con respecto a todos los bunches a donde $N$ tenga transiciones salientes. Para ello, se identifican todos los bottom states de $N$ y se itera sobre $\Pi_t$ para encontrar todos los bunches que contienen alguna transición saliente de $N$. Por cada bunch encontrado, se crea un splitter secundario. Por último, se itera sobre los estados bottom identificados de $N$ y se marca a una transición por cada estado. Estas marcas se realizan agregando a la primera transición del estado en una lista de estados \lstinline|marksForRestabilization|.
+Acorde con el análisis hecho en el paper, la estabilidad no se preserva cuando aparecen nuevos estados bottom, por lo que se debe estabilizar al nuevo bloque $N$ con respecto a todos los bunches a donde $N$ tenga transiciones salientes. Para ello, se identifican todos los bottom states de $N$ y se itera sobre $\Pi_t$ para encontrar todos los bunches que contienen alguna transición saliente de $N$. Por cada bunch encontrado, se crea un splitter secundario. Por último, se itera sobre los estados bottom identificados de $N$ y se marca a una transición por cada estado. Estas marcas se realizan agregando a la primera transición del estado en una lista de estados \texttt{marksForRestabilization}.
 
-Retomando, la función split es el corazón del algoritmo. La función split es la que se encarga de dividir al bloque $B$ en los bloques $R$ y $U$, y la implementación de esta función es la que hace la diferencia en el paper para poder alcanzar la cota de la complejidad. En el paper se detalla a la función split como dos corutinas que se ejecutan en paralelo. Sin embargo, con vistas a nuestro objetivo de poder realizar primero una primera implementación del algoritmo y validar su correctitud, en esta primera versión no implementamos a la función como dos corutinas. La función split tiene la siguiente firma: 
+Retomando, la función split es el corazón del algoritmo. La función split es la que se encarga de dividir al bloque $B$ en los bloques $R$ y $U$, y la implementación de esta función es la que hace la diferencia en el paper para poder alcanzar la cota de la complejidad. En el paper se detalla a la función split como dos corutinas que se ejecutan en paralelo. Sin embargo, con vistas a nuestro objetivo de poder realizar primero una primera implementación del algoritmo y validar su correctitud, en esta primera versión no se implementó la función como dos corutinas. La función split tiene la siguiente firma: 
 
 \begin{lstlisting}[language=Java, numbers=none]                                
       private static Pair<Set<Long>, Set<Long>> split(
@@ -66,133 +60,34 @@ Retomando, la función split es el corazón del algoritmo. La función split es 
             Map<Long, Set<Long>> stateToSCCMap)
 \end{lstlisting}   
 
-Es decir, la función split recibe como argumentos el bloque $B$ a dividir, las transiciones del splitter asociado, las marcas del splitter asociado, el LTS a minimizar, el conjunto de etiquetas identificadas como tau y el mapa de estados a bloques. A su vez, \lstinline|split| devuelve un par de conjuntos de estados, el bloque $R$ y el bloque $U$. En esta versión, \lstinline|split| se limita a calcular el conjunto $R$ usando backward reachability para las transiciones inertes. Para comenzar este procesamiento, todos los estados con alguna transición marcada (es decir, incluida en \lstinline|currentMarks|), son puestos en el nuevo bloque $R$. A su vez, se recorren todas las transiciones del splitter para incluir también en $R$ a los estados desde los cuales estas transiciones salen. Luego, se construye el mapa \lstinline|inertPredecessorsInB|, que almacena para cada estado cuáles son sus predecesores inertes. Luego, se propagan las transiciones inertes hacia atrás, utilizando una estructura \lstinline|worklistR| que comienza con todos los estados de $R$, y por cada uno de ellos busca qué estados son predecesores inertes y los agrega a $R$ y a la worklist para procesarlos también. El proceso continúa hasta que no queden predecesores inertes y por lo tanto, $R$ sea estable. Luego, se devuelve el nuevo bloque $R$ y el nuevo bloque $U$, definido como el complemento de $R$ en $B$.
+Es decir, la función split recibe como argumentos el bloque $B$ a dividir, las transiciones del splitter asociado, las marcas del splitter asociado, el LTS a minimizar, el conjunto de etiquetas identificadas como tau y el mapa de estados a bloques. A su vez, \texttt{split} devuelve un par de conjuntos de estados, el bloque $R$ y el bloque $U$. En esta versión, \texttt{split} se limita a calcular el conjunto $R$ usando backward reachability para las transiciones inertes. Para comenzar este procesamiento, todos los estados con alguna transición marcada (es decir, incluida en \texttt{currentMarks}), son puestos en el nuevo bloque $R$. A su vez, se recorren todas las transiciones del splitter para incluir también en $R$ a los estados desde los cuales estas transiciones salen. Luego, se construye el mapa \texttt{inertPredecessorsInB}, que almacena para cada estado cuáles son sus predecesores inertes. Luego, se propagan las transiciones inertes hacia atrás, utilizando una estructura \texttt{worklistR} que comienza con todos los estados de $R$, y por cada uno de ellos busca qué estados son predecesores inertes y los agrega a $R$ y a la worklist para procesarlos también. El proceso continúa hasta que no queden predecesores inertes y por lo tanto, $R$ sea estable. Luego, se devuelve el nuevo bloque $R$ y el nuevo bloque $U$, definido como el complemento de $R$ en $B$.
 
 \section{Primeros tests}
 Como se mencionó anteriormente, la estrategia fue desarrollar una primera versión fiel al algoritmo para entender la lógica y poder validar su correctitud. Por eso, luego de realizar esta primera implementación, se desarrollaron casos de tests para verificar los funcionamientos básicos del algoritmo. Se realizaron en primera instancia tests unitarios básicos, con casos desde 2 estados hasta 80 estados. Se creó un archivo de testeo unitario llamado BranchingEquivalenceTest.java, ubicado en mtstools/DCS/Compositional/Tests/, donde se implementó la lógica básica para a raíz de archivos .lts llamar al algoritmo de Branching Equivalence y luego del algoritmo de Weak Equivalence y comparar el grafo resultante obtenido. 
-Para esto, primero hicimos pruebas de todos los casos donde ambos algoritmos tenían que reducir al mismo gráfico, es decir casos donde los algoritmos se comporten de forma equivalente. Luego de validar estos casos, nuestro objetivo fue encontrar un caso donde la lógica de los algoritmos difiera, es decir que por el caso de estudio del grafo elegido, ambas reducciones por la definición de equivalencia que utilizan, se comporten de forma diferente. Para ello, se implementó el caso de test presentado por ROB J. VAN GLABBEEK y W. PETER WEIJLAND en https://dl.acm.org/doi/epdf/10.1145/233551.233556 . Este caso de test fue importante para poder asegurarnos de que el comportamiento de Branching Equivalence realmente se comporte como esperábamos, y nos permitió validar de forma más robusta su implementación. A su vez, nos permitió desarrollar a un nivel más práctico las diferencias reales entre ambos algoritmos.
+Para esto, primero se realizaron pruebas de todos los casos donde ambos algoritmos tenían que reducir al mismo gráfico, es decir, casos donde los algoritmos se comportaran de forma equivalente. Luego de validar estos casos, el objetivo fue encontrar un caso donde la lógica de los algoritmos difiera, es decir que por el caso de estudio del grafo elegido, ambas reducciones por la definición de equivalencia que utilizan, se comporten de forma diferente. Para ello, se implementó el caso de test presentado por \todo{agregar cita} ROB J. VAN GLABBEEK y W. PETER WEIJLAND en https://dl.acm.org/doi/epdf/10.1145/233551.233556 . Este caso de test fue importante para poder asegurar que el algoritmo de Branching Equivalence realmente funcionara de la forma esperada, permitiendo validar de forma más robusta su implementación. A su vez, permitió desarrollar a un nivel más práctico las diferencias reales entre ambos algoritmos.
 
-\section{Optimizaciones y mejoras (v1)}
-\subsection{Estructura del bucle: dos fases que alternan}
-Para la primer version del algoritmo con optimizaciones, la mayor diferencia con la estructura del paper es que se implementan dos fases que alternan al mismo nivel en lugar de anidar un while externo sobre bunches con un for interno sobre splitters. 
-% El bucle principal alterna dos fases: Fase 1 estabiliza estados drenando
-% splitterList; Fase 2 refina un bunch y genera nuevos splitters. Continúa
-% hasta que ambas estructuras quedan vacías.
+\subsection{Integración con el algoritmo composicional}
+Luego de realizar los primeros tests, se revisó también la integración del nuevo algoritmo de branching equivalence con MTSA. En este contexto, se pudó detectar que en el contexto del algoritmo, una acción fluent se debería distinguir de las transiciones tau, y aun cuando esté identificada como local, no debe ser tratada como tau. Es por esto, que en la siguiente versión se agrega una validación para eliminar a las acciones fluents del conjunto de \texttt{tauLabels}.
 
+Otra diferencia a como estaba implementado el algoritmo es que en MTSA el estado de error $-1L$ es particular. En el algoritmo inicial, esto no estaba contemplado, pero luego al realizar las primeras pruebas, lo modifiqué para que el estado de error tenga un bloque inicial propio.
 
-\subsection{Fase 1: estabilización de estados}
-% Por cada splitter pendiente se ejecuta split(B, transitions, marks); si
-% parte el bloque B en R y U se actualizan las estructuras, se subdividen los
-% splitters obsoletos que apuntaban a B y se propaga la cascada de $\tau$
-% no-inertes nuevas mediante la cola newFrontiers.
+A su vez, para poder integrar el algoritmo de minimización de branching en el algoritmo composicional, se creó la función \texttt{buildMinimisedMTSFromPartition}, que a partir de una partición que devuelve el algoritmo de branching bisimilarity se crea el MTS correspondiente. 
 
+\section{Primeras optimizaciones}
 
-\subsection{Fase 2: refinamiento de bunches}
-% Se elige un bunch T de la cola, se lo parte en slices por (acción, bloque
-% destino), se elige una small half de tamaño $\le |T|/2$ y se generan
-% splitters primary/secondary asociados por groupId para que la próxima
-% Fase 1 los procese.
+\subsection{Cambio de estrategia: dos fases que alternan}
+Para la primera versión del algoritmo con optimizaciones, la mayor diferencia con la estructura del paper es que se implementan dos fases que alternan al mismo nivel en lugar de anidar un while externo sobre bunches con un for interno sobre splitters. 
+Si bien este cambio no afecta la complejidad asintótica, mejora el entendimiento del algoritmo y ayuda a introducir los cambios que mejoran el uso de las estructuras.
+A su vez, también permite tener dos fases separadas y poder utilizarlas como elemento de medición para contar iteraciones y tiempos. Entonces, se modifica el algoritmo para que esté compuesto por dos fases: la primera donde se realiza la estabilización de estados y la segunda donde se refinan los bunches correspondientes. 
 
+En la primera fase, se itera sobre la splitter list, que almacena una estructura por cada split pendiente, indicando que falta estabilizar el bloque B con el conjunto de transiciones asociadas y las marcas correspondientes. Por cada splitter, si el bloque no está en $\Pi_s$ quiere decir que ya fue partido por un splitter anterior y se descarta. Esto no pasará en la primera ronda pero puede suceder en las rondas futuras. Si no, se ejecuta el \texttt{split(B, transitions, marks)} que devuelve los bloques R y U al igual que en la primera versión. Al dividir a B en R y U, hay que actualizar los splitters relacionados a B. En la primera versión, esto era necesario solo para el splitter secundario, pero como ahora el algoritmo se divide en dos fases, entonces se define la función \texttt{refineSplitters} que recorre la splitterList y por cada splitter relacionado al bloque B, se crean dos splitters nuevos para R y U recalculando nuevamente las marcas necesarias y manteniendo el groupId. Estos splitters son añadidos a la splitter list para que sean procesados a continuación. Al igual que antes, el split no solo afecta a los splitters, sino que también puede hacer que un bunch trivial se vuelva no trivial luego de la partición. Para encolar a estos bunches, en esta nueva versión se implementa la estructura nueva \texttt{targetStateToBunches} que es de tipo \texttt{Map\textless Long, Set\textless Set\textless Triple\textgreater\textgreater\textgreater} y permite almacenar por cada bloque B cuáles son los bunches que tienen alguna transición entrante a B. Esto permite no iterar sobre todo $\Pi_t$ para encontrar los bunches afectados y encolarlos fácilmente. Por último, también puede ser que haya transiciones inertes en el bloque b que al dividirlo ya no sean inertes. Este proceso se optimizó en esta versión para acercarse más a lo sugerido en el paper. Para ello, se utiliza una nueva estructura \texttt{newFrontiers} que es un \texttt{Queue\textless Pair\textless Set\textless Long\textgreater, Set\textless Long\textgreater\textgreater\textgreater}, donde cada elemento es un par que contiene un bloque en cada posición, por ejemplo \texttt{\textless R,U\textgreater} y \texttt{\textless U,R\textgreater}, indicando que se debe revisar si hay transiciones que vayan de R a U que anteriormente eran inertes pero ahora dejaron de serlo. Por cada par, se buscan estas transiciones y se registra como nuevo bunch en las estructuras de datos indicadas, como $\Pi_t$. Luego, al igual que en la versión inicial, se vuelve a partir el bloque R en N y R', pero utilizando los nuevos mecanismos detallados para esta versión. El invariante que se asegura al finalizar la Fase 1, es que $\Pi_s$ es estable y la \texttt{splitterList} finaliza vacía. 
 
-\subsection{Construcción del MTS minimizado}
-% Cada bloque recibe un identificador nuevo, cada transición $s \xrightarrow{a} s'$
-% del MTS original se mapea a $\text{block}(s) \xrightarrow{a} \text{block}(s')$
-% en el resultado, y los self-loops $\tau$ controlables se renombran a
-% c_<acción> y se registran en translatorControllable.
+La segunda fase toma un bunch no trivial T de $\Pi_t$. Para T, se inicializa un mapa \texttt{Map\textless Pair\textless String, Integer\textgreater, Set\textless Triple\textless Long, String, Long\textgreater\textgreater\textgreater} llamado \texttt{slices}, donde por cada par \texttt{\textless a, blockID\textgreater} se almacena el conjunto de transiciones de T que tienen acción a y entran al bloque blockID. Esta es otra optimización que se agrega en esta versión, ya que antes los bloques se representaban como un \texttt{Set\textless Long\textgreater} pero esto representaba un costo O(n) cada vez que se buscaba un bloque. En esta nueva versión, se utiliza la estructura \texttt{blockIdMap} implementada como un \texttt{IdentityHashMap\textless Set\textless Long\textgreater, Integer\textgreater}. Esta estructura asocia por cada bloque un Integer, que actúa como su blockID asociado, permitiendo obtener el número de bloque en O(1). Retomando el algoritmo, T es trivial cuando hay una sola slice, por lo que en ese caso si el bunch elegido tiene una sola slice, se toma otro bunch de $\Pi_t$ hasta obtener uno que no sea trivial. Al encontrar un bunch T no trivial, es decir que tiene más de un slice, al igual que en la primera versión, se eligen las \texttt{chosenTransitions} y se realiza el mismo procedimiento que el mencionado anteriormente para partir T en \texttt{chosenTransitions} y \texttt{newBunch}, también actualizando $\Pi_t$ y los splitter asociados.
 
+Entonces, la estrategia en esta nueva versión del algoritmo fue cambiar el orden de la lógica para primero procesar todos los splitters pendientes en la fase 1, luego realizar la partición de un bunch no trivial en la fase 2 y encolar nuevos splitters, para finalmente volver a iterar los splitters en la fase 2. Estas dos fases se ejecutan de manera alterna hasta que las estructuras $\Pi_t$ y la \texttt{splitterList} se encuentran vacías, ya que eso asegura que todos los bloques son estables respecto a los conjuntos de transiciones, y que a su vez todas las transiciones son no triviales. 
 
-\section{Decisiones de diseño no dictadas por el paper}
-
-\subsection{Dos fases en lugar del nesting outer-while + inner-for}
-% El paper anida un while externo sobre bunches con un for interno sobre
-% splitters. Implementar dos fases que alternan al mismo nivel no cambia la
-% complejidad asintótica, pero da invariantes verificables y separa los
-% efectos de la restabilización del flujo principal.
-
-
-\subsection{Identidad por referencia para la cola de bunches}
-% Los bunches se mutan durante el algoritmo (addAll, removeAll). Una cola
-% basada en equals/hashCode de Set produce falsos negativos en contains tras
-% la mutación. Una cola que decide pertenencia por identidad de referencia
-% (IdentityQueue) evita el bug y permite mutar bunches encolados con seguridad.
-
-
-\subsection{Índice inverso estado destino $\to$ bunches}
-% La estructura targetStateToBunches mapea cada estado destino al conjunto
-% de bunches que lo contienen. Cuando se parte un bloque, esto permite
-% re-encolar sólo los bunches afectados en lugar de re-escanear todo $\Pi_t$.
-
-
-\subsection{Subdivisión sistemática de splitters obsoletos}
-% Cuando un splitter parte el bloque B en R y U, los demás splitters
-% pendientes que apuntaban a B quedan sin un blanco válido. La rutina
-% refineSplitters los subdivide en dos splitters (uno para R, uno para U)
-% preservando marcas según primary/secondary. El paper trata este caso de
-% manera informal.
-
-
-\subsection{SCCs como unidad atómica en split}
-% R arranca con las SCCs enteras de los estados origen de las marcas, no con
-% estados sueltos. Esto refleja una propiedad del algoritmo de Groote: los
-% estados de una misma SCC $\tau$-conexa son siempre branching-equivalentes
-% entre sí, por lo que separarlos en R y U sería incorrecto.
-
-
-\subsection{Detección de bottom states por SCC}
-% Una SCC se considera bottom si ninguno de sus estados tiene una transición
-% $\tau$ saliente que termine en otra SCC del mismo bloque. Trabajar a nivel
-% de SCC en lugar de estado a estado mejora tanto la corrección semántica
-% como la eficiencia.
-
-
-\subsection{Hashing de bloques en tiempo constante}
-% El hashCode de Set<Long> es $O(n)$ y domina el tiempo de Fase 2 cuando los
-% bloques son grandes. Asignar un identificador entero por bloque
-% (blockIdMap) permite indexar las slices por Pair<String, Integer> y reduce
-% el costo de hashing a $O(1)$.
-
-
-\subsection{Restabilización en ambas direcciones}
-% Tras un split en R y U, el paper sólo contempla nuevas $\tau$ no-inertes
-% en sentido R \to U. En MTSs reales también aparecen en sentido U \to R.
-% La cola newFrontiers propaga la cascada en ambas direcciones, agendando
-% pares (R, U) y (U, R) hasta agotar las nuevas no-inertes generadas.
-
-
-\section{Adaptaciones al contexto composicional}
-
-\subsection{Estado de error como bloque inicial separado}
-% El estado de error ($-1$) se trata como un bloque inicial propio en $\Pi_s$.
-% Mezclarlo con Bvis o Binvis es semánticamente incorrecto: en el contexto
-% de DCS el estado de error no es equivalente a ningún estado de operación
-% normal.
-
-
-\subsection{Self-loops $\tau$ controlables}
-% Si un self-loop $\tau$ corresponde a una acción controlable, en el MTS
-% minimizado se renombra a c\_<acción> y se registra en translatorControllable.
-% Sin esta intervención la acción se perdería al colapsar el self-loop.
-
-
-\subsection{Initiating actions de fluents fuera de $\tau$}
-% Una acción que dispara un fluent modifica el valor del fluent y por lo
-% tanto distingue estados desde la lógica del sistema. Tratarla como $\tau$
-% haría que el algoritmo colapse estados que el modelo considera distintos,
-% por lo que las initiating actions se sacan de tauLabels antes del bucle.
-
-
-\subsection{Reuso de partición precomputada}
-% La API buildMinimisedMTSFromPartition permite construir el MTS minimizado
-% a partir de una partición ya calculada, sin recomputar la equivalencia.
-% Es necesaria para que el flujo composicional pueda intercalar cómputos y
-% reutilizar resultados.
-
-
-\subsection{Eventos controlables, no-controlables y estados marcados}
-% El algoritmo del paper opera sobre LTS "puros". Acá hay que preservar
-% durante la minimización la información extra que aporta el contexto:
-% qué eventos son controlables y cuáles no, y qué estados están marcados.
-
+\subsection{Implementación de nuevas estructuras}
+Con el objetivo de optimizar los tiempos del algoritmo, se reemplazaron varias estructuras poco ágiles de la primera versión. Por ejemplo, $\Pi_t$, antes implementada como un \texttt{List\textless Set\textless Triple\textgreater\textgreater}, ahora fue implementada como un \texttt{Set\textless Set\textless Triple\textgreater\textgreater} con \texttt{IdentityHashMap}. A su vez, en la clase \texttt{Splitter} también se realizaron varias modificaciones. Previamente, las marcas se marcaban en un mapa asociando el splitter con las marcas, ahora en cambio se implementa un campo \texttt{marks} dentro de la propia clase. Por otro lado, en la primera versión del algoritmo se explicó que para detectar cuando un splitter primario tenía un splitter secundario, se buscaba directamente el siguiente en la fila de splitters, asumiendo una adyacencia. Eso era válido en esa versión, pero ahora al tener dos fases distintas, se necesitó implementar dentro de la clase \texttt{Splitter} el campo \texttt{groupId}, marcando que si dos splitters tienen el mismo groupId están emparejados.
 
 \section{Validación de correctitud}
 
