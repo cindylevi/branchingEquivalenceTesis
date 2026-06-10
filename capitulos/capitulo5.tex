@@ -91,7 +91,7 @@ Con el objetivo de optimizar los tiempos del algoritmo, se reemplazaron varias e
 
 \section{Alcanzando la complejidad teorica}
 
-Luego de realizar las primeras optimizaciones mencionadas y validar que el algoritmo funcionara correctamente, solo quedaba implementar dos cambios claves para alcanzar la complejidad teorica de o(n log m) tal como se detalla en el paper. En particular, el paper menciona dos estructuras claves en la seccion "detalles de implementacion". Por un lado, detalla la implementacion de estados agrupados por bloques con la utilizacion de una estructura llamada "refinable partition". Por otro lado, se menciona la implementacion de una estructura para almacenar los bunches de transiciones llamada "linked refinable partitions" a la que en el codigo final para esta tesis se decidio nombrar como "LinkedTransitionPartitions".
+Luego de realizar las primeras optimizaciones mencionadas y validar que el algoritmo funcionara correctamente, solo quedaba implementar dos cambios claves para alcanzar la complejidad teorica de o(n log m) tal como se detalla en el paper. En particular, el paper menciona dos estructuras claves en la seccion "detalles de implementacion". Por un lado, detalla la implementacion de estados agrupados por bloques con la utilizacion de una estructura llamada "refinable partition". Por otro lado, se menciona la implementacion de una estructura para almacenar los bunches de transiciones llamada "Linked Refinable Partitions" a la que en el codigo final para esta tesis se decidio nombrar como "LinkedTransitionPartitions". Por ultimo, en esta nueva version se implementan tambien los cambios necesarios para poder ejecutar la funcion \texttt{split} como las dos corrutinas mencionadas en el paper.
 
 \subsection{Refinable Partitions}
 
@@ -293,22 +293,21 @@ A su vez, se define la clase "RefinablePartition", detallada en la  Figura~\ref{
   \begin{minipage}{\linewidth}
   \begin{lstlisting}[language=Java, numbers=none]
     final class RefinablePartition {
-    RefinablePartition(Collection<Long> universe);
-    void seedFromInitialBlocks(List<Set<Long>> initialBlocks);
+      RefinablePartition(Collection<Long> universe);
+      void seedFromInitialBlocks(List<Set<Long>> initialBlocks);
 
-    Block blockOf(long s);                  
-    Iterable<Long> states(Block b);         
-    Iterable<Long> bottoms(Block b);        
-    Iterable<Long> rDestStates(Block b);    
-    List<Block> liveBlocks();              
+      Block blockOf(long s);                  
+      Iterable<Long> states(Block b);         
+      Iterable<Long> bottoms(Block b);        
+      Iterable<Long> rDestStates(Block b);    
+      List<Block> liveBlocks();              
 
-    void addToR(long s);                    
-    void clearR(Block b);                  
-    Pair<Block, Block> splitOffR(Block b);  
+      void addToR(long s);                    
+      void clearR(Block b);                  
+      Pair<Block, Block> splitOffR(Block b);  
 
-    void markAsBottom(long s);
-    void unmarkAsBottom(long s);
-    void resetBottoms(Block b);
+      void markAsBottom(long s);
+      void resetBottoms(Block b);
     }
   \end{lstlisting}
   \end{minipage}
@@ -316,102 +315,143 @@ A su vez, se define la clase "RefinablePartition", detallada en la  Figura~\ref{
   \label{fig:class-rp}
 \end{figure}
 
-La Figura~\ref{fig:refinable-split} sigue cómo va mutando la estructura durante un split, paso a paso. Observar este proceso ayudara a explicar como funcionan los metodos \textt{addToR}, \textt{clearR} y \texttt{splitOffR} que son el corazon de la \texttt{RefinablePartition}. Observemos el slice de la estructura \texttt{RefinablePartition} que representa al bloque B. Para ejecutar las operaciones, lo único que se mueve son los estados dentro del slice de $B$ (a traves de swaps) y los punteros \texttt{bottomEnd} y \texttt{rDestEnd}. En ningún momento se copian estados a una estructura nueva ni a otro slice. A continuacion, el paso a paso de un split.
+La Figura~\ref{fig:refinable-split} sigue cómo va mutando la estructura durante un split, paso a paso. Observar este proceso ayudara a explicar como funcionan los metodos \texttt{addToR}, \texttt{clearR} y \texttt{splitOffR} que son el corazon de la \texttt{RefinablePartition}. Observemos el slice de la estructura \texttt{RefinablePartition} que representa al bloque B. Para ejecutar las operaciones, lo único que se mueve son los estados dentro del slice de $B$ (a traves de swaps) y los punteros \texttt{bottomEnd} y \texttt{rDestEnd}. En ningún momento se copian estados a una estructura nueva ni a otro slice. A continuacion, el paso a paso de un split.
 
-\begin{figure}[htbp]
-    \centering
-    \resizebox{\textwidth}{!}{%
-    \begin{tikzpicture}[
-        font=\sffamily,
-        oplabel/.style={font=\ttfamily\small, anchor=east}
-    ]
+\colorlet{cBot}{gray!25}
+\colorlet{cU}{white}
+\colorlet{cR}{red!18}
+\newcommand{\rpBox}[5]{%
+    \draw[fill=#5] (#1, #3 - 0.35) rectangle (#2, #3 + 0.35);%
+    \node at ({(#1+#2)/2}, #3) {#4};}
+\newcommand{\rpPtr}[4]{%
+    \node[font=\ttfamily\scriptsize, text=#4, anchor=south] at (#1, #2 + 0.78) {#3};%
+    \draw[#4, thick] (#1, #2 + 0.75) -- (#1, #2 + 0.4);}
 
-    % Colores de los tres rangos de un bloque
-    \colorlet{cBot}{gray!25}   % estados bottom
-    \colorlet{cU}{white}        % no-bottom que NO van a R
-    \colorlet{cR}{red!18}       % estados destinados a R
-
-    % Caja de rango. #1 = x_ini, #2 = x_fin, #3 = y, #4 = texto, #5 = color
-    \newcommand{\mybox}[5]{
-        \draw[fill=#5] (#1, #3 - 0.35) rectangle (#2, #3 + 0.35);
-        \node at ({(#1+#2)/2}, #3) {#4};
-    }
-    % Puntero vertical. #1 = x, #2 = y_fila, #3 = etiqueta, #4 = color
-    \newcommand{\ptrtick}[4]{
-        \node[font=\ttfamily\scriptsize, text=#4, anchor=south] at (#1, #2 + 0.78) {#3};
-        \draw[#4, thick] (#1, #2 + 0.75) -- (#1, #2 + 0.4);
-    }
-
-    % ================= Punteros y llave sobre la fila (a) =================
-    \ptrtick{0}{0}{start}{black}
-    \ptrtick{3}{0}{bottomEnd}{blue!60!black}
-    \ptrtick{12}{0}{rDestEnd = end}{red!70!black}
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily]
+    \rpPtr{0}{0}{start}{black}
+    \rpPtr{3}{0}{bottomEnd}{blue!60!black}
+    \rpPtr{12}{0}{rDestEnd = end}{red!70!black}
     \draw[decorate, decoration={brace, amplitude=5pt}]
         (0, 1.45) -- (12, 1.45) node[midway, above=4pt] {Bloque $B$ que se va a partir};
+    \rpBox{0}{3}{0}{bottom}{cBot}
+    \rpBox{3}{12}{0}{no-bottom}{cU}
+\end{tikzpicture}%
+}
+\caption{Paso (a): estado inicial del bloque $B$ (\texttt{clearR}).}
+\label{fig:refinable-split}
+\end{figure}
 
-    % ================= (a) clearR(B) =================
-    \node[oplabel] at (-0.6, 0) {(a) clearR};
-    \mybox{0}{3}{0}{bottom}{cBot}
-    \mybox{3}{12}{0}{no-bottom}{cU}
+\textbf{(a) \textbf{\texttt{clearR(B)}}} (Figura~\ref{fig:refinable-split}). Por default, un bloque comienza con \texttt{rDestEnd = end}, por lo que la particion destinada a $R$ queda vacío. El bloque contiene sólo dos rangos visibles: los estados bottom \texttt{[start..bottomEnd)} y el resto no-bottom. La función \texttt{clearR} asegura que la particion de $R$ comience vacía.
 
-    % ================= (b) addToR sobre un no-bottom =================
-    \node[oplabel] at (-0.6, -2) {(b) addToR};
-    \mybox{0}{3}{-2}{bottom}{cBot}
-    \mybox{3}{11}{-2}{no-bottom}{cU}
-    \mybox{11}{12}{-2}{$s$}{cR}
-    \ptrtick{11}{-2}{rDestEnd}{red!70!black}
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily]
+    \rpBox{0}{3}{0}{bottom}{cBot}
+    \rpBox{3}{11}{0}{no-bottom}{cU}
+    \rpBox{11}{12}{0}{$s$}{cR}
+    \rpPtr{11}{0}{rDestEnd}{red!70!black}
+\end{tikzpicture}%
+}
+\caption[]{Paso (b): \texttt{addToR} sobre un estado no-bottom.}
+\label{fig:refinable-split-b}
+\end{figure}
 
-    % ================= (c) addToR sobre un bottom =================
-    \node[oplabel] at (-0.6, -4) {(c) addToR};
-    \mybox{0}{2}{-4}{bottom}{cBot}
-    \mybox{2}{10}{-4}{no-bottom}{cU}
-    \mybox{10}{12}{-4}{$R$}{cR}
-    \ptrtick{2}{-4}{bottomEnd}{blue!60!black}
-    \ptrtick{10}{-4}{rDestEnd}{red!70!black}
+\textbf{(b) \textbf{\texttt{addToR(s)}} sobre un no-bottom} (Figura~\ref{fig:refinable-split-b}). Si se debe agregar un estado $s$ no-bottom a $R$, se hace un swap del estado contra la posición \texttt{rDestEnd-1} y se retrocede \texttt{rDestEnd} en uno. La particion $R$ crece de a un estado por llamada, sin tocar los estados bottom. $O(1)$ ya que solo se debe realizar el swap y sumar o restar a los punteros.
 
-    % ================= (d) estado tras repetir addToR =================
-    \node[oplabel] at (-0.6, -6) {(d)};
-    \mybox{0}{2}{-6}{bottom}{cBot}
-    \mybox{2}{7}{-6}{no-bottom}{cU}
-    \mybox{7}{12}{-6}{$R$}{cR}
-    \ptrtick{0}{-6}{start}{black}
-    \ptrtick{2}{-6}{bottomEnd}{blue!60!black}
-    \ptrtick{7}{-6}{rDestEnd}{red!70!black}
-    \ptrtick{12}{-6}{end}{red!70!black}
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily]
+    \rpBox{0}{2}{0}{bottom}{cBot}
+    \rpBox{2}{10}{0}{no-bottom}{cU}
+    \rpBox{10}{12}{0}{$R$}{cR}
+    \rpPtr{2}{0}{bottomEnd}{blue!60!black}
+    \rpPtr{10}{0}{rDestEnd}{red!70!black}
+\end{tikzpicture}%
+}
+\caption[]{Paso (c): \texttt{addToR} sobre un estado bottom.}
+\label{fig:refinable-split-c}
+\end{figure}
 
-    % ================= (e) splitOffR(B) =================
-    \node[oplabel] at (-0.6, -8) {(e) splitOffR};
-    \mybox{0}{2}{-8}{bottom}{cBot}
-    \mybox{2}{7}{-8}{no-bottom}{cU}
-    \mybox{7.3}{12}{-8}{$R$}{cR}
+\textbf{(c) \textbf{\texttt{addToR(b)}} sobre un bottom} (Figura~\ref{fig:refinable-split-c}). Si el estado era bottom, primero se lo saca de ahí con un swap contra \texttt{bottomEnd-1} y se retrocede \texttt{bottomEnd}. D esta forma, el estado queda incluido en la particion $R$ al igual que en (b). $O(1)$ ya que solo se debe realizar el swap y sumar o restar a los punteros.
+
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily]
+    \rpBox{0}{2}{0}{bottom}{cBot}
+    \rpBox{2}{7}{0}{no-bottom}{cU}
+    \rpBox{7}{12}{0}{$R$}{cR}
+    \rpPtr{0}{0}{start}{black}
+    \rpPtr{2}{0}{bottomEnd}{blue!60!black}
+    \rpPtr{7}{0}{rDestEnd}{red!70!black}
+    \rpPtr{12}{0}{end}{red!70!black}
+\end{tikzpicture}%
+}
+\caption[]{Paso (d): estado del bloque tras repetir \texttt{addToR}.}
+\label{fig:refinable-split-d}
+\end{figure}
+
+\textbf{(d) Estado tras repetir \textbf{\texttt{addToR}}} (Figura~\ref{fig:refinable-split-d}). Una vez agregados todos los estados de $R$, la particion \texttt{[rDestEnd..end)} contiene los estados indicados y el slice de $B$ quedó ordenado en tres particiones.
+
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily]
+    \rpBox{0}{2}{0}{bottom}{cBot}
+    \rpBox{2}{7}{0}{no-bottom}{cU}
+    \rpBox{7.3}{12}{0}{$R$}{cR}
     \draw[decorate, decoration={brace, amplitude=4pt, mirror}]
-        (0, -8.45) -- (7, -8.45) node[midway, below=4pt] {\small \texttt{uBlock}};
+        (0, -0.45) -- (7, -0.45) node[midway, below=4pt] {\small \texttt{uBlock}};
     \draw[decorate, decoration={brace, amplitude=4pt, mirror}]
-        (7.3, -8.45) -- (12, -8.45) node[midway, below=4pt] {\small \texttt{rBlock}};
+        (7.3, -0.45) -- (12, -0.45) node[midway, below=4pt] {\small \texttt{rBlock}};
+\end{tikzpicture}%
+}
+\caption[]{Paso (e): \texttt{splitOffR} divide el bloque en \texttt{uBlock} y \texttt{rBlock}.}
+\label{fig:refinable-split-e}
+\end{figure}
 
-    % ================= (f) findBottomStates =================
-    \node[oplabel] at (-0.6, -10) {(f) findBottomStates};
-    \mybox{0}{1.5}{-10}{bottom}{cBot}
-    \mybox{1.5}{7}{-10}{no-bottom}{cU}
-    \mybox{7.3}{9}{-10}{bottom}{cBot}
-    \mybox{9}{12}{-10}{no-bottom}{cU}
+\textbf{(e) \textbf{\texttt{splitOffR(B)}}} (Figura~\ref{fig:refinable-split-e}). Se corta el slice en \texttt{rDestEnd}: la primera particion \texttt{[start..rDestEnd)} pasa a ser \texttt{uBlock} y la segunda particion \texttt{[rDestEnd..end)} pasa a ser \texttt{rBlock}, cada uno con su nuevo id. El viejo $B$ se marca como muerto y se reasigna \texttt{blockOfElement} únicamente en las posiciones del sufijo para que apunten a \texttt{rBlock}. Es la única pasada lineal del split y reemplaza a la copia de dos \texttt{HashSet} de las versiones anteriores. $O(1)$ ya que lo unico que se hace es separar a R como otro bloque. Esto implica crear una nueva estructura Block con los punteros de start y end, pero no implica copiar todos los elementos de R. 
 
-    \end{tikzpicture}%
-    }
-    \caption{Cómo va mutando la refinable partition durante un split.}
-    \label{fig:refinable-split}
+\begin{figure}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[font=\sffamily]
+    \rpBox{0}{1.5}{0}{bottom}{cBot}
+    \rpBox{1.5}{7}{0}{no-bottom}{cU}
+    \rpBox{7.3}{9}{0}{bottom}{cBot}
+    \rpBox{9}{12}{0}{no-bottom}{cU}
+\end{tikzpicture}%
+}
+\caption[]{Paso (f): \texttt{findBottomStates} recomputa los estados bottom en cada bloque nuevo.}
+\label{fig:refinable-split-f}
+\end{figure}
+
+\textbf{(f) \textbf{\texttt{findBottomStates}}} (Figura~\ref{fig:refinable-split-f}). Como al hacer el split los bottoms del bloque viejo ya no valen,se recomputan utilizando \texttt{resetBottoms}, que realiza \texttt{bottomEnd = start} y \texttt{markAsBottom} que realiza un swap y mueve el puntero \texttt{bottomEnd} segun corresponda.
+
+Para concluir, tambien se reemplazo la inicializacion de $\Pi_s$, que en las anteriores versiones era implementado como una lista \texttt{List<Set<Long>>}, por las llamadas a los contructores de RefinablePartitions, tal como se ve en la Figura~\ref{fig:init-pi-s}. Asi, se logra bajar la complejidad de varias operaciones frecuentes de $\Pi_s$. Por ejemplo, cuando previamente se queria ver si $\Pi_s$ contenia un bloque B, se debia recorrer toda la lista de bloques, es decir que tenia complejidad $O(|\Pi_s|)$. Con la nueva estructura, esto se realiza en O(1), simplemente viendo si el bloque B tiene el campo \texttt{alive} en \texttt{true}. A su vez, para encontrar los bottom states de un bloque B, se iteraba por todos los estados hasta encontrar los bottom. Ahora, se pueden encontrar todos los bottoms directamente en la particion \texttt{[start..bottomEnd)}. 
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{\linewidth}
+  \begin{lstlisting}[language=Java, numbers=none]
+    RefinablePartition Pi_s = new RefinablePartition(toMinimise.getStates());
+    Pi_s.seedFromInitialBlocks(initialBlocks);
+  \end{lstlisting}
+  \end{minipage}
+  \caption{Inicializacion de $\Pi_s$ como RefinablePartition}
+  \label{fig:init-pi-s}
 \end{figure}
 
 
+\subsection{Linked Transition Partitions}
 
-\begin{itemize}
-    \item \textbf{(a) \texttt{clearR(B)}.} Por default, un bloque comienza con \texttt{rDestEnd = end}, por lo que la particion destinada a $R$ queda vacío. El bloque contiene sólo dos rangos visibles: los estados bottom \texttt{[start..bottomEnd)} y el resto no-bottom. La funcion clearR asegura que la particion de R comience vacia. 
-    \item \textbf{(b) \texttt{addToR(s)} sobre un no-bottom.} En el caso que se debe agregar un estado s no bottom a R, se hace un swap del estado contra la posición \texttt{rDestEnd-1} y se retrocede \texttt{rDestEnd} en uno. La particion $R$ crece de a un estado por llamada, sin tocar los estados bottom. $O(1)$ ya que solo se debe realizar el swap y sumar o restar a los punteros.
-    \item \textbf{(c) \texttt{addToR(b)} sobre un bottom.} Si el estado era bottom, primero se lo saca de ahí con un swap contra \texttt{bottomEnd-1} y se retrocede \texttt{bottomEnd}; luego se lo lleva al sufijo igual que en (b). $O(1)$ ya que solo se debe realizar el swap y sumar o restar a los punteros.
-    \item \textbf{(d) Estado tras repetir \texttt{addToR}.} Una vez agregados todos los estados de $R$, la particion \texttt{[rDestEnd..end)} contiene los estados indicados y el slice de $B$ quedó ordenado en tres rangos. 
-    \item \textbf{(e) \texttt{splitOffR(B)}.} Se corta el slice en \texttt{rDestEnd}: el prefijo \texttt{[start..rDestEnd)} pasa a ser \texttt{uBlock} y el sufijo \texttt{[rDestEnd..end)} pasa a ser \texttt{rBlock}, cada uno con su nuevo id. El viejo $B$ se marca como muerto y se reasigna \texttt{blockOfElement} únicamente en las posiciones del sufijo para que apunten a \texttt{rBlock}. Es la única pasada lineal del split y reemplaza a la copia de dos \texttt{HashSet} de las versiones anteriores. $O(1)$ ya que lo unico que se hace es separar a R como otro bloque. Esto implica crear una nueva estructura Block con los punteros de start y end, pero no implica copiar todos los elementos de R. 
-    \item \textbf{(f) \texttt{findBottomStates}.} Como los bottoms del bloque viejo ya no valen, cada bloque nuevo los recomputa: \texttt{resetBottoms} pone \texttt{bottomEnd = start} y \texttt{markAsBottom} reconstruye el prefijo.
-\end{itemize}
+
+\subsection{La funcion split como corrutinas}
 
 \section{Validación de correctitud}
 
