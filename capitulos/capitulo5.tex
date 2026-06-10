@@ -89,6 +89,330 @@ Entonces, la estrategia en esta nueva versión del algoritmo fue cambiar el orde
 \subsection{Implementación de nuevas estructuras}
 Con el objetivo de optimizar los tiempos del algoritmo, se reemplazaron varias estructuras poco ágiles de la primera versión. Por ejemplo, $\Pi_t$, antes implementada como un \texttt{List\textless Set\textless Triple\textgreater\textgreater}, ahora fue implementada como un \texttt{Set\textless Set\textless Triple\textgreater\textgreater} con \texttt{IdentityHashMap}. A su vez, en la clase \texttt{Splitter} también se realizaron varias modificaciones. Previamente, las marcas se marcaban en un mapa asociando el splitter con las marcas, ahora en cambio se implementa un campo \texttt{marks} dentro de la propia clase. Por otro lado, en la primera versión del algoritmo se explicó que para detectar cuando un splitter primario tenía un splitter secundario, se buscaba directamente el siguiente en la fila de splitters, asumiendo una adyacencia. Eso era válido en esa versión, pero ahora al tener dos fases distintas, se necesitó implementar dentro de la clase \texttt{Splitter} el campo \texttt{groupId}, marcando que si dos splitters tienen el mismo groupId están emparejados.
 
+\section{Alcanzando la complejidad teorica}
+
+Luego de realizar las primeras optimizaciones mencionadas y validar que el algoritmo funcionara correctamente, solo quedaba implementar dos cambios claves para alcanzar la complejidad teorica de o(n log m) tal como se detalla en el paper. En particular, el paper menciona dos estructuras claves en la seccion "detalles de implementacion". Por un lado, detalla la implementacion de estados agrupados por bloques con la utilizacion de una estructura llamada "refinable partition". Por otro lado, se menciona la implementacion de una estructura para almacenar los bunches de transiciones llamada "linked refinable partitions" a la que en el codigo final para esta tesis se decidio nombrar como "LinkedTransitionPartitions".
+
+\subsection{Refinable Partitions}
+
+\begin{figure}[htbp]
+    \centering
+    
+    % ==========================================
+    % GRÁFICO (a) - LTS y Particiones (Versión Mejorada)
+    % ==========================================
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+\begin{tikzpicture}[>=Stealth, state/.style={draw, circle, inner sep=1pt, minimum size=0.55cm}, scale=0.9, transform shape]
+
+        % ==========================================
+        % 1. POSICIONAMIENTO DE NODOS (GRILLA EXACTA)
+        % ==========================================
+        \node[state] (s6) at (3.0, 6.6) {$s_6$};
+        
+        \node[state] (s5) at (0.5, 4.2) {$s_5$};
+        \node[state] (s4) at (2.3, 4.2) {$s_4$};
+        \node[state] (s2) at (3.7, 4.2) {$s_2$};
+        
+        \node[state] (s3) at (0.5, 2.4) {$s_3$};
+        \node[state] (s1) at (2.8, 2.4) {$s_1$};
+        \node[state] (s0) at (4.5, 2.4) {$s_0$};
+        
+        \node[state] (s7) at (1.5, 0.0) {$s_7$};
+        \node[state] (s8) at (4.0, 0.0) {$s_8$};
+
+        % ==========================================
+        % 2. FORMAS DE FONDO Y CAJAS (SEPARADAS)
+        % ==========================================
+        \begin{scope}[on background layer]
+            
+            % --- Fila Superior ---
+            % B1
+            \draw[thick, fill=black!10, rounded corners=12pt] (-0.2, 5.9) rectangle (5.0, 7.3);
+            \node at (0.2, 6.6) {$B_1$};
+            
+            % T'
+            \draw (-0.2, 5.1) rectangle (5.0, 5.6);
+            \node at (0.2, 5.35) {$T'$};
+            \node at (1.3, 5.35) {$d$};
+            \node at (3.5, 5.35) {$d$};
+            
+            % --- Fila Central ---
+            % B4
+            \draw[thick, fill=black!10, rounded corners=12pt] (-0.4, 1.6) rectangle (1.2, 4.8);
+            \node at (0.9, 3.3) {$B_4$};
+            
+            % T_\tau (Caja vertical)
+            \draw (1.4, 1.6) rectangle (1.8, 4.8);
+            \node at (1.6, 4.5) {$T_\tau$};
+            
+            % B0 (Polígono suavizado exacto)
+            \draw[thick, fill=black!10, rounded corners=12pt] 
+                (1.9, 4.8) -- (4.4, 4.8) -- (4.4, 3.5) -- (3.4, 2.8) -- (3.5, 1.6) -- (1.9, 1.6) -- cycle;
+            \node at (3.5, 4.6) {$B_0$};
+            
+            % B3
+            \draw[thick, fill=black!10, rounded corners=12pt] (3.8, 1.6) rectangle (5.2, 3.2);
+            \node at (4.2, 2.9) {$B_3$};
+            
+            % --- Fila Inferior ---
+            % T''
+            \draw (-0.2, 0.7) rectangle (2.2, 1.2);
+            \node at (0.1, 0.95) {$T''$};
+            \node at (0.8, 0.95) {$a$};
+            \node at (2.0, 0.95) {$a$};
+            
+            % T
+            \draw (2.4, 0.7) rectangle (5.2, 1.2);
+            \node at (2.7, 0.95) {$T$};
+            \node at (3.6, 0.95) {$b$};
+            \node at (4.0, 0.95) {$b$};
+            \node at (4.3, 0.95) {$c$};
+
+            % B2
+            \draw[thick, fill=black!10, rounded corners=12pt] (-0.2, -0.8) rectangle (5.2, 0.5);
+            \node at (0.2, -0.1) {$B_2$};
+            
+        \end{scope}
+
+        % ==========================================
+        % 3. TRANSICIONES (FLECHAS)
+        % ==========================================
+        % Conexiones izquierdas
+        \draw[->] (s5) to[bend right=30] node[left] {$a$} (s3);
+        \draw[->] (s3) -- (s5);
+        \draw[->] (s4) -- (s3);
+        
+        % Conexiones centrales y cruzadas
+        \draw[->] (s4) -- (s2);
+        \draw[->] (s2) -- (s3);
+        \draw[->] (s2) -- (s1);
+        
+        % Conexiones hacia abajo (pasando por T'' y T)
+        \draw[->] (s3) to[out=270, in=110] (s7);
+        \draw[->] (s1) -- (s7);
+        \draw[->] (s1) -- (s8);
+        \draw[->] (s0) -- (s8);
+        
+        % Autoloop y conexión de s8 a s7
+        \draw[->] (s8) edge [loop above, min distance=1.2cm, in=60, out=120] (s8);
+        \draw[->] (s8) to[bend left=20] node[below] {$b$} (s7);
+        
+        % Conexiones hacia arriba (pasando por T')
+        \draw[->] (s3) to[out=100, in=180] (s6);
+        \draw[->] (s2) -- (s6);
+        \draw[->] (s0) to[out=90, in=340] node[right, pos=0.8] {$d$} (s6);
+
+    \end{tikzpicture}
+        \caption*{\small (a) Un ejemplo de LTS y su particion correspondiente. Las transiciones no etiquetadas deben asumirse como intertes, es decir $\tau$-transitions.}
+    \end{subfigure}
+    \hfill
+    % ==========================================
+    % GRÁFICO (b) - Estructura de Datos
+    % ==========================================
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \begin{tikzpicture}[>=Stealth, node distance=0cm, scale=0.85, transform shape]
+
+            % Nodos del Array
+            \tikzstyle{cell}=[draw, minimum width=0.85cm, minimum height=0.6cm, anchor=center]
+            
+            \node[cell] (c6) {$s_6$};
+            \node[cell, right=of c6] (c7) {$s_7$};
+            \node[cell, right=of c7] (c8) {$s_8$};
+            \node[cell, right=of c8] (c0) {$s_0$};
+            \node[cell, right=of c0] (c5) {$s_5$};
+            \node[cell, right=of c5] (c3) {$s_3$};
+            \node[cell, right=of c3] (c1) {$s_1$};
+            \node[cell, right=of c1] (c4) {$s_4$};
+            \node[cell, right=of c4] (c2) {$s_2$};
+
+            % Nodos Circulares Superiores
+            \tikzstyle{bnode}=[draw, circle, inner sep=1pt, minimum size=0.6cm]
+            
+            \node[bnode] (b1) at ($(c6.north) + (0, 1cm)$) {$B_1$};
+            \node[bnode] (b2) at ($(c7.north)!0.5!(c8.north) + (0, 1cm)$) {$B_2$};
+            \node[bnode] (b3) at ($(c0.north) + (0, 1cm)$) {$B_3$};
+            \node[bnode] (b4) at ($(c5.north)!0.5!(c3.north) + (0, 1cm)$) {$B_4$};
+            \node[bnode] (b0) at ($(c1.north)!0.5!(c4.north) + (0, 1cm)$) {$B_0$};
+
+            % Flechas hacia arriba
+            \draw[->] (c6.north) -- (b1.south);
+            \draw[->] (c7.north) -- (b2.south);
+            \draw[->] (c8.north) -- (b2.south);
+            \draw[->] (c0.north) -- (b3.south);
+            \draw[->] (c5.north) -- (b4.south);
+            \draw[->] (c3.north) -- (b4.south);
+            \draw[->] (c1.north) -- (b0.south);
+            \draw[->] (c4.north) -- (b0.south);
+            \draw[->] (c2.north) -- (b0.south);
+
+            % Llaves inferiores
+            \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (c6.south west) -- (c6.south east) node[midway,below=3pt] {\scriptsize bot.};
+            \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (c7.south west) -- (c8.south east) node[midway,below=3pt] {\scriptsize bot.};
+            \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (c0.south west) -- (c0.south east) node[midway,below=3pt] {\scriptsize bot.};
+            \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (c5.south west) -- (c3.south east) node[midway,below=3pt] {\scriptsize bot.};
+            \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (c1.south west) -- (c1.south east) node[midway,below=3pt] {\scriptsize bot.};
+
+        \end{tikzpicture}
+        \vspace{1.5cm} % Espaciado para que quede a la misma altura visual que el otro gráfico
+        \caption*{\small (b) Estructura Refinable Partition para el LTS de ejemplo.}
+    \end{subfigure}
+    \caption{Una refinable partition para un LTS de ejemplo. (a) El LTS y su partición en cinco bloques; las transiciones sin etiqueta se asumen $\tau$ (inertes). (b) El array maestro \texttt{elements}: cada bloque es un slice contiguo, y dentro de cada slice los estados bottom (marcados \emph{bot.}) se ubican primero.}
+    \label{fig:refinable-ejemplo}
+\end{figure}
+
+Las refinable partitions son una estructura de datos que reemplaza la forma de almacenar a $\Pi_s$ como una lista \texttt{List<Set<Long>>}, la estructura \texttt{stateToBlockMap} y el id de bloque \texttt{blockIdMap} de las primeras versiones. La idea principal es que todos los estados viven en un único array \texttt{elements}. Cada bloque es un slice contiguo \texttt{[start..end)} de ese array. Por lo tanto, al separar un bloque no se necesita copiar nuevamente la estructura, sino que se reordena el array con swaps $O(1)$ y se agrega un nuevo slice de bloque. La Figura~\ref{fig:refinable-ejemplo} (a) muestra un ejemplo de un LTS partido en 5 bloques, y la Figura~\ref{fig:refinable-ejemplo} (b) hace un snapshot de cómo se vería la estructura de Refinable Partition para el LTS de ejemplo, marcando también los slices contiguos de cada bloque. A su vez, dentro de cada bloque hay tres rangos disjuntos de estados, delimitados por dos punteros \texttt{bottomEnd} y \texttt{rDestEnd}. Esto se ve de forma poco clara pero introductoria en la Figura~\ref{fig:refinable-ejemplo} (b), donde se puede observar que los estados no-bottom de $B_0$ y $B_4$ están agrupados de forma separada dentro de cada bloque, luego de los estados bottom, marcados como ``bot.''. Una refinable partition tiene tres divisiones: primero en \texttt{[start..bottomEnd)}, se posicionan los estados bottom. Luego, en \texttt{[bottomEnd..rDestEnd)}, se almacenaran durante el algoritmo del split, los estados no-bottom que no van a estar en $R$. Por ultimo, posicionado al final de la estructura, en \texttt{[rDestEnd..end)}, se encontraran los estados destinados a $R$. Se mantiene siempre el invariante $\mathtt{start} \le \mathtt{bottomEnd} \le \mathtt{rDestEnd} \le \mathtt{end}$.
+
+La implementacion de refinable partition se compone de dos clases: \texttt{RefinablePartition} y \texttt{Block}. La Figura~\ref{fig:class-block} detalla la clase Block, compuesta por el camppo de start, end, bottomEnd, rDestEnd, el id y si el bloque sigue activo, con alive. A su vez, expone tambien el metodo size. 
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{\linewidth}
+  \begin{lstlisting}[language=Java, numbers=none]
+    public static final class Block {
+        int start;
+        int end;
+        int bottomEnd;
+        int rDestEnd;
+        public final int id;
+        boolean alive;
+
+        public int size()          { return end - start; }
+    }
+  \end{lstlisting}
+  \end{minipage}
+  \caption{Definicion de la clase Block}
+  \label{fig:class-block}
+\end{figure}
+
+A su vez, se define la clase "RefinablePartition", detallada en la  Figura~\ref{fig:class-rp}. Se exponen los metodos de contruccion, \texttt{RefinablePartition(Collection<Long> universe)} y \texttt{void seedFromInitialBlocks(List<Set<Long>> initialBlocks)}. Luego, los metodos de lookup, donde se pueden notar claramente las mejoras en los tiempos de acceso en esta estructura. \texttt{Block blockOf(long s)} devuelve el bloque al que pertenece el estado s, en $O(1)$. \texttt{Iterable<Long> states(Block b)} retorna los estados del bloque b, en $O(|b|)$. \texttt{Iterable<Long> bottoms(Block b)} retorna los estados bottoms del bloque b, en $O(|cant estados bottom de b|)$. \texttt{Iterable<Long> rDestStates(Block b)} retorna todos los estados destinados a R del bloque B, utilizando el puntero ya mencionado, $rDestEnd$, en $O(|b.rDestCount|)$. Por ultimo, \texttt{List<Block> liveBlocks()} retorna todos los bloques existentes en la RefinablePartition. Luego, se exponen tambien los metodos necesarios para realizar un split.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{\linewidth}
+  \begin{lstlisting}[language=Java, numbers=none]
+    final class RefinablePartition {
+    RefinablePartition(Collection<Long> universe);
+    void seedFromInitialBlocks(List<Set<Long>> initialBlocks);
+
+    Block blockOf(long s);                  
+    Iterable<Long> states(Block b);         
+    Iterable<Long> bottoms(Block b);        
+    Iterable<Long> rDestStates(Block b);    
+    List<Block> liveBlocks();              
+
+    void addToR(long s);                    
+    void clearR(Block b);                  
+    Pair<Block, Block> splitOffR(Block b);  
+
+    void markAsBottom(long s);
+    void unmarkAsBottom(long s);
+    void resetBottoms(Block b);
+    }
+  \end{lstlisting}
+  \end{minipage}
+  \caption{Definicion de la clase RefinablePartition}
+  \label{fig:class-rp}
+\end{figure}
+
+La Figura~\ref{fig:refinable-split} sigue cómo va mutando la estructura durante un split, paso a paso. Observar este proceso ayudara a explicar como funcionan los metodos \textt{addToR}, \textt{clearR} y \texttt{splitOffR} que son el corazon de la \texttt{RefinablePartition}. Observemos el slice de la estructura \texttt{RefinablePartition} que representa al bloque B. Para ejecutar las operaciones, lo único que se mueve son los estados dentro del slice de $B$ (a traves de swaps) y los punteros \texttt{bottomEnd} y \texttt{rDestEnd}. En ningún momento se copian estados a una estructura nueva ni a otro slice. A continuacion, el paso a paso de un split.
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[
+        font=\sffamily,
+        oplabel/.style={font=\ttfamily\small, anchor=east}
+    ]
+
+    % Colores de los tres rangos de un bloque
+    \colorlet{cBot}{gray!25}   % estados bottom
+    \colorlet{cU}{white}        % no-bottom que NO van a R
+    \colorlet{cR}{red!18}       % estados destinados a R
+
+    % Caja de rango. #1 = x_ini, #2 = x_fin, #3 = y, #4 = texto, #5 = color
+    \newcommand{\mybox}[5]{
+        \draw[fill=#5] (#1, #3 - 0.35) rectangle (#2, #3 + 0.35);
+        \node at ({(#1+#2)/2}, #3) {#4};
+    }
+    % Puntero vertical. #1 = x, #2 = y_fila, #3 = etiqueta, #4 = color
+    \newcommand{\ptrtick}[4]{
+        \node[font=\ttfamily\scriptsize, text=#4, anchor=south] at (#1, #2 + 0.78) {#3};
+        \draw[#4, thick] (#1, #2 + 0.75) -- (#1, #2 + 0.4);
+    }
+
+    % ================= Punteros y llave sobre la fila (a) =================
+    \ptrtick{0}{0}{start}{black}
+    \ptrtick{3}{0}{bottomEnd}{blue!60!black}
+    \ptrtick{12}{0}{rDestEnd = end}{red!70!black}
+    \draw[decorate, decoration={brace, amplitude=5pt}]
+        (0, 1.45) -- (12, 1.45) node[midway, above=4pt] {Bloque $B$ que se va a partir};
+
+    % ================= (a) clearR(B) =================
+    \node[oplabel] at (-0.6, 0) {(a) clearR};
+    \mybox{0}{3}{0}{bottom}{cBot}
+    \mybox{3}{12}{0}{no-bottom}{cU}
+
+    % ================= (b) addToR sobre un no-bottom =================
+    \node[oplabel] at (-0.6, -2) {(b) addToR};
+    \mybox{0}{3}{-2}{bottom}{cBot}
+    \mybox{3}{11}{-2}{no-bottom}{cU}
+    \mybox{11}{12}{-2}{$s$}{cR}
+    \ptrtick{11}{-2}{rDestEnd}{red!70!black}
+
+    % ================= (c) addToR sobre un bottom =================
+    \node[oplabel] at (-0.6, -4) {(c) addToR};
+    \mybox{0}{2}{-4}{bottom}{cBot}
+    \mybox{2}{10}{-4}{no-bottom}{cU}
+    \mybox{10}{12}{-4}{$R$}{cR}
+    \ptrtick{2}{-4}{bottomEnd}{blue!60!black}
+    \ptrtick{10}{-4}{rDestEnd}{red!70!black}
+
+    % ================= (d) estado tras repetir addToR =================
+    \node[oplabel] at (-0.6, -6) {(d)};
+    \mybox{0}{2}{-6}{bottom}{cBot}
+    \mybox{2}{7}{-6}{no-bottom}{cU}
+    \mybox{7}{12}{-6}{$R$}{cR}
+    \ptrtick{0}{-6}{start}{black}
+    \ptrtick{2}{-6}{bottomEnd}{blue!60!black}
+    \ptrtick{7}{-6}{rDestEnd}{red!70!black}
+    \ptrtick{12}{-6}{end}{red!70!black}
+
+    % ================= (e) splitOffR(B) =================
+    \node[oplabel] at (-0.6, -8) {(e) splitOffR};
+    \mybox{0}{2}{-8}{bottom}{cBot}
+    \mybox{2}{7}{-8}{no-bottom}{cU}
+    \mybox{7.3}{12}{-8}{$R$}{cR}
+    \draw[decorate, decoration={brace, amplitude=4pt, mirror}]
+        (0, -8.45) -- (7, -8.45) node[midway, below=4pt] {\small \texttt{uBlock}};
+    \draw[decorate, decoration={brace, amplitude=4pt, mirror}]
+        (7.3, -8.45) -- (12, -8.45) node[midway, below=4pt] {\small \texttt{rBlock}};
+
+    % ================= (f) findBottomStates =================
+    \node[oplabel] at (-0.6, -10) {(f) findBottomStates};
+    \mybox{0}{1.5}{-10}{bottom}{cBot}
+    \mybox{1.5}{7}{-10}{no-bottom}{cU}
+    \mybox{7.3}{9}{-10}{bottom}{cBot}
+    \mybox{9}{12}{-10}{no-bottom}{cU}
+
+    \end{tikzpicture}%
+    }
+    \caption{Cómo va mutando la refinable partition durante un split.}
+    \label{fig:refinable-split}
+\end{figure}
+
+
+
+\begin{itemize}
+    \item \textbf{(a) \texttt{clearR(B)}.} Por default, un bloque comienza con \texttt{rDestEnd = end}, por lo que la particion destinada a $R$ queda vacío. El bloque contiene sólo dos rangos visibles: los estados bottom \texttt{[start..bottomEnd)} y el resto no-bottom. La funcion clearR asegura que la particion de R comience vacia. 
+    \item \textbf{(b) \texttt{addToR(s)} sobre un no-bottom.} En el caso que se debe agregar un estado s no bottom a R, se hace un swap del estado contra la posición \texttt{rDestEnd-1} y se retrocede \texttt{rDestEnd} en uno. La particion $R$ crece de a un estado por llamada, sin tocar los estados bottom. $O(1)$ ya que solo se debe realizar el swap y sumar o restar a los punteros.
+    \item \textbf{(c) \texttt{addToR(b)} sobre un bottom.} Si el estado era bottom, primero se lo saca de ahí con un swap contra \texttt{bottomEnd-1} y se retrocede \texttt{bottomEnd}; luego se lo lleva al sufijo igual que en (b). $O(1)$ ya que solo se debe realizar el swap y sumar o restar a los punteros.
+    \item \textbf{(d) Estado tras repetir \texttt{addToR}.} Una vez agregados todos los estados de $R$, la particion \texttt{[rDestEnd..end)} contiene los estados indicados y el slice de $B$ quedó ordenado en tres rangos. 
+    \item \textbf{(e) \texttt{splitOffR(B)}.} Se corta el slice en \texttt{rDestEnd}: el prefijo \texttt{[start..rDestEnd)} pasa a ser \texttt{uBlock} y el sufijo \texttt{[rDestEnd..end)} pasa a ser \texttt{rBlock}, cada uno con su nuevo id. El viejo $B$ se marca como muerto y se reasigna \texttt{blockOfElement} únicamente en las posiciones del sufijo para que apunten a \texttt{rBlock}. Es la única pasada lineal del split y reemplaza a la copia de dos \texttt{HashSet} de las versiones anteriores. $O(1)$ ya que lo unico que se hace es separar a R como otro bloque. Esto implica crear una nueva estructura Block con los punteros de start y end, pero no implica copiar todos los elementos de R. 
+    \item \textbf{(f) \texttt{findBottomStates}.} Como los bottoms del bloque viejo ya no valen, cada bloque nuevo los recomputa: \texttt{resetBottoms} pone \texttt{bottomEnd = start} y \texttt{markAsBottom} reconstruye el prefijo.
+\end{itemize}
+
 \section{Validación de correctitud}
 
 \subsection{Estrategia}
