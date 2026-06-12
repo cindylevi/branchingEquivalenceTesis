@@ -449,7 +449,272 @@ Para concluir, tambien se reemplazo la inicializacion de $\Pi_s$, que en las ant
 
 
 \subsection{Linked Transition Partitions}
+En el paper de Jansen tambien se sugiere la implementacion de $\Pi_t$ como "linked refinable partitions". Asi, la idea es reemplazar los bunches de  $\Pi_t$  que en las primeras versiones estaban representados como \texttt{Set<Triple<Long, String, Long>>}. Para ello, se define la clase \texttt{Transition} tal como muestra la Figura~\ref{fig:class-transition}, donde cada transicion es un objeto que almacena el estado de origen, la accion y el estado destino. A su vez, se almacena el bunch de $\Pi_t$ que la contiene, y el block-bunch al que pertence, es decir el subgrupo que indica dentro de la bunch a la que pertence, de que estado de origen es. Por ultimo, se implementa el campo untested, necesario para la implementacion de las corrutinas en el split. 
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{\linewidth}
+  \begin{lstlisting}[language=Java, numbers=none]
+    public static final class Transition {
+        public final long source;
+        public final String action;
+        public final long target;
+        BunchSlice bunch;
+        BlockBunchSlice blockBunch;
+        int untested;
+    }
+  \end{lstlisting}
+  \end{minipage}
+  \caption{Definicion de la clase Transition}
+  \label{fig:class-transition}
+\end{figure}
 
+Luego, se define la clase \texttt{LinkedTransitionPartitions}, tal como se ve en la Figura~\ref{fig:class-ltp}. Se hace referencia a $\Pi_s$ ya que se debe consultar en diversos metodos, debido a que los bunches dependen de los bloques de estados.  La cola de trabajo El campo \texttt{globalUnstable} es la lista de todas las block-bunch-slices inestables, es decir, la cola de trabajo pendiente de la Fase 2: implementada como una lista con \emph{position tracking}, permite agregar y quitar elementos en $O(1)$. Por ultimo, \texttt{nextBunchId} y \texttt{nextBlockBunchId} son contadores que asignan un identificador unico a cada \texttt{BunchSlice} y \texttt{BlockBunchSlice} en el momento de su creacion. A su vez, esta la lista \texttt{allTransitions}, que es la lista que contiene todas las transiciones del LTS. Esta es la lista principal sobre la cual se construyen las cuatro vistas de las transiciones descritas en el paper de Jansen que permiten sostener la complejidad deseada.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}{\linewidth}
+  \begin{lstlisting}[language=Java, numbers=none]
+    public final class LinkedTransitionPartitions {
+      RefinablePartition Pi_s;
+      List<Transition> allTransitions;
+      Map<Long, List<Transition>> bySource;
+      Map<Long, List<Transition>> byTarget;
+      List<BunchSlice> liveBunches;
+      Map<RefinablePartition.Block, List<BlockBunchSlice>> slicesByBlock;
+      List<BlockBunchSlice> globalUnstable;
+      Map<Triple<Long, String, Long>, Transition> transitionLookup;
+
+      nextBunchId;
+      nextBlockBunchId;
+    }
+  \end{lstlisting}
+  \end{minipage}
+  \caption{Definicion de la clase LinkedTransitionPartitions}
+  \label{fig:class-ltp}
+\end{figure}
+
+Por un lado, esta la vista por bunch \texttt{liveBunches}. Esta vista se implementa como una lista de bunch slices \texttt{List<BunchSlice>}, donde la clase \texttt{BunchSlice} agrupa las transiciones de un mismo bunch de $\Pi_t$. Esta es la vista que implementa directamente la particion $\Pi_t$, y reemplaza al \texttt{IdentityHashMap} que en las versiones anteriores representaba el conjunto de bunches. La Figura~\ref{fig:vista-a} la muestra como queda la estructura sobre el ejemplo de la Figura~\ref{fig:refinable-ejemplo}. A diferencia del paper, esta vista no mantiene de forma explicita los action-block-slices (los subconjuntos de transiciones de un mismo bunch con igual accion y bloque destino), sino que estos se calculan momentaneamente solo cuando hace falta refinar un bunch, en el metodo \texttt{peelSlice}.
+
+\begin{figure}[h]
+  \centering
+  \begin{tikzpicture}[
+    >=stealth,
+    sbox/.style={draw, rectangle, minimum width=0.95cm, minimum height=0.55cm, inner sep=0pt, outer sep=0pt, font=\scriptsize},
+    ell/.style={draw, ellipse, inner sep=1.5pt, font=\scriptsize},
+    circ/.style={draw, circle, inner sep=1.5pt, font=\scriptsize},
+    node distance=-\pgflinewidth
+  ]
+
+    % Leaf nodes (boxes)
+    \node[sbox] (a0) {$s_3 \xrightarrow{a} s_7$};
+    \node[sbox, right=of a0] (a1) {$s_1 \xrightarrow{a} s_7$};
+    \node[sbox, right=of a1] (a2) {$s_5 \xrightarrow{a} s_7$};
+    
+    \node[sbox, right=of a2] (a3) {$s_0 \xrightarrow{c} s_8$};
+    
+    \node[sbox, right=of a3] (a4) {$s_1 \xrightarrow{b} s_8$};
+    \node[sbox, right=of a4] (a5) {$s_7 \xrightarrow{b} s_7$};
+    \node[sbox, right=of a5] (a6) {$s_8 \xrightarrow{b} s_8$};
+    
+    \node[sbox, right=of a6] (a7) {$s_5 \xrightarrow{d} s_6$};
+    \node[sbox, right=of a7] (a8) {$s_2 \xrightarrow{d} s_6$};
+    \node[sbox, right=of a8] (a9) {$s_0 \xrightarrow{d} s_6$};
+    
+    \node[sbox, right=of a9] (a10) {$s_4 \xrightarrow{\tau} s_5$};
+    \node[sbox, right=of a10] (a11) {$s_4 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of a11] (a12) {$s_2 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of a12] (a13) {$s_1 \xrightarrow{\tau} s_3$};
+
+    % Root nodes (bunches)
+    \node[circ] (R1) at ($(a0)!0.5!(a2) + (0, 1.5)$) {$T''$};
+    \node[circ] (R2) at ($(a3)!0.5!(a6) + (0, 1.5)$) {$T$};
+    \node[circ] (R3) at ($(a7)!0.5!(a9) + (0, 1.5)$) {$T'$};
+    \node[circ] (R4) at ($(a10)!0.5!(a13) + (0, 1.5)$) {$T_\tau$};
+
+    % Arrows
+    \foreach \i in {0,1,2} \draw[->] (a\i.north) -- (R1);
+    \foreach \i in {3,4,5,6} \draw[->] (a\i.north) -- (R2);
+    \foreach \i in {7,8,9} \draw[->] (a\i.north) -- (R3);
+    \foreach \i in {10,11,12,13} \draw[->] (a\i.north) -- (R4);
+
+  \end{tikzpicture}
+  \caption{La estrctura de \texttt{liveBunches}, que representa la vista de todas las transiciones ordenadas por bunches de $\Pi_t$. Se usa el ejemplo de la Figura~\ref{fig:refinable-ejemplo}. }
+  \label{fig:vista-a}
+\end{figure}
+
+Luego, la segunda vista es \texttt{slicesByBlock}, que se implementa como un mapa \texttt{Map<Block, List<BlockBunchSlice>>}, donde cada bloque de $\Pi_s$ tiene asociada una lista de todos sus block-bunch-slices, que serian las transiciones que se originan desde bloque dentro de cada bunch. Este mapa permite recuperar en $O(1)$ todas las block-bunch-slices de un bloque, lo cual es utilizado cuando se parte un bloque, ya que se debe redistribuir las block-bunch-slices del bloque viejo entre los dos bloques nuevos. La Figura~\ref{fig:vista-b} muestra la estructura de  \texttt{slicesByBlock} para el ejemplo presentado anteriormente.
+
+
+
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    >=stealth,
+    sbox/.style={draw, rectangle, minimum width=0.95cm, minimum height=0.55cm, inner sep=0pt, outer sep=0pt, font=\scriptsize},
+    ell/.style={draw, ellipse, inner sep=1.5pt, font=\scriptsize},
+    circ/.style={draw, circle, inner sep=1.5pt, font=\scriptsize},
+    node distance=-\pgflinewidth
+  ]
+
+    % Leaf nodes (boxes), grouped by source block
+    \node[sbox] (b0) {$s_1 \xrightarrow{a} s_7$};
+    \node[sbox, right=of b0] (b1) {$s_0 \xrightarrow{c} s_8$};
+    \node[sbox, right=of b1] (b2) {$s_1 \xrightarrow{b} s_8$};
+    \node[sbox, right=of b2] (b3) {$s_2 \xrightarrow{d} s_6$};
+    \node[sbox, right=of b3] (b4) {$s_0 \xrightarrow{d} s_6$};
+    \node[sbox, right=of b4] (b5) {$s_4 \xrightarrow{\tau} s_5$};
+    \node[sbox, right=of b5] (b6) {$s_4 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of b6] (b7) {$s_2 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of b7] (b8) {$s_1 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of b8] (b9) {$s_7 \xrightarrow{b} s_7$};
+    \node[sbox, right=of b9] (b10) {$s_8 \xrightarrow{b} s_8$};
+    \node[sbox, right=of b10] (b11) {$s_3 \xrightarrow{a} s_7$};
+    \node[sbox, right=of b11] (b12) {$s_5 \xrightarrow{a} s_7$};
+    \node[sbox, right=of b12] (b13) {$s_5 \xrightarrow{d} s_6$};
+
+    % Intermediate nodes (block-bunch-slices), notation T_B ->
+    \node[ell] (M1) at ($(b0) + (0, 1.5)$) {$T''_{B_0}{\rightarrow}$};
+    \node[ell] (M2) at ($(b1)!0.5!(b2) + (0, 1.5)$) {$T_{B_0}{\rightarrow}$};
+    \node[ell] (M3) at ($(b3)!0.5!(b4) + (0, 1.5)$) {$T'_{B_0}{\rightarrow}$};
+    \node[ell] (M4) at ($(b5)!0.5!(b8) + (0, 1.5)$) {$(T_\tau)_{B_0}{\rightarrow}$};
+    \node[ell] (M5) at ($(b9)!0.5!(b10) + (0, 1.5)$) {$T_{B_2}{\rightarrow}$};
+    \node[ell] (M6) at ($(b11)!0.5!(b12) + (0, 1.5)$) {$T''_{B_4}{\rightarrow}$};
+    \node[ell] (M7) at ($(b13) + (0, 1.5)$) {$T'_{B_4}{\rightarrow}$};
+
+    % Root nodes (source blocks)
+    \node[circ] (P0) at ($(M1)!0.5!(M4) + (0, 1.5)$) {$B_0$};
+    \node[circ] (P2) at ($(M5) + (0, 1.5)$) {$B_2$};
+    \node[circ] (P4) at ($(M6)!0.5!(M7) + (0, 1.5)$) {$B_4$};
+
+    % Arrows
+    \draw[->] (b0.north) -- (M1);
+    \foreach \i in {1,2} \draw[->] (b\i.north) -- (M2);
+    \foreach \i in {3,4} \draw[->] (b\i.north) -- (M3);
+    \foreach \i in {5,6,7,8} \draw[->] (b\i.north) -- (M4);
+    \foreach \i in {9,10} \draw[->] (b\i.north) -- (M5);
+    \foreach \i in {11,12} \draw[->] (b\i.north) -- (M6);
+    \draw[->] (b13.north) -- (M7);
+
+    \draw[->] (M1.north) -- (P0);
+    \draw[->] (M2.north) -- (P0);
+    \draw[->] (M3.north) -- (P0);
+    \draw[->] (M4.north) -- (P0);
+    \draw[->] (M5.north) -- (P2);
+    \draw[->] (M6.north) -- (P4);
+    \draw[->] (M7.north) -- (P4);
+
+  \end{tikzpicture}%
+  }
+  \caption{La estructura de \texttt{slicesByBlock}, mostrando la vista de las transiciones agrupadas por block-bunch-slice.}
+  \label{fig:vista-b}
+\end{figure}
+
+La tercera vista mencionada agrupa las transiciones por su estado de origen. Se implementa como un mapa de tipo \texttt{Map<Long, List<Transition>>} llamado \texttt{bySource} y se expone con el metodo \texttt{outgoing(s)}, que devuelve todas las transiciones salientes del estado s. Esta vista es \emph{estatica}, ya que como la lista de transiciones salientes de un estado se fija segun el LTS de entrada y no varia, la estructura no se modifica en ningun paso del algoritmo. Se usa de referencia para poder obtener todas las transiciones salientes de un estado, por ejemplo, durante el split. La Figura~\ref{fig:vista-c} muestra la estructura, donde cada estado de origen tiene asociada la lista de sus transiciones salientes.
+% A diferencia del paper, en esta implementacion las transiciones inertes no se almacenan en \texttt{LinkedTransitionPartitions}, ya que la alcanzabilidad inerte se resuelve con la descomposicion en componentes fuertemente conexas por $\tau$ precomputada al inicio. Por eso, \texttt{bySource} solo contiene transiciones no-inertes.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    >=stealth,
+    sbox/.style={draw, rectangle, minimum width=0.95cm, minimum height=0.55cm, inner sep=0pt, outer sep=0pt, font=\scriptsize},
+    ell/.style={draw, ellipse, inner sep=1.5pt, font=\scriptsize},
+    node distance=-\pgflinewidth
+  ]
+
+    % Leaf nodes, grouped by source state
+    \node[sbox] (c0) {$s_0 \xrightarrow{c} s_8$};
+    \node[sbox, right=of c0] (c1) {$s_0 \xrightarrow{d} s_6$};
+    \node[sbox, right=of c1] (c2) {$s_1 \xrightarrow{a} s_7$};
+    \node[sbox, right=of c2] (c3) {$s_1 \xrightarrow{b} s_8$};
+    \node[sbox, right=of c3] (c4) {$s_1 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of c4] (c5) {$s_2 \xrightarrow{d} s_6$};
+    \node[sbox, right=of c5] (c6) {$s_2 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of c6] (c7) {$s_3 \xrightarrow{a} s_7$};
+    \node[sbox, right=of c7] (c8) {$s_4 \xrightarrow{\tau} s_5$};
+    \node[sbox, right=of c8] (c9) {$s_4 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of c9] (c10) {$s_5 \xrightarrow{a} s_7$};
+    \node[sbox, right=of c10] (c11) {$s_5 \xrightarrow{d} s_6$};
+    \node[sbox, right=of c11] (c12) {$s_7 \xrightarrow{b} s_7$};
+    \node[sbox, right=of c12] (c13) {$s_8 \xrightarrow{b} s_8$};
+
+    % Root nodes (source states)
+    \node[ell] (S0) at ($(c0)!0.5!(c1) + (0, 1.5)$) {out($s_0$)};
+    \node[ell] (S1) at ($(c2)!0.5!(c4) + (0, 1.5)$) {out($s_1$)};
+    \node[ell] (S2) at ($(c5)!0.5!(c6) + (0, 1.5)$) {out($s_2$)};
+    \node[ell] (S3) at ($(c7) + (0, 1.5)$) {out($s_3$)};
+    \node[ell] (S4) at ($(c8)!0.5!(c9) + (0, 1.5)$) {out($s_4$)};
+    \node[ell] (S5) at ($(c10)!0.5!(c11) + (0, 1.5)$) {out($s_5$)};
+    \node[ell] (S7) at ($(c12) + (0, 1.5)$) {out($s_7$)};
+    \node[ell] (S8) at ($(c13) + (0, 1.5)$) {out($s_8$)};
+
+    % Arrows
+    \foreach \i in {0,1} \draw[->] (c\i.north) -- (S0);
+    \foreach \i in {2,3,4} \draw[->] (c\i.north) -- (S1);
+    \foreach \i in {5,6} \draw[->] (c\i.north) -- (S2);
+    \draw[->] (c7.north) -- (S3);
+    \foreach \i in {8,9} \draw[->] (c\i.north) -- (S4);
+    \foreach \i in {10,11} \draw[->] (c\i.north) -- (S5);
+    \draw[->] (c12.north) -- (S7);
+    \draw[->] (c13.north) -- (S8);
+
+  \end{tikzpicture}%
+  }
+  \caption{La estructura(\texttt{bySource}), que representa la vista de transiciones ordenadas por estado de origen.}
+  \label{fig:vista-c}
+\end{figure}
+
+Por ultimo, la cuarta vista es la otra de la anterior y agrupa las transiciones por su estado destino, tal como muestra la Figura~\ref{fig:vista-d}. Se implementa como un mapa de transiciones \texttt{Map<Long, List<Transition>>} denotado \texttt{byTarget} y se expone con el metodo \texttt{incoming(s)}, que devuelve las traniciones entrantes al estado s. Por el mismo motivo que la vista anterior, tambien es estatica. Optimiza de forma el proceso de cuando un bloque se parte, ya que se deben marcar como inestables las block-bunch-slices de los bunches que tenian transiciones apuntando a los estados del bloque que se separo, y \texttt{byTarget} permite acceder a ellas facilmente recorriendo para cada estado del nuevo bloque, sus transiciones entrantes.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    >=stealth,
+    sbox/.style={draw, rectangle, minimum width=0.95cm, minimum height=0.55cm, inner sep=0pt, outer sep=0pt, font=\scriptsize},
+    ell/.style={draw, ellipse, inner sep=1.5pt, font=\scriptsize},
+    node distance=-\pgflinewidth
+  ]
+
+    % Leaf nodes, grouped by target state
+    \node[sbox] (d0) {$s_4 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of d0] (d1) {$s_2 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of d1] (d2) {$s_1 \xrightarrow{\tau} s_3$};
+    \node[sbox, right=of d2] (d3) {$s_4 \xrightarrow{\tau} s_5$};
+    \node[sbox, right=of d3] (d4) {$s_5 \xrightarrow{d} s_6$};
+    \node[sbox, right=of d4] (d5) {$s_2 \xrightarrow{d} s_6$};
+    \node[sbox, right=of d5] (d6) {$s_0 \xrightarrow{d} s_6$};
+    \node[sbox, right=of d6] (d7) {$s_3 \xrightarrow{a} s_7$};
+    \node[sbox, right=of d7] (d8) {$s_1 \xrightarrow{a} s_7$};
+    \node[sbox, right=of d8] (d9) {$s_5 \xrightarrow{a} s_7$};
+    \node[sbox, right=of d9] (d10) {$s_7 \xrightarrow{b} s_7$};
+    \node[sbox, right=of d10] (d11) {$s_0 \xrightarrow{c} s_8$};
+    \node[sbox, right=of d11] (d12) {$s_1 \xrightarrow{b} s_8$};
+    \node[sbox, right=of d12] (d13) {$s_8 \xrightarrow{b} s_8$};
+
+    % Root nodes (target states)
+    \node[ell] (I3) at ($(d0)!0.5!(d2) + (0, 1.5)$) {in($s_3$)};
+    \node[ell] (I5) at ($(d3) + (0, 1.5)$) {in($s_5$)};
+    \node[ell] (I6) at ($(d4)!0.5!(d6) + (0, 1.5)$) {in($s_6$)};
+    \node[ell] (I7) at ($(d7)!0.5!(d10) + (0, 1.5)$) {in($s_7$)};
+    \node[ell] (I8) at ($(d11)!0.5!(d13) + (0, 1.5)$) {in($s_8$)};
+
+    % Arrows
+    \foreach \i in {0,1,2} \draw[->] (d\i.north) -- (I3);
+    \draw[->] (d3.north) -- (I5);
+    \foreach \i in {4,5,6} \draw[->] (d\i.north) -- (I6);
+    \foreach \i in {7,8,9,10} \draw[->] (d\i.north) -- (I7);
+    \foreach \i in {11,12,13} \draw[->] (d\i.north) -- (I8);
+
+  \end{tikzpicture}%
+  }
+  \caption{La estructura  \texttt{byTarget}, mostrando las transiciones agrupadas por estado destino.}
+  \label{fig:vista-d}
+\end{figure}
+
+Es importante aclarar que las cuatro vistas no implica que haya cuatro copias de las transiciones, sino que existen cuatro agrupaciones de los mismos objetos \texttt{Transition}, ya que cada transicion guarda punteros a su \texttt{BunchSlice} y a su \texttt{BlockBunchSlice}, y el puntero a la propia \texttt{Transition} es lo que se relaciona en las listas de \texttt{bySource} y \texttt{byTarget}. Es por esto que el paper las llama "linked", ya que una unica instancia participa de las cuatro vistas/particiones a la vez.
 
 \subsection{La funcion split como corrutinas}
 
