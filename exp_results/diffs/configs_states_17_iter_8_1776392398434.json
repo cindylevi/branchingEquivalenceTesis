@@ -1,0 +1,585 @@
+{
+  "translatorControllable": {
+    "c_phil.1.arise": "phil.1.arise",
+    "c_phil.1.sitdown": "phil.1.sitdown",
+    "c_phil.0.sitdown": "phil.0.sitdown",
+    "c_phil.0.arise": "phil.0.arise",
+    "c_phil.2.arise": "phil.2.arise",
+    "c_phil.2.sitdown": "phil.2.sitdown"
+  },
+  "subsysSet1": [
+    "phil.0.eat",
+    "tau",
+    "phil.1.left.get",
+    "phil.0.right.get",
+    "phil.1.right.get",
+    "phil.1.arise",
+    "phil.0.left.get",
+    "phil.0.sitdown",
+    "phil.1.left.put",
+    "phil.0.arise",
+    "phil.1.right.put",
+    "phil.0.left.put",
+    "phil.0.right.put",
+    "phil.1.sitdown",
+    "phil.1.eat"
+  ],
+  "subsysSet2": [
+    "phil.0.eat",
+    "phil.1.left.get",
+    "phil.0.right.get",
+    "phil.1.arise",
+    "phil.0.sitdown",
+    "phil.1.left.put",
+    "phil.0.arise",
+    "phil.0.right.put",
+    "phil.1.sitdown",
+    "phil.1.eat"
+  ],
+  "sourcesWithUncontrollablePath": {
+    "0": [
+      0
+    ],
+    "1": [
+      1
+    ],
+    "2": [
+      2
+    ],
+    "3": [
+      3
+    ],
+    "4": [
+      4
+    ],
+    "5": [
+      5
+    ],
+    "6": [
+      6
+    ],
+    "7": [
+      7
+    ],
+    "8": [
+      8
+    ],
+    "9": [
+      9
+    ],
+    "10": [
+      10
+    ],
+    "11": [
+      11
+    ],
+    "12": [
+      12
+    ],
+    "13": [
+      13
+    ],
+    "14": [
+      14
+    ],
+    "15": [
+      15
+    ],
+    "16": [
+      16
+    ],
+    "17": []
+  },
+  "goalFluents": [
+    {
+      "name": "F_Eat2",
+      "initiatingActions": [
+        {
+          "strSymbol": "phil.2.eat"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "phil.1.left.get"
+        },
+        {
+          "strSymbol": "phil.1.sitdown"
+        },
+        {
+          "strSymbol": "phil.1.arise"
+        },
+        {
+          "strSymbol": "phil.2.sitdown"
+        },
+        {
+          "strSymbol": "phil.0.sitdown"
+        },
+        {
+          "strSymbol": "phil.2.right.put"
+        },
+        {
+          "strSymbol": "phil.2.left.get"
+        },
+        {
+          "strSymbol": "phil.2.arise"
+        },
+        {
+          "strSymbol": "phil.1.eat"
+        },
+        {
+          "strSymbol": "phil.2.right.get"
+        },
+        {
+          "strSymbol": "phil.0.right.get"
+        },
+        {
+          "strSymbol": "phil.2.left.put"
+        },
+        {
+          "strSymbol": "phil.1.right.get"
+        },
+        {
+          "strSymbol": "phil.1.left.put"
+        },
+        {
+          "strSymbol": "phil.0.right.put"
+        },
+        {
+          "strSymbol": "phil.0.eat"
+        },
+        {
+          "strSymbol": "phil.1.right.put"
+        },
+        {
+          "strSymbol": "phil.0.left.get"
+        },
+        {
+          "strSymbol": "phil.0.arise"
+        },
+        {
+          "strSymbol": "phil.0.left.put"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "F_Eat0",
+      "initiatingActions": [
+        {
+          "strSymbol": "phil.0.eat"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "phil.2.eat"
+        },
+        {
+          "strSymbol": "phil.1.left.get"
+        },
+        {
+          "strSymbol": "phil.1.sitdown"
+        },
+        {
+          "strSymbol": "phil.1.arise"
+        },
+        {
+          "strSymbol": "phil.2.sitdown"
+        },
+        {
+          "strSymbol": "phil.0.sitdown"
+        },
+        {
+          "strSymbol": "phil.2.right.put"
+        },
+        {
+          "strSymbol": "phil.2.left.get"
+        },
+        {
+          "strSymbol": "phil.2.arise"
+        },
+        {
+          "strSymbol": "phil.1.eat"
+        },
+        {
+          "strSymbol": "phil.2.right.get"
+        },
+        {
+          "strSymbol": "phil.0.right.get"
+        },
+        {
+          "strSymbol": "phil.2.left.put"
+        },
+        {
+          "strSymbol": "phil.1.right.get"
+        },
+        {
+          "strSymbol": "phil.1.left.put"
+        },
+        {
+          "strSymbol": "phil.0.right.put"
+        },
+        {
+          "strSymbol": "phil.1.right.put"
+        },
+        {
+          "strSymbol": "phil.0.left.get"
+        },
+        {
+          "strSymbol": "phil.0.arise"
+        },
+        {
+          "strSymbol": "phil.0.left.put"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "F_Eat1",
+      "initiatingActions": [
+        {
+          "strSymbol": "phil.1.eat"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "phil.2.eat"
+        },
+        {
+          "strSymbol": "phil.1.left.get"
+        },
+        {
+          "strSymbol": "phil.1.sitdown"
+        },
+        {
+          "strSymbol": "phil.1.arise"
+        },
+        {
+          "strSymbol": "phil.2.sitdown"
+        },
+        {
+          "strSymbol": "phil.0.sitdown"
+        },
+        {
+          "strSymbol": "phil.2.right.put"
+        },
+        {
+          "strSymbol": "phil.2.left.get"
+        },
+        {
+          "strSymbol": "phil.2.arise"
+        },
+        {
+          "strSymbol": "phil.2.right.get"
+        },
+        {
+          "strSymbol": "phil.0.right.get"
+        },
+        {
+          "strSymbol": "phil.2.left.put"
+        },
+        {
+          "strSymbol": "phil.1.right.get"
+        },
+        {
+          "strSymbol": "phil.1.left.put"
+        },
+        {
+          "strSymbol": "phil.0.right.put"
+        },
+        {
+          "strSymbol": "phil.0.eat"
+        },
+        {
+          "strSymbol": "phil.1.right.put"
+        },
+        {
+          "strSymbol": "phil.0.left.get"
+        },
+        {
+          "strSymbol": "phil.0.arise"
+        },
+        {
+          "strSymbol": "phil.0.left.put"
+        }
+      ],
+      "initialValue": false
+    }
+  ],
+  "totalTranslator": [],
+  "translatedControllableLabels": [
+    "c_phil.1.arise",
+    "phil.2.left.get",
+    "phil.2.left.put",
+    "phil.0.right.get",
+    "phil.1.left.get",
+    "phil.1.right.get",
+    "c_phil.2.arise",
+    "phil.0.left.get",
+    "c_phil.2.sitdown",
+    "phil.2.right.put",
+    "phil.1.left.put",
+    "c_phil.1.sitdown",
+    "phil.1.right.put",
+    "c_phil.0.sitdown",
+    "phil.0.left.put",
+    "phil.2.right.get",
+    "phil.0.right.put",
+    "c_phil.0.arise"
+  ],
+  "existUncontrollableLocalPathMatrix": [
+    [
+      1
+    ],
+    [
+      2
+    ],
+    [
+      4
+    ],
+    [
+      8
+    ],
+    [
+      16
+    ],
+    [
+      32
+    ],
+    [
+      64
+    ],
+    [
+      128
+    ],
+    [
+      256
+    ],
+    [
+      512
+    ],
+    [
+      1024
+    ],
+    [
+      2048
+    ],
+    [
+      4096
+    ],
+    [
+      8192
+    ],
+    [
+      16384
+    ],
+    [
+      32768
+    ],
+    [
+      65536
+    ],
+    []
+  ],
+  "localUncontrollableAndFormulaLabels": [
+    "phil.0.arise",
+    "phil.1.sitdown",
+    "phil.1.arise",
+    "phil.0.sitdown"
+  ],
+  "localAlphabet": [
+    "phil.0.eat",
+    "phil.1.left.get",
+    "phil.0.right.get",
+    "phil.1.arise",
+    "phil.0.sitdown",
+    "phil.1.left.put",
+    "phil.0.arise",
+    "phil.0.right.put",
+    "phil.1.sitdown",
+    "phil.1.eat"
+  ],
+  "relevantLabelsFromFormula": [
+    "phil.0.eat",
+    "phil.1.eat"
+  ],
+  "sourceWithLabel": {
+    "0": {
+      "phil.0.arise": [
+        0
+      ],
+      "phil.1.right.put": [
+        8
+      ],
+      "phil.0.right.put": [
+        13
+      ],
+      "phil.1.sitdown": [
+        0
+      ],
+      "phil.1.arise": [
+        0
+      ],
+      "phil.0.sitdown": [
+        0
+      ]
+    },
+    "1": {
+      "phil.0.arise": [
+        1
+      ],
+      "phil.0.right.put": [
+        5
+      ],
+      "phil.1.right.get": [
+        0
+      ],
+      "phil.0.sitdown": [
+        1
+      ]
+    },
+    "2": {
+      "phil.0.right.get": [
+        1
+      ],
+      "phil.1.right.get": [
+        16
+      ]
+    },
+    "3": {
+      "phil.1.right.get": [
+        11
+      ],
+      "phil.0.left.get": [
+        2
+      ]
+    },
+    "4": {
+      "phil.0.eat": [
+        3
+      ],
+      "phil.1.right.get": [
+        12
+      ]
+    },
+    "5": {
+      "phil.0.left.put": [
+        4
+      ],
+      "phil.1.right.get": [
+        13
+      ]
+    },
+    "6": {
+      "phil.0.arise": [
+        6
+      ],
+      "phil.1.left.get": [
+        1
+      ],
+      "phil.0.sitdown": [
+        6
+      ]
+    },
+    "7": {
+      "phil.0.arise": [
+        7
+      ],
+      "phil.1.eat": [
+        6
+      ],
+      "phil.0.sitdown": [
+        7
+      ]
+    },
+    "8": {
+      "phil.0.arise": [
+        8
+      ],
+      "phil.0.right.put": [
+        15
+      ],
+      "phil.0.sitdown": [
+        8
+      ],
+      "phil.1.left.put": [
+        7
+      ]
+    },
+    "9": {
+      "phil.0.right.get": [
+        8
+      ]
+    },
+    "10": {
+      "phil.0.left.get": [
+        9
+      ]
+    },
+    "11": {
+      "phil.1.right.put": [
+        10
+      ],
+      "phil.1.sitdown": [
+        11
+      ],
+      "phil.1.arise": [
+        11
+      ],
+      "phil.0.left.get": [
+        16
+      ]
+    },
+    "12": {
+      "phil.0.eat": [
+        11
+      ],
+      "phil.1.right.put": [
+        14
+      ],
+      "phil.1.sitdown": [
+        12
+      ],
+      "phil.1.arise": [
+        12
+      ]
+    },
+    "13": {
+      "phil.1.right.put": [
+        15
+      ],
+      "phil.0.left.put": [
+        12
+      ],
+      "phil.1.sitdown": [
+        13
+      ],
+      "phil.1.arise": [
+        13
+      ]
+    },
+    "14": {
+      "phil.0.eat": [
+        10
+      ]
+    },
+    "15": {
+      "phil.0.left.put": [
+        14
+      ]
+    },
+    "16": {
+      "phil.1.right.put": [
+        9
+      ],
+      "phil.1.sitdown": [
+        16
+      ],
+      "phil.0.right.get": [
+        0
+      ],
+      "phil.1.arise": [
+        16
+      ]
+    }
+  }
+}

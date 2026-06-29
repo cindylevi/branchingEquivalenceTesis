@@ -1,0 +1,1647 @@
+{
+  "translatorControllable": {
+    "c_a.2.idle": "a.2.idle",
+    "c_b.2.idle": "b.2.idle",
+    "c_a.3.idle": "a.3.idle",
+    "c_a.4.idle": "a.4.idle",
+    "c_b.4.idle": "b.4.idle",
+    "c_a.1.idle": "a.1.idle",
+    "c_b.3.idle": "b.3.idle",
+    "c_b.1.idle": "b.1.idle"
+  },
+  "subsysSet1": [
+    "get.oven.b.4",
+    "get.oven.a.3",
+    "get.oven.b.2",
+    "get.oven.a.4",
+    "get.oven.b.3",
+    "put.oven.a.1",
+    "put.oven.a.2",
+    "put.oven.b.1",
+    "put.oven.a.3",
+    "put.oven.b.2",
+    "get.oven.a.1",
+    "put.oven.a.4",
+    "put.oven.b.3",
+    "get.oven.a.2",
+    "get.oven.b.1",
+    "put.oven.b.4"
+  ],
+  "subsysSet2": [],
+  "sourcesWithUncontrollablePath": {
+    "0": [
+      0
+    ],
+    "1": [
+      1
+    ],
+    "2": [
+      2
+    ],
+    "3": [
+      3
+    ],
+    "4": [
+      4
+    ],
+    "5": [
+      5
+    ],
+    "6": [
+      6
+    ],
+    "7": [
+      7
+    ],
+    "8": [
+      8
+    ],
+    "9": []
+  },
+  "goalFluents": [
+    {
+      "name": "ADDED_TO_INTRAY.b.4",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.4.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.b.3",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.3.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.a.4",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.4.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.4.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.a.3",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.3.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.b.2",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.2.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.a.4",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.4.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.b.3",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.3.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.a.1",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.1.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.a.2",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.2.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.b.1",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.1.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.4.putOutTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.a.1",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.1.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.1.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_OUTTRAY.b.4",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.4.putOutTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.idle"
+        },
+        {
+          "strSymbol": "a.3.idle"
+        },
+        {
+          "strSymbol": "a.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.1"
+        },
+        {
+          "strSymbol": "a.3.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.a.2"
+        },
+        {
+          "strSymbol": "put.oven.b.1"
+        },
+        {
+          "strSymbol": "put.oven.a.3"
+        },
+        {
+          "strSymbol": "put.oven.b.2"
+        },
+        {
+          "strSymbol": "b.3.putOutTray"
+        },
+        {
+          "strSymbol": "put.oven.a.4"
+        },
+        {
+          "strSymbol": "put.oven.b.3"
+        },
+        {
+          "strSymbol": "b.3.getInTray"
+        },
+        {
+          "strSymbol": "a.2.getInTray"
+        },
+        {
+          "strSymbol": "a.2.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.putOutTray"
+        },
+        {
+          "strSymbol": "a.4.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.inTray"
+        },
+        {
+          "strSymbol": "a.2.inTray"
+        },
+        {
+          "strSymbol": "a.3.inTray"
+        },
+        {
+          "strSymbol": "a.4.inTray"
+        },
+        {
+          "strSymbol": "a.2.idle"
+        },
+        {
+          "strSymbol": "b.2.getInTray"
+        },
+        {
+          "strSymbol": "b.1.putOutTray"
+        },
+        {
+          "strSymbol": "a.1.putOutTray"
+        },
+        {
+          "strSymbol": "b.2.idle"
+        },
+        {
+          "strSymbol": "a.4.getInTray"
+        },
+        {
+          "strSymbol": "put.oven.b.4"
+        },
+        {
+          "strSymbol": "get.oven.a.2"
+        },
+        {
+          "strSymbol": "get.oven.b.1"
+        },
+        {
+          "strSymbol": "get.oven.a.3"
+        },
+        {
+          "strSymbol": "get.oven.b.2"
+        },
+        {
+          "strSymbol": "a.1.idle"
+        },
+        {
+          "strSymbol": "get.oven.a.1"
+        },
+        {
+          "strSymbol": "a.4.idle"
+        },
+        {
+          "strSymbol": "b.4.getInTray"
+        },
+        {
+          "strSymbol": "b.4.idle"
+        },
+        {
+          "strSymbol": "b.1.getInTray"
+        },
+        {
+          "strSymbol": "b.1.idle"
+        },
+        {
+          "strSymbol": "a.1.getInTray"
+        },
+        {
+          "strSymbol": "get.oven.a.4"
+        },
+        {
+          "strSymbol": "get.oven.b.3"
+        },
+        {
+          "strSymbol": "get.oven.b.4"
+        },
+        {
+          "strSymbol": "b.1.inTray"
+        },
+        {
+          "strSymbol": "b.2.inTray"
+        },
+        {
+          "strSymbol": "b.3.inTray"
+        },
+        {
+          "strSymbol": "b.4.inTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.b.2",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.2.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.2.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.b.2",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.2.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.2.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.a.3",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.3.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.3.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.a.3",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.3.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.3.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.b.1",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.1.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.1.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.b.1",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.1.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.1.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.a.2",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.2.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.2.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.a.2",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.2.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.2.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "ADDED_TO_INTRAY.a.1",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.1.inTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.1.getInTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.b.4",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.4.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.4.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.b.3",
+      "initiatingActions": [
+        {
+          "strSymbol": "b.3.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "b.3.putOutTray"
+        }
+      ],
+      "initialValue": false
+    },
+    {
+      "name": "BEING_PROCESSED.a.4",
+      "initiatingActions": [
+        {
+          "strSymbol": "a.4.getInTray"
+        }
+      ],
+      "terminatingActions": [
+        {
+          "strSymbol": "a.4.putOutTray"
+        }
+      ],
+      "initialValue": false
+    }
+  ],
+  "totalTranslator": [],
+  "translatedControllableLabels": [
+    "a.2.getInTray",
+    "b.2.getInTray",
+    "a.1.putOutTray",
+    "c_a.3.idle",
+    "b.1.putOutTray",
+    "c_b.3.idle",
+    "a.4.putOutTray",
+    "c_a.2.idle",
+    "c_b.2.idle",
+    "b.4.putOutTray",
+    "put.oven.a.1",
+    "put.oven.a.2",
+    "put.oven.b.1",
+    "put.oven.a.3",
+    "put.oven.b.2",
+    "put.oven.a.4",
+    "put.oven.b.3",
+    "get.oven.a.1",
+    "put.oven.b.4",
+    "get.oven.a.2",
+    "get.oven.b.1",
+    "a.4.getInTray",
+    "b.4.getInTray",
+    "b.3.putOutTray",
+    "a.3.putOutTray",
+    "a.1.getInTray",
+    "a.3.getInTray",
+    "get.oven.b.4",
+    "c_a.4.idle",
+    "c_b.4.idle",
+    "get.oven.a.3",
+    "get.oven.b.2",
+    "get.oven.a.4",
+    "get.oven.b.3",
+    "c_a.1.idle",
+    "c_b.1.idle",
+    "b.1.getInTray",
+    "a.2.putOutTray",
+    "b.2.putOutTray",
+    "b.3.getInTray"
+  ],
+  "existUncontrollableLocalPathMatrix": [
+    [
+      1
+    ],
+    [
+      2
+    ],
+    [
+      4
+    ],
+    [
+      8
+    ],
+    [
+      16
+    ],
+    [
+      32
+    ],
+    [
+      64
+    ],
+    [
+      128
+    ],
+    [
+      256
+    ],
+    []
+  ],
+  "localUncontrollableAndFormulaLabels": [],
+  "localAlphabet": [],
+  "relevantLabelsFromFormula": [],
+  "sourceWithLabel": {
+    "0": {
+      "get.oven.b.4": [
+        1
+      ],
+      "get.oven.b.2": [
+        4
+      ],
+      "get.oven.a.3": [
+        5
+      ],
+      "get.oven.b.3": [
+        2
+      ],
+      "get.oven.a.4": [
+        3
+      ],
+      "get.oven.a.1": [
+        8
+      ],
+      "get.oven.b.1": [
+        6
+      ],
+      "get.oven.a.2": [
+        7
+      ]
+    },
+    "1": {
+      "put.oven.b.4": [
+        0
+      ]
+    },
+    "2": {
+      "put.oven.b.3": [
+        0
+      ]
+    },
+    "3": {
+      "put.oven.a.4": [
+        0
+      ]
+    },
+    "4": {
+      "put.oven.b.2": [
+        0
+      ]
+    },
+    "5": {
+      "put.oven.a.3": [
+        0
+      ]
+    },
+    "6": {
+      "put.oven.b.1": [
+        0
+      ]
+    },
+    "7": {
+      "put.oven.a.2": [
+        0
+      ]
+    },
+    "8": {
+      "put.oven.a.1": [
+        0
+      ]
+    }
+  }
+}

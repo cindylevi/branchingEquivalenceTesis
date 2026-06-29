@@ -1,0 +1,17 @@
+DEFAULT = Q0,
+	Q0	= (put.oven.b[4] -> Q1
+		  |put.oven.b[3] -> Q2
+		  |put.oven.a[4] -> Q3
+		  |put.oven.b[2] -> Q4
+		  |put.oven.a[3] -> Q5
+		  |put.oven.b[1] -> Q6
+		  |put.oven.a[2] -> Q7
+		  |put.oven.a[1] -> Q8),
+	Q1	= (get.oven.b[4] -> Q0),
+	Q2	= (get.oven.b[3] -> Q0),
+	Q3	= (get.oven.a[4] -> Q0),
+	Q4	= (get.oven.b[2] -> Q0),
+	Q5	= (get.oven.a[3] -> Q0),
+	Q6	= (get.oven.b[1] -> Q0),
+	Q7	= (get.oven.a[2] -> Q0),
+	Q8	= (get.oven.a[1] -> Q0).
