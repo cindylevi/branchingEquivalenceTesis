@@ -3,15 +3,7 @@ package MTSTools.ac.ic.doc.mtstools.model.operations.DCS.Compositional;
 import MTSTools.ac.ic.doc.commons.relations.Pair;
 import org.jgrapht.alg.util.Triple;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Refinable partition de transiciones (Jansen, Groote, Keiren, Wijs 2019,
@@ -353,6 +345,27 @@ public final class LinkedTransitionPartitions {
         if (s.stable) return;
         s.stable = true;
         removeFromUnstable(s);
+    }
+
+    /**
+     * Una BlockBunchSlice es "divisible" (su bloque fuente NO es estable wrt su
+     * bunch) sii sus transiciones abarcan más de un par (action, targetBlock)
+     * distinto. Se usa para no marcar estable una BBS popeada que un peel de
+     * <em>otro</em> bloque dejó sin refinar: {@code peelSlice} pela una slice
+     * global del bunch, que puede no tocar el bloque de la BBS popeada.
+     */
+    public boolean isRefinable(BlockBunchSlice bbs) {
+        if (bbs == null || !bbs.alive) return false;
+        String firstAct = null;
+        int firstBlk = 0;
+        boolean have = false;
+        for (Transition t : bbs.transitions) {
+            RefinablePartition.Block tgtB = Pi_s.blockOf(t.target);
+            if (tgtB == null) continue;
+            if (!have) { firstAct = t.action; firstBlk = tgtB.id; have = true; }
+            else if (!firstAct.equals(t.action) || firstBlk != tgtB.id) return true;
+        }
+        return false;
     }
 
     private void removeFromUnstable(BlockBunchSlice s) {

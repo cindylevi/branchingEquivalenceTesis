@@ -450,6 +450,15 @@ public class BranchingEquivalenceV3C {
                     continue;
                 }
 
+                // peelSlice pela una slice GLOBAL del bunch, que puede no tocar el
+                // bloque de la BBS que popeamos. Si esa BBS sigue viva y todavía es
+                // divisible (su bloque no es estable wrt el bunch), la re-marcamos
+                // inestable: si no, quedaría marcada estable sin haber sido refinada
+                // y su bloque nunca se separaría (sub-fusión).
+                if (unstable.isAlive() && Lt.isRefinable(unstable)) {
+                    Lt.markUnstable(unstable);
+                }
+
                 // Bloques afectados por el peel: cualquiera con transiciones en el
                 // bunch nuevo (= la "smaller half" elegida por peelSlice).
                 Set<RefinablePartition.Block> affectedBlocks = newIdentityBlockSet();
