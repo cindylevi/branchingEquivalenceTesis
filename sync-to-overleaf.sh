@@ -22,7 +22,7 @@ echo "→ Subiendo a Overleaf..."
 while IFS= read -r file; do
   # Saltar archivos que no deberían ir a Overleaf
   case "$file" in
-    .git*|venv/*|versiones/*|docs/*|*.sh|*.py|*.md|README.md|sync-from-overleaf.sh|sync-to-overleaf.sh)
+    .git*|venv/*|versiones/*|docs/*|*.sh|*.py|*.md|*.pdf|README.md|sync-from-overleaf.sh|sync-to-overleaf.sh)
       echo "  - skip: $file"
       continue
       ;;

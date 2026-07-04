@@ -65,25 +65,26 @@ En este contexto surge el enfoque de exploración \textit{on-the-fly}, en donde 
 
 Basándonos en este trabajo, en esta tesis analizaremos el comportamiento del algoritmo de exploración del autómata compuesto que describimos anteriormente. Vamos a definir y describir ciertas fases o etapas relevantes del proceso, buscando experimentar el desempeño de las heurísticas existentes y que posibilidades de mejora existen en base a esta información.
 
-% TODO(guía de lectura): REESCRIBIR a la estructura NUEVA de capítulos:
+% GUÍA DE LECTURA (estructura NUEVA de capítulos):
 %   Cap. 2  Antecedentes (LTS, control safe/non-blocking, síntesis
-%           composicional, WSOE).
-%   Cap. 3  Branching bisimilarity (definición, relación con otras
-%           equivalencias, algoritmo O(m log n) de Groote et al.).
-%   Cap. 4  Equivalencia entre WSOE y branching bisimilarity (teorema +
-%           demostración) -> aporte teórico central.
+%           composicional).
+%   Cap. 3  Branching bisimilarity: definición, definición de WSOE,
+%           teorema de equivalencia WSOE≡branching (aporte teórico central)
+%           y relación con otras equivalencias.
+%   Cap. 4  Algoritmo O(m log n) de Groote et al.
 %   Cap. 5  Adaptación e implementación en MTSA.
 %   Cap. 6  Experimentación y resultados (WSOE vs branching bisimilarity).
 %   Cap. 7  Conclusiones.
-% Los párrafos de abajo describen la estructura VIEJA (caps. 3-6 del molde)
-% y deben reemplazarse.
-En el capítulo 2 presentaremos los antecedentes y definiciones necesarias alrededor del problema de síntesis de controladores. Luego en el capítulo 3 presentaremos la idea básica de exploración \textit{on-the-fly} junto con una descripción del enfoque y pseudocódigo asociado como paso necesario para encarar el análisis posterior.
+% NOTA: la prosa de abajo ya apunta a esta estructura; el hilo temático
+% completo (cuello de botella WSOE, propuesta) queda pendiente de redacción
+% según los TODO de más arriba.
+En el capítulo 2 presentaremos los antecedentes y definiciones necesarias alrededor del problema de síntesis composicional de controladores: LTS y composición paralela, el problema de control \textit{safe} y \textit{non-blocking}, y la síntesis composicional.
 
-Habiendo presentado las intuiciones del algoritmo, en el capítulo 4 avanzamos en la definición y análisis de las fases de exploración involucradas. En ese capítulo realizamos las definiciones necesarias y hacemos una experimentación acerca del peso de estas fases utilizando la heurística RA definida en \cite{Ciolek} y comparándola con heurísticas tradicionales.
+En el capítulo 3 introducimos \textit{branching bisimilarity}, damos la definición formal de WSOE y demostramos el teorema de equivalencia entre ambas —el aporte teórico que justifica reemplazar una por la otra—, ubicándola además frente a las equivalencias clásicas.
 
-En el capítulo 5 avanzamos con una propuesta de cambio a la heurística RA que involucra el aprovechamiento de información brindada en el análisis de etapas del algoritmo y busca mejorar la \textit{performance} de las fases en las que RA tenga menor rendimiento.
+En el capítulo 4 presentamos el algoritmo $O(m \log n)$ de Groote et al.\ \cite{groote2019} que calcula branching bisimilarity de forma eficiente. Luego, en el capítulo 5, detallamos su adaptación e implementación dentro del flujo composicional de MTSA \cite{mtsa}.
 
-Finalmente, en el capítulo 6 presentamos las conclusiones y aportes del trabajo realizado.
+En el capítulo 6 presentamos la experimentación, comparando la minimización por WSOE contra branching bisimilarity en tiempo, memoria y tamaño de los LTS minimizados. Finalmente, en el capítulo 7 exponemos las conclusiones y aportes del trabajo.
 
 
 % Seguidamente, en el capítulo 5, exponemos detalles sobre la implementación, MTSA,

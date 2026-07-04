@@ -263,10 +263,10 @@ v3-B era O(\|B\|) por iteración; con abort, el lado más chico paga el costo.
 
 | Salida | Qué quedó | Acción |
 |--------|-----------|--------|
-| `forwardAbort` | R era más grande | drenar reverse, aplicar `R := B \ U` (`applyComplement`) |
-| `reverseAbort` | U era más grande | drenar forward, aplicar `R := rSCCs` (`applyExplicit`) |
-| `forwardQ` vacía sin abortar | R drenó natural; rSCCs es completo | `applyExplicit` |
-| `reverseQ` vacía sin abortar | U drenó natural; uSCCs es completo | `applyComplement` |
+| `rAbort` | R era más grande | drenar reverse, aplicar `R := B \ U` (`applyComplement`) |
+| `uAbort` | U era más grande | drenar forward, aplicar `R := rSCCs` (`applyExplicit`) |
+| `rQueue` vacía sin abortar | R drenó natural; rSCCs es completo | `applyExplicit` |
+| `uQueue` vacía sin abortar | U drenó natural; uSCCs es completo | `applyComplement` |
 
 **`applyExplicit`** y **`applyComplement`** mutan `Pi_s` con `addToR` para
 cada estado correspondiente. Por el bug de iteración-vs-swap descrito en
@@ -302,8 +302,8 @@ coroutina se aplana en variables que viven afuera, y los `yield` se vuelven
 Cada coroutina del paper es un método estático en `BranchingEquivalence`:
 
 ```java
-forwardStep(forwardQ, rSCCs, inSCCs, sccSizeInB, rSize) → newRSize
-reverseStep(reverseQ, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize) → newUSize
+rStep(rQueue, rSCCs, inSCCs, sccSizeInB, rSize) → newRSize
+uStep(uQueue, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize) → newUSize
 ```
 
 Cada llamada hace **un paso de BFS**: poll-ea un elemento de su queue,
@@ -314,14 +314,14 @@ a lo que en una coroutina "real" sería el código entre dos `yield`.
 El driver es el while de lockstep adentro de `split`:
 
 ```java
-while (!forwardAbort && !reverseAbort) {
-    if (forwardQ.isEmpty()) break;
-    rSize = forwardStep(forwardQ, rSCCs, inSCCs, sccSizeInB, rSize);
-    if (rSize > half) { forwardAbort = true; break; }
+while (!rAbort && !uAbort) {
+    if (rQueue.isEmpty()) break;
+    rSize = rStep(rQueue, rSCCs, inSCCs, sccSizeInB, rSize);
+    if (rSize > half) { rAbort = true; break; }
 
-    if (reverseQ.isEmpty()) break;
-    uSize = reverseStep(reverseQ, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize);
-    if (uSize > half) { reverseAbort = true; break; }
+    if (uQueue.isEmpty()) break;
+    uSize = uStep(uQueue, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize);
+    if (uSize > half) { uAbort = true; break; }
 }
 ```
 
@@ -338,11 +338,11 @@ variables del frame de `split`:
 
 | Variable local de la coroutina (paper) | En v3 |
 |---|---|
-| Queue de la BFS | `forwardQ`, `reverseQ` (`Deque<Set<Long>>`) |
+| Queue de la BFS | `rQueue`, `uQueue` (`Deque<Set<Long>>`) |
 | Conjunto de SCCs ya vistas | `rSCCs`, `uSCCs` (sets por identidad) |
 | Contador `untested[t]` por transición | `untestedSCC: IdentityHashMap<Set<Long>, Integer>` (a nivel de SCC) |
 | Tamaño actual del lado | `rSize`, `uSize` (int devueltos por cada step) |
-| Flag de aborto | `forwardAbort`, `reverseAbort` (bool) |
+| Flag de aborto | `rAbort`, `uAbort` (bool) |
 
 Cada step es **stateless** (función pura sobre sus argumentos): lee el
 estado, hace UN poll + las adiciones correspondientes, devuelve el tamaño
@@ -382,8 +382,8 @@ v3 cumple.
 
 **Constantes.** Cada step tiene overhead de llamada a método (vs. acceso
 local en una coroutina compilada) y los argumentos se pasan por valor en
-cada paso. En la práctica el compilador JIT inline-a `forwardStep` y
-`reverseStep` después de unas pocas iteraciones, así que el overhead es
+cada paso. En la práctica el compilador JIT inline-a `rStep` y
+`uStep` después de unas pocas iteraciones, así que el overhead es
 mínimo.
 
 **Sintaxis.** Lo único que se "pierde" es la legibilidad de la versión

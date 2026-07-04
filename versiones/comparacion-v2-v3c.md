@@ -253,7 +253,7 @@ sub-DAG de SCCs τ-conexas dentro de `B`:
   cuando una σ' pasa a `U`, decrementa el contador de sus predecesores, y al
   llegar a 0 (y no estar en `R`) ese predecesor también es `U`.
 
-Las dos avanzan un paso cada una por iteración (`forwardStep` / `reverseStep`).
+Las dos avanzan un paso cada una por iteración (`rStep` / `uStep`).
 **El primero que supera |B|/2 estados es la "mitad grande" y se aborta**; el otro
 se drena hasta vaciar su queue (cota ≤ |B|/2) y los estados sin clasificar se
 asignan al lado abortado. Según cómo se sale del lockstep hay cuatro casos
@@ -459,12 +459,12 @@ devuelve `(Pi_s.asLegacyView(), Lt.asLegacyView())` más el `timingMap`.
 
 ### 4.5. Procedimientos auxiliares (qué cambió respecto de v2)
 
-- **`split`** — reescrito por completo: coroutine dual con `forwardStep` /
-  `reverseStep`, contador `untestedSCC`, abort-on-half, y los cuatro casos de
+- **`split`** — reescrito por completo: coroutine dual con `rStep` /
+  `uStep`, contador `untestedSCC`, abort-on-half, y los cuatro casos de
   salida con `applyExplicit` / `applyComplement`. Internamente llama a
   `Pi_s.splitOffR` y `Lt.notifyBlockSplit`. (§3.3)
 
-- **`forwardStep` / `reverseStep`** — nuevos: un paso de cada BFS del lockstep.
+- **`rStep` / `uStep`** — nuevos: un paso de cada BFS del lockstep.
 
 - **`applyExplicit` / `applyComplement`** — nuevos: materializan qué estados van
   a `R` (explícito: las SCCs en `rSCCs`; complemento: las que no están en

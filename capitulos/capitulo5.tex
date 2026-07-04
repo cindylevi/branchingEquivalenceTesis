@@ -716,22 +716,10 @@ Por ultimo, la cuarta vista es la otra de la anterior y agrupa las transiciones 
 
 Es importante aclarar que las cuatro vistas no implica que haya cuatro copias de las transiciones, sino que existen cuatro agrupaciones de los mismos objetos \texttt{Transition}, ya que cada transicion guarda punteros a su \texttt{BunchSlice} y a su \texttt{BlockBunchSlice}, y el puntero a la propia \texttt{Transition} es lo que se relaciona en las listas de \texttt{bySource} y \texttt{byTarget}. Es por esto que el paper las llama "linked", ya que una unica instancia participa de las cuatro vistas/particiones a la vez.
 
-\subsection{La funcion split como corrutinas}
+\subsection{El método split como corrutinas}
+Como se explicó anteriormente, la función split en el paper de Jansen se idea originalmente como dos corrutinas, donde la corrutina de R comienza con los estados iniciales que deben ir en R y luego extiende el conjunto hacia atrás, recorriendo las transiciones inertes. A su vez, la corrutina de U identifica a los estados que no están en R, contando por cada estado cuántos son sus sucesores que todavía no están en U. Ejecutar estas corrutinas de forma alternada, un paso cada una (en lockstep), es la esencia de la complejidad del paper, ya que en cuanto una corrutina agrega a su conjunto más de la mitad de estados totales que tenía el bloque, se corta su ejecución. Este corte consigue que cada llamada a la función split pase de tener que recorrer todo el bloque en peor caso, a que pase a recorrer solo el subbloque más chico de los dos conjuntos de estados resultantes. Sin embargo, en las primeras versiones la implementación se había reducido a realizar backwards-reachability para R, es decir, no se había desarrollado la optimización sugerida en el paper. Por su importancia en la complejidad final, era esencial implementarla en nuestra versión en MTSA. Sin embargo, Java no tiene la posibilidad de implementar corrutinas de forma nativa.
 
-\section{Validación de correctitud}
+Para poder subsanar esa dificultad en la implementación, se implementaron dos funciones: rStep que ejecuta un paso en el análisis del bloque R y uStep que ejecuta un paso en el análisis del bloque U. Ahora, ¿cómo representamos qué es un ''paso'' en las funciones? Para esta implementación, un paso en cada función es analizar el próximo estado que corresponde chequear si pertenece al subbloque de la función. Para ello, se implementaron dos estructuras de colas, una para cada función, que contienen los estados que faltan analizar. En cada paso, cada corrutina toma el siguiente paso y ejecuta el análisis correspondiente para ver si ese estado corresponde o no en su conjunto. A su vez, se implementan los contadores ''rSize'' y ''uSize''. Esto permite validar que cuando alguno de los dos contadores supere la mitad de los estados del bloque, se deje de ejecutar esa corrutina y no se sigan analizando estados para ese subbloque, haciendo que solo finalice la corrutina del subbloque más chico y luego se calcule el conjunto final de estados para cada subbloque, tal como se detalla en el paper y tal como fue explicado en la sección previa.
 
-\subsection{Estrategia}
-% ¿Comparaste salidas con WSOE en casos chicos? ¿Verificaste alguna
-% propiedad invariante (por ejemplo, que el LTS minimizado sea
-% branching-bisimilar al original)? ¿Probaste sobre los casos del paper
-% composicional?
+Si bien esta implementacion no mantiene de manera completamente fiel el detalle del paper, permite que repliquemos la cota de la complejidad dentro de las limitaciones del lenguaje utilizado. 
 
-
-\subsection{Tests automatizados}
-% ¿Hay tests JUnit? ¿Cuántos casos? ¿Dónde viven en el repo?
-
-
-\subsection{Casos de borde cubiertos}
-% $\tau$-loops, MTSs sin transiciones invisibles, bloque error, fluents,
-% bloques con un único estado, transiciones controlables que se vuelven
-% self-loops tras la minimización.

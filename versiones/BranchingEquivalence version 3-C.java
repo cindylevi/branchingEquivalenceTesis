@@ -671,11 +671,11 @@ public class BranchingEquivalence {
 
         // ---- 3. Tamaños iniciales y queues ------------------------------
         int rSize = 0;
-        Deque<Set<Long>> forwardQ = new ArrayDeque<>();
+        Deque<Set<Long>> rQueue = new ArrayDeque<>();
         for (Set<Long> scc : rSCCs) {
             Integer sz = sccSizeInB.get(scc);
             if (sz != null) rSize += sz;
-            forwardQ.add(scc);
+            rQueue.add(scc);
         }
 
         // U-leaves: SCCs sin τ-outs dentro de B (untested=0) que NO estén en R.
@@ -683,53 +683,53 @@ public class BranchingEquivalence {
         // no tenga τ-edges internas; si todas las sumidero están en R, R cubre
         // B (cualquier σ ∈ B alcanza alguna sumidero ∈ R₀).
         Set<Set<Long>> uSCCs = newIdentitySCCSet();
-        Deque<Set<Long>> reverseQ = new ArrayDeque<>();
+        Deque<Set<Long>> uQueue = new ArrayDeque<>();
         int uSize = 0;
         for (Map.Entry<Set<Long>, Integer> e : untestedSCC.entrySet()) {
             Set<Long> scc = e.getKey();
             if (rSCCs.contains(scc)) continue;
             if (e.getValue() == 0) {
                 uSCCs.add(scc);
-                reverseQ.add(scc);
+                uQueue.add(scc);
                 uSize += sccSizeInB.get(scc);
             }
         }
 
         int half = B.size() / 2;
-        boolean forwardAbort = rSize > half;
-        boolean reverseAbort = uSize > half;
+        boolean rAbort = rSize > half;
+        boolean uAbort = uSize > half;
 
         // ---- 4. Lockstep BFS con abort-on-half --------------------------
-        while (!forwardAbort && !reverseAbort) {
-            if (forwardQ.isEmpty()) break;
-            rSize = forwardStep(forwardQ, rSCCs, inSCCs, sccSizeInB, rSize);
-            if (rSize > half) { forwardAbort = true; break; }
+        while (!rAbort && !uAbort) {
+            if (rQueue.isEmpty()) break;
+            rSize = rStep(rQueue, rSCCs, inSCCs, sccSizeInB, rSize);
+            if (rSize > half) { rAbort = true; break; }
 
-            if (reverseQ.isEmpty()) break;
-            uSize = reverseStep(reverseQ, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize);
-            if (uSize > half) { reverseAbort = true; break; }
+            if (uQueue.isEmpty()) break;
+            uSize = uStep(uQueue, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize);
+            if (uSize > half) { uAbort = true; break; }
         }
 
         // ---- 5. Continuación del lado más chico + apply R ---------------
         // Cuatro casos según cómo salimos del lockstep:
-        //   forwardAbort: R era más grande; drenar reverse y tomar R = B \ U.
-        //   reverseAbort: U era más grande; drenar forward y tomar R = rSCCs.
-        //   forwardQ vacía sin abortar: R drenó natural; R = rSCCs.
-        //   reverseQ vacía sin abortar: U drenó natural; R = B \ U.
-        if (forwardAbort) {
-            while (!reverseQ.isEmpty()) {
-                uSize = reverseStep(reverseQ, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize);
+        //   rAbort: R era más grande; drenar reverse y tomar R = B \ U.
+        //   uAbort: U era más grande; drenar forward y tomar R = rSCCs.
+        //   rQueue vacía sin abortar: R drenó natural; R = rSCCs.
+        //   uQueue vacía sin abortar: U drenó natural; R = B \ U.
+        if (rAbort) {
+            while (!uQueue.isEmpty()) {
+                uSize = uStep(uQueue, uSCCs, rSCCs, untestedSCC, inSCCs, sccSizeInB, uSize);
             }
             applyComplement(Pi_s, B, uSCCs, stateToSCCMap);
-        } else if (reverseAbort) {
-            while (!forwardQ.isEmpty()) {
-                rSize = forwardStep(forwardQ, rSCCs, inSCCs, sccSizeInB, rSize);
+        } else if (uAbort) {
+            while (!rQueue.isEmpty()) {
+                rSize = rStep(rQueue, rSCCs, inSCCs, sccSizeInB, rSize);
             }
             applyExplicit(Pi_s, B, rSCCs, stateToSCCMap);
-        } else if (forwardQ.isEmpty()) {
+        } else if (rQueue.isEmpty()) {
             applyExplicit(Pi_s, B, rSCCs, stateToSCCMap);
         } else {
-            // reverseQ.isEmpty()
+            // uQueue.isEmpty()
             applyComplement(Pi_s, B, uSCCs, stateToSCCMap);
         }
 
@@ -744,23 +744,23 @@ public class BranchingEquivalence {
     }
 
     /**
-     * Un step del lado R. Toma una SCC σ del frente de {@code forwardQ},
+     * Un step del lado R. Toma una SCC σ del frente de {@code rQueue},
      * expande sus τ-pred-SCCs dentro de B, y agrega las nuevas a {@code rSCCs}
      * y a la queue. Devuelve el {@code rSize} actualizado (acumula los
      * estados-en-B de cada SCC nueva).
      */
-    private static int forwardStep(
-            Deque<Set<Long>> forwardQ,
+    private static int rStep(
+            Deque<Set<Long>> rQueue,
             Set<Set<Long>> rSCCs,
             Map<Set<Long>, Set<Set<Long>>> inSCCs,
             Map<Set<Long>, Integer> sccSizeInB,
             int rSize) {
-        Set<Long> sigma = forwardQ.poll();
+        Set<Long> sigma = rQueue.poll();
         Set<Set<Long>> preds = inSCCs.get(sigma);
         if (preds == null) return rSize;
         for (Set<Long> pred : preds) {
             if (rSCCs.add(pred)) {
-                forwardQ.add(pred);
+                rQueue.add(pred);
                 Integer sz = sccSizeInB.get(pred);
                 if (sz != null) rSize += sz;
             }
@@ -769,21 +769,21 @@ public class BranchingEquivalence {
     }
 
     /**
-     * Un step del lado U. Toma una SCC σ' del frente de {@code reverseQ}
+     * Un step del lado U. Toma una SCC σ' del frente de {@code uQueue}
      * (recién clasificada como U) y, para cada τ-pred-SCC σ dentro de B,
      * decrementa {@code untestedSCC[σ]}. Las SCCs ya clasificadas R o U se
      * saltean. Si {@code untestedSCC[σ]} llega a 0, σ pasa a U y se encola.
      * Devuelve el {@code uSize} actualizado.
      */
-    private static int reverseStep(
-            Deque<Set<Long>> reverseQ,
+    private static int uStep(
+            Deque<Set<Long>> uQueue,
             Set<Set<Long>> uSCCs,
             Set<Set<Long>> rSCCs,
             Map<Set<Long>, Integer> untestedSCC,
             Map<Set<Long>, Set<Set<Long>>> inSCCs,
             Map<Set<Long>, Integer> sccSizeInB,
             int uSize) {
-        Set<Long> sigmaU = reverseQ.poll();
+        Set<Long> sigmaU = uQueue.poll();
         Set<Set<Long>> uPreds = inSCCs.get(sigmaU);
         if (uPreds == null) return uSize;
         for (Set<Long> pred : uPreds) {
@@ -793,7 +793,7 @@ public class BranchingEquivalence {
             untestedSCC.put(pred, u);
             if (u == 0) {
                 uSCCs.add(pred);
-                reverseQ.add(pred);
+                uQueue.add(pred);
                 Integer sz = sccSizeInB.get(pred);
                 if (sz != null) uSize += sz;
             }

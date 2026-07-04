@@ -2,24 +2,35 @@
 
 % =====================================================================
 % ESTRUCTURA OBJETIVO DE ESTE CAPÍTULO (ver planificacion-tesis.md)
-%   3.1 Definición formal.
-%   3.2 Relación con otras equivalencias (weak, observational, WSOE)
-%       -> clave para justificar la sustitución del Cap. 4.
-%   3.3 Algoritmo O(m log n) de Groote et al. (2019):
-%       ideas principales, estructuras (splitters, bloques), invariantes.
+%   3.1 Definición formal de branching.
+%   3.2 WSOE: definición formal.
+%   3.3 Diferencias intuitivas y casos motivadores.
+%   3.4 Teorema de equivalencia + demostración.
+%   3.5 Corolarios: qué se preserva en el contexto composicional
+%       (control, safe, non-blocking).
+%   3.6 Relación con otras equivalencias (weak, observational, WSOE)
+%       -> clave para justificar la sustitución.
+%
+% NOTA DE REORGANIZACIÓN: este capítulo fusiona lo que antes eran dos
+% capítulos separados (Branching bisimilarity + Equivalencia WSOE≡branching).
+% El algoritmo O(m log n) de Groote et al. YA NO vive acá: pasó a ser un
+% capítulo propio (Cap. 4 — Algoritmo).
 %
 % Papers de referencia:
 %   - Groote, Jansen, Keiren, Wijs (2019), arXiv:1909.10824  -> \cite{groote2019}
 %     (copia local en Papers/jansen.pdf)
+%   - WSOE (Mohajerani / Malik / Fabian, Chalmers)           -> \cite{wsoe}
+%   - Paper composicional que usa WSOE (Pousseur-Uchitel)    -> \cite{compositional}
 % =====================================================================
 
 % TODO(intro): párrafo puente desde el Cap. 2. Recordar que en el flujo
 % composicional se minimiza entre composiciones usando una noción de
-% equivalencia (WSOE, definida en 2.4) y que el costo de esa minimización
-% es el cuello de botella. Anunciar que branching bisimilarity es la
-% equivalencia candidata a reemplazarla y que este capítulo la define,
-% la ubica frente a las equivalencias clásicas y presenta el algoritmo
-% eficiente que la calcula.
+% equivalencia (WSOE) y que el costo de esa minimización es el cuello de
+% botella. Anunciar que branching bisimilarity es la equivalencia
+% candidata a reemplazarla, que este capítulo la define, define también
+% WSOE, demuestra que ambas coinciden en lo que importa para la síntesis
+% composicional, y la ubica frente a las equivalencias clásicas. El
+% algoritmo eficiente que la calcula se trata en el Cap. 4.
 
 \section{Definición formal}
 
@@ -35,38 +46,64 @@
 %  - (Opcional) variante divergence-sensitive si se usa en el contexto
 %    composicional; aclarar cuál se adopta y por qué.
 %  - Ejemplo mínimo: dos LTS branching-bisimilares y un par que NO lo es
-%    pero sí es weak-bisimilar (motiva 3.2).
+%    pero sí es weak-bisimilar (motiva 3.6).
+
+\section{WSOE: definición formal}
+
+% TODO(3.2): antes estaba planificado en el Cap. 2 (§2.4) y como
+% "Recordatorio de WSOE" en el viejo Cap. 4; ahora se da la definición
+% formal completa acá. \cite{wsoe}.
+%  - Definición de WSOE (Weak Synthesis Observational Equivalence).
+%  - Algoritmo de minimización por WSOE y su complejidad.
+%  - Por qué escala mal -> motiva el reemplazo por branching bisimilarity
+%    y la demo de equivalencia de 3.4. Contrastar esta complejidad con el
+%    O(m log n) del algoritmo de Groote et al. (Cap. 4).
+%  - Fijar la notación que usará la demostración de 3.4.
+
+\section{Diferencias intuitivas y casos motivadores}
+
+% TODO(3.3):
+%  - Mostrar con ejemplos chicos dónde WSOE y branching bisimilarity
+%    "se ven" distintas y dónde coinciden.
+%  - Casos motivadores: pares de LTS que ilustren por qué el matching de
+%    branching (preservar estados intermedios bajo tau) captura lo mismo
+%    que WSOE necesita para preservar control / safe / non-blocking.
+%  - Esta sección prepara la intuición para que la demostración de 3.4
+%    no caiga en frío.
+
+\section{Teorema de equivalencia y demostración}
+
+% TODO(3.4): EL CORAZÓN DE LA PARTE TEÓRICA.
+%  - Enunciar el teorema con precisión (¿igualdad de relaciones?
+%    ¿coincidencia sobre la clase de LTS del contexto composicional?
+%    Definir el alcance exacto antes de demostrar).
+%  - Demostración. Probablemente se apoye en lemas auxiliares:
+%       * preservación bajo composición paralela (||),
+%       * preservación de la noción de "ganador" / estados marcados,
+%       * manejo de eventos controlables vs no-controlables.
+%    Los lemas pesados pueden ir al Apéndice; acá la línea argumental.
+%  - Si la demostración tiene huecos pendientes, marcarlos explícitamente
+%    con \todo{...} para no perderlos de vista.
+
+\section{Corolarios}
+
+% TODO(3.5): consecuencias en el contexto composicional.
+%  - Qué se preserva al minimizar con branching bisimilarity en lugar de
+%    WSOE: controlabilidad, safe, non-blocking. \cite{compositional}.
+%  - Corolario clave: la sustitución es correcta -> el controlador
+%    sintetizado tras minimizar con branching bisimilarity es el mismo
+%    (o equivalente) al obtenido con WSOE. Esto habilita el Cap. 5
+%    (implementación) y el Cap. 6 (experimentación).
 
 \section{Relación con otras equivalencias}
 
-% TODO(3.2): este es el puente conceptual hacia el Cap. 4.
+% TODO(3.6): puente conceptual que justifica la sustitución.
 %  - Ubicar branching bisimilarity en la jerarquía: strong > branching >
 %    weak / observational. Dar la intuición de por qué branching es más
 %    fina que weak (preserva el potencial de los estados intermedios).
 %  - Relación con observational equivalence.
-%  - Relación con WSOE (la noción del paper composicional, definida en 2.4):
-%    adelantar la afirmación que el Cap. 4 demuestra formalmente y dar la
-%    intuición de por qué coinciden en el contexto de control.
+%  - Relación con WSOE (definida en 3.2): reafirmar, con la equivalencia
+%    ya demostrada en 3.4, por qué coinciden en el contexto de control.
 %  - Cerrar motivando: si coinciden en lo que importa para síntesis, se
 %    puede sustituir WSOE por branching bisimilarity y ganar el algoritmo
-%    eficiente de 3.3.
-
-\section{\texorpdfstring{Algoritmo $O(m \log n)$}{Algoritmo O(m log n)} de Groote et al.}
-
-% TODO(3.3): basado en \cite{groote2019} (Papers/jansen.pdf).
-%  - Idea general: partition refinement. Partir de una partición inicial
-%    de los estados en bloques y refinarla hasta el punto fijo.
-%  - Estructuras de datos clave: bloques, partición refinable, splitters,
-%    y la maquinaria que da la cota O(m log n) (estrategia "process the
-%    smaller half" / constellations-bloques del paper).
-%  - Invariantes que mantiene el refinamiento (estabilidad de bloques
-%    respecto de los splitters) y por qué garantizan correctitud.
-%  - Complejidad: enunciar O(m log n) (m transiciones, n estados) y
-%    contrastar con la complejidad de la minimización por WSOE vista en
-%    2.4 -> ESTE es el argumento de escalabilidad de toda la tesis.
-%  - El pseudocódigo extendido va al Apéndice; acá solo las ideas y
-%    estructuras principales (usar el lstdefinelanguage 'pseudocode' de
-%    tesis.tex si se incluye algún fragmento).
-%  - Nota: la adaptación concreta de este algoritmo al contexto
-%    composicional (eventos controlables/no-controlables, estados
-%    marcados) y su implementación se tratan en el Cap. 5.
+%    eficiente del Cap. 4.

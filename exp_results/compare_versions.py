@@ -9,14 +9,21 @@ branching (sustituto de WSOE en la síntesis composicional — ver tesis).
 
 Variantes comparadas
 ---------------------
-  * WSOE : baseline a reemplazar (algoritmo viejo de "weak semantics on edges").
-  * v0   : primera implementación del algoritmo de Groote (2019).
-  * v2   : segunda iteración (optimizaciones de particionamiento).
-  * v3c  : versión más reciente (la candidata a quedar en la tesis).
+  * WSOE  : baseline a reemplazar (algoritmo viejo de "weak semantics on edges").
+  * v0    : primera implementación del algoritmo de Groote (2019).
+  * v2    : segunda iteración (optimizaciones de particionamiento).
+  * v3fix : versión candidata a quedar en la tesis. Es v3c
+            (BranchingEquivalenceV3C) con el bug de sobre-fusión corregido:
+            v3c re-marcaba inestables solo las BBS que perdían transiciones tras
+            peelSlice, dejando sin refinar el remanente de otras source-blocks
+            (sub-refinamiento -> over-merge). El fix (LinkedTransitionPartitions
+            .isRefinable + re-mark acotado) preserva O(m log n). La campaña
+            v3fix es la re-corrida completa con ese build; reemplaza a v3c en
+            todos los gráficos y hereda su color.
 
 Las cuatro producen la MISMA minimización salvo WSOE, que puede diferir
-(columna EqualsWSOE en el dataset v0). v0/v2/v3c deberían coincidir en
-FinalStates entre sí.
+(columna EqualsWSOE en el dataset v0). v0/v2/v3fix deberían coincidir en
+FinalStates entre sí (y con el fix, v3fix coincide con v2 sin sobre-fusionar).
 
 Fuentes de datos (en esta misma carpeta)
 ----------------------------------------
@@ -26,7 +33,10 @@ Fuentes de datos (en esta misma carpeta)
            columnas *WSOE = baseline
   * minimization_results_branching_v2_v3c.csv
         -> filas con AlgoVersion in {v2, v3c}, esquema unificado
-           (timings de fase SIN sufijo).
+           (timings de fase SIN sufijo). SOLO se usa la parte v2; v3c quedó
+           obsoleta (buggy) y se descarta.
+  * minimization_results_branching_v3fix.csv
+        -> filas con AlgoVersion = v3fix, MISMO esquema que el archivo v2_v3c.
 
 Metodología de medición
 ------------------------
@@ -63,27 +73,30 @@ warnings.filterwarnings("ignore")
 HERE = os.path.dirname(os.path.abspath(__file__))
 F_V0 = os.path.join(HERE, "minimization_results_v0.csv")
 F_V23 = os.path.join(HERE, "minimization_results_branching_v2_v3c.csv")
+F_V3FIX = os.path.join(HERE, "minimization_results_branching_v3fix.csv")
 FIGDIR = os.path.join(HERE, "figures")
 os.makedirs(FIGDIR, exist_ok=True)
 
 # Orden y colores consistentes en TODOS los gráficos (clave para que el lector
 # de la tesis asocie siempre el mismo color a la misma versión).
-ORDER = ["WSOE", "v0", "v2", "v3c"]
-COLORS = {"WSOE": "#999999", "v0": "#d62728", "v2": "#ff7f0e", "v3c": "#1f77b4"}
+# v3fix hereda el rol/color de v3c: es la MISMA versión candidata con el bug de
+# sobre-fusión de peelSlice corregido (ver docstring del módulo).
+ORDER = ["WSOE", "v0", "v2", "v3fix"]
+COLORS = {"WSOE": "#999999", "v0": "#d62728", "v2": "#ff7f0e", "v3fix": "#1f77b4"}
 
 # Versiones del algoritmo nuevo (sin WSOE) — útiles cuando comparamos calidad
 # de minimización frente al baseline.
-NEW_ORDER = ["v0", "v2", "v3c"]
+NEW_ORDER = ["v0", "v2", "v3fix"]
 
 # Versiones que SÍ exponen instrumentación interna (timings por fase y
 # MainLoopIters). v0 las dejó en -1 (sin instrumentar), así que queda afuera
 # de los gráficos de fases/iteraciones.
-INSTRUMENTED = ["v2", "v3c"]
+INSTRUMENTED = ["v2", "v3fix"]
 
 # Para los gráficos de complejidad/calidad nos interesa comparar el baseline
 # contra las versiones "candidatas" del algoritmo nuevo (v0 quedó obsoleta:
-# no instrumentada y con resultados distintos a v2/v3c).
-CANDIDATES_VS_WSOE = ["WSOE", "v2", "v3c"]
+# no instrumentada y con resultados distintos a v2/v3fix).
+CANDIDATES_VS_WSOE = ["WSOE", "v2", "v3fix"]
 
 
 def binned_median(d, xcol, ycol, log=True, nbins=25):
@@ -144,7 +157,12 @@ PHASE_COLS = [
 
 def load_long():
     dfv0 = pd.read_csv(F_V0)
-    dfv23 = pd.read_csv(F_V23)
+    # v2 sale del archivo v2_v3c (se descarta v3c, que estaba buggeada);
+    # v3fix sale de su propia campaña. Mismo esquema -> se concatenan.
+    dfv2 = pd.read_csv(F_V23)
+    dfv2 = dfv2[dfv2["AlgoVersion"] == "v2"].copy()
+    dffix = pd.read_csv(F_V3FIX)
+    dfv23 = pd.concat([dfv2, dffix], ignore_index=True)
 
     rows = []
 
@@ -181,7 +199,7 @@ def load_long():
         w[c] = np.nan
     rows.append(w)
 
-    # --- v2/v3c file: ya viene en formato largo ----------------------------- #
+    # --- v2 + v3fix (ya concatenados): vienen en formato largo -------------- #
     v23 = dfv23[["Model", "Run", "Warmup", "AlgoVersion"] + INPUT_COLS].copy()
     v23 = v23.rename(columns={"AlgoVersion": "Version"})
     v23["FinalStates"] = dfv23["FinalStates"]
@@ -236,8 +254,8 @@ def plot_time_vs_states(agg):
     POR QUÉ INTERESA: es el gráfico central de escalabilidad. La pendiente en
     log-log aproxima el exponente empírico de complejidad. Permite responder
     la pregunta de fondo de la tesis: ¿el algoritmo nuevo (Groote) escala mejor
-    que WSOE, y v3c mejora la pendiente/constante respecto de v0? Si las rectas
-    de v0/v2/v3c quedan por debajo de WSOE y con pendiente menor, hay evidencia
+    que WSOE, y v3fix mejora la pendiente/constante respecto de v0? Si las rectas
+    de v0/v2/v3fix quedan por debajo de WSOE y con pendiente menor, hay evidencia
     de que conviene reemplazar WSOE en la síntesis composicional.
     """
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -268,7 +286,7 @@ def plot_speedup_boxplot(agg):
     la DISTRIBUCIÓN de la mejora modelo a modelo. Acá calculamos, para cada
     modelo, el cociente Time(baseline)/Time(version). Un boxplot por encima de
     1 indica aceleración consistente. Sirve para reportar en la tesis un número
-    duro tipo "v3c es en mediana N× más rápido que WSOE", y para ver si la
+    duro tipo "v3fix es en mediana N× más rápido que WSOE", y para ver si la
     mejora es robusta (caja angosta) o depende del modelo (caja ancha / colas).
     """
     piv = agg.pivot_table(index="Model", columns="Version", values="Time_ms")
@@ -277,9 +295,9 @@ def plot_speedup_boxplot(agg):
     ratios = {
         "WSOE / v0": piv["WSOE"] / piv["v0"],
         "WSOE / v2": piv["WSOE"] / piv["v2"],
-        "WSOE / v3c": piv["WSOE"] / piv["v3c"],
-        "v0 / v3c": piv["v0"] / piv["v3c"],
-        "v2 / v3c": piv["v2"] / piv["v3c"],
+        "WSOE / v3fix": piv["WSOE"] / piv["v3fix"],
+        "v0 / v3fix": piv["v0"] / piv["v3fix"],
+        "v2 / v3fix": piv["v2"] / piv["v3fix"],
     }
     fig, ax = plt.subplots(figsize=(9, 6))
     labels = list(ratios.keys())
@@ -305,10 +323,10 @@ def plot_phase_breakdown(agg):
 
     POR QUÉ INTERESA: explica el PORQUÉ de las diferencias de tiempo entre
     versiones. WSOE no expone fases y v0 quedó SIN instrumentar (sus columnas
-    de fase valen -1), así que solo se comparan v2 y v3c. Si v3c reduce el
+    de fase valen -1), así que solo se comparan v2 y v3fix. Si v3fix reduce el
     tiempo total, este gráfico muestra qué fase concreta se optimizó (p. ej.
-    InitSplit o Phase2). Es el argumento técnico de la tesis: no solo "v3c es
-    más rápido" sino "v3c es más rápido PORQUE atacó la fase X".
+    InitSplit o Phase2). Es el argumento técnico de la tesis: no solo "v3fix es
+    más rápido" sino "v3fix es más rápido PORQUE atacó la fase X".
     Se agregan las fases sobre todo el corpus (suma de medianas).
     """
     phases = ["SCC_ms", "Bvis_ms", "InitSplit_ms", "Phase1_ms", "Phase2_ms",
@@ -335,15 +353,15 @@ def plot_reduction_quality(agg):
     """Calidad de la minimización: estados finales vs iniciales.
 
     POR QUÉ INTERESA: la velocidad no sirve si la minimización es distinta.
-    v2/v3c implementan branching bisimulation; WSOE usa otra equivalencia. NO
-    coinciden exactamente: validado contra la columna EqualsWSOE, v2 da el
-    mismo cociente que WSOE en ~83% de los modelos y v3c en ~73% (ver gráfico
-    05). Este gráfico justifica el reemplazo por CALIDAD: si los puntos quedan
+    v2/v3fix implementan branching bisimulation; WSOE usa otra equivalencia. NO
+    coinciden exactamente: validado contra la columna EqualsWSOE (ver gráfico
+    05). Con el bug de sobre-fusión corregido, v3fix ya no minimiza de más y
+    coincide con v2. Este gráfico justifica el reemplazo por CALIDAD: si los puntos quedan
     por debajo de los de WSOE, el algoritmo nuevo produce modelos más chicos,
     lo que beneficia a la síntesis composicional (menos estados que arrastrar
     en la composición). Se excluye v0 (versión obsoleta, no candidata).
     """
-    versions = CANDIDATES_VS_WSOE  # WSOE, v2, v3c
+    versions = CANDIDATES_VS_WSOE  # WSOE, v2, v3fix
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
 
     # (a) FinalStates vs InitialStates
@@ -386,7 +404,7 @@ def plot_equals_wsoe(agg):
     que el reemplazo cambia el modelo minimizado — algo que la tesis debe
     documentar explícitamente.
 
-    El dataset trae la columna booleana EqualsWSOE SOLO para v0. Para v2/v3c se
+    El dataset trae la columna booleana EqualsWSOE SOLO para v0. Para v2/v3fix se
     usa como proxy la igualdad de la tupla (FinalStates, FinalTransitions,
     FinalLocalTransitions): se verificó que ese proxy coincide al 100% con la
     columna EqualsWSOE real en v0, así que es confiable. Se incluye v0 como
@@ -407,7 +425,7 @@ def plot_equals_wsoe(agg):
         ok = ok[valid]
         return ok.mean(), valid.sum()
 
-    versions = ["v0", "v2", "v3c"]
+    versions = ["v0", "v2", "v3fix"]
     fig, ax = plt.subplots(figsize=(7, 5.5))
     fr = [frac_equal(v) for v in versions]
     equal = [f[0] * 100 for f in fr]
@@ -464,7 +482,7 @@ def plot_iters_vs_states(agg):
     """Iteraciones del loop principal vs tamaño (solo algoritmo nuevo).
 
     POR QUÉ INTERESA: MainLoopIters es una métrica independiente del hardware
-    (no es tiempo de pared). Si v3c hace MENOS iteraciones que v2 para el mismo
+    (no es tiempo de pared). Si v3fix hace MENOS iteraciones que v2 para el mismo
     tamaño, demuestra que la mejora es algorítmica y no solo de constante/JIT.
     Es la evidencia "limpia" de que la optimización es real y reproducible.
     v0 no instrumentó esta métrica (queda afuera).
@@ -569,7 +587,7 @@ def plot_complexity_slope(agg):
             xx = np.array([NMIN, d["InitialStates"].max()], dtype=float)
             axA.plot(xx, C * xx ** a, "-", color=COLORS[v], lw=2.5,
                      label=f"{v}: pend. aparente ≈ {a:.2f}")
-    yref = agg[(agg["Version"] == "v3c") & (agg["InitialStates"] >= NMIN)]["Time_ms"].median()
+    yref = agg[(agg["Version"] == "v3fix") & (agg["InitialStates"] >= NMIN)]["Time_ms"].median()
     xr = np.array([NMIN, agg["InitialStates"].max()], dtype=float)
     axA.plot(xr, yref * (xr / NMIN) ** 1, "k:", lw=1, alpha=0.7, label="pendiente 1")
     axA.plot(xr, yref * (xr / NMIN) ** 2, "k--", lw=1, alpha=0.7, label="pendiente 2")
@@ -619,7 +637,7 @@ def plot_complexity_normalized(agg):
         branching : T / (m·log2 n)
     Si la cota es ajustada, la curva normalizada se APLANA (tiende a una
     constante = el costo por operación). Si en cambio sigue creciendo, la cota
-    subestima el costo real; si decrece, lo sobreestima. Ver la curva de v3c
+    subestima el costo real; si decrece, lo sobreestima. Ver la curva de v3fix
     aplanarse al dividir por m·log n —y NO al dividir por algo menor— es la
     confirmación de que el algoritmo se comporta como O(m·log n) en la práctica,
     cerrando el argumento teórico de la tesis con evidencia empírica.
@@ -631,11 +649,11 @@ def plot_complexity_normalized(agg):
     wide = agg.pivot_table(index="Model", columns="Version", values="Time_ms")
 
     work = {
-        "WSOE": m * n,                       # O(m·n)
-        "v2": m * np.log2(n.clip(lower=2)),  # O(m·log n)
-        "v3c": m * np.log2(n.clip(lower=2)),
+        "WSOE": m * n,                        # O(m·n)
+        "v2": m * np.log2(n.clip(lower=2)),   # O(m·log n)
+        "v3fix": m * np.log2(n.clip(lower=2)),
     }
-    titles = {"WSOE": "T / (m·n)", "v2": "T / (m·log₂n)", "v3c": "T / (m·log₂n)"}
+    titles = {"WSOE": "T / (m·n)", "v2": "T / (m·log₂n)", "v3fix": "T / (m·log₂n)"}
 
     fig, ax = plt.subplots(figsize=(8.5, 6.5))
     for v in CANDIDATES_VS_WSOE:
@@ -686,7 +704,7 @@ def plot_memory_delta(agg):
     NMIN = 100
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
 
-    # (a) delta de memoria vs n (mediana por bin), WSOE vs v2 vs v3c
+    # (a) delta de memoria vs n (mediana por bin), WSOE vs v2 vs v3fix
     for v in CANDIDATES_VS_WSOE:
         d = agg[agg["Version"] == v]
         d = d[(d["InitialStates"] >= NMIN) & (d["MemDelta_MB"] > 0)]
@@ -704,14 +722,14 @@ def plot_memory_delta(agg):
     wide = agg.pivot_table(index="Model", columns="Version", values="MemDelta_MB")
     sizes = agg.groupby("Model")["InitialStates"].first()
     data, labels = [], []
-    for v in ["v2", "v3c"]:
+    for v in ["v2", "v3fix"]:
         sub = wide[["WSOE", v]].copy()
         sub = sub[(sizes.reindex(sub.index) >= NMIN)]
         sub = sub[(sub["WSOE"] > 0) & (sub[v] > 0)]
         ratio = (sub[v] / sub["WSOE"]).replace([np.inf, -np.inf], np.nan).dropna()
         data.append(ratio); labels.append(f"{v} / WSOE")
     bp = ax2.boxplot(data, labels=labels, showfliers=False, patch_artist=True)
-    for patch, v in zip(bp["boxes"], ["v2", "v3c"]):
+    for patch, v in zip(bp["boxes"], ["v2", "v3fix"]):
         patch.set_facecolor(COLORS[v]); patch.set_alpha(0.6)
     ax2.axhline(1.0, color="k", ls="--", lw=1, label="igual que WSOE")
     for i, dvals in enumerate(data, 1):
@@ -724,24 +742,28 @@ def plot_memory_delta(agg):
 
 
 def plot_v3c_vs_wsoe_size(agg):
-    """v3c vs WSOE: cuando difieren, ¿v3c minimiza más o menos? (solo v3c).
+    """v3fix vs WSOE: cuando difieren, ¿v3fix minimiza más o menos? (solo v3fix).
 
     POR QUÉ INTERESA: la tesis demuestra (Cap. 4) que WSOE ≡ branching
     bisimilarity, por lo que los cocientes deberían ser isomorfos —MISMO número
     de estados siempre—. Este gráfico contrasta esa predicción con los datos:
-    clasifica cada modelo del corpus en idéntico a WSOE / v3c con menos estados
-    / mismo nº de estados pero distintas transiciones / v3c con más estados.
-    Si aparecen casos discrepantes (sobre todo "más estados"), hay que explicar
-    por qué la implementación se aparta de la equivalencia teórica (conteo de
-    τ-transiciones, aristas paralelas, manejo de divergencia, etc.). Es una
-    verificación de CORRECTITUD, no de performance: el dato que un jurado va a
-    mirar antes de aceptar el reemplazo de WSOE.
+    clasifica cada modelo del corpus en idéntico a WSOE / v3fix con menos estados
+    / mismo nº de estados pero distintas transiciones / v3fix con más estados.
+
+    Es la figura donde se ve el efecto del FIX: v3c (buggy) minimizaba de más
+    (bucket "menos estados") en cientos de modelos por el sub-refinamiento de
+    peelSlice; v3fix corrige eso, por lo que ese bucket debe colapsar a ~0 y
+    crecer "idéntico a WSOE". Los casos discrepantes que sobrevivan son la
+    diferencia REAL branching↔WSOE (conteo de τ-transiciones, aristas paralelas,
+    manejo de divergencia, etc.), no el bug. Es una verificación de CORRECTITUD,
+    no de performance: el dato que un jurado va a mirar antes de aceptar el
+    reemplazo de WSOE.
     """
     cols = ["FinalStates", "FinalTransitions", "FinalLocalTransitions"]
     wide = agg.pivot_table(index="Model", columns="Version", values=cols)
-    s_v, s_w = wide[("FinalStates", "v3c")], wide[("FinalStates", "WSOE")]
-    t_v, t_w = wide[("FinalTransitions", "v3c")], wide[("FinalTransitions", "WSOE")]
-    l_v, l_w = wide[("FinalLocalTransitions", "v3c")], wide[("FinalLocalTransitions", "WSOE")]
+    s_v, s_w = wide[("FinalStates", "v3fix")], wide[("FinalStates", "WSOE")]
+    t_v, t_w = wide[("FinalTransitions", "v3fix")], wide[("FinalTransitions", "WSOE")]
+    l_v, l_w = wide[("FinalLocalTransitions", "v3fix")], wide[("FinalLocalTransitions", "WSOE")]
     ok = s_v.notna() & s_w.notna() & t_v.notna() & t_w.notna() & l_v.notna() & l_w.notna()
     s_v, s_w, t_v, t_w, l_v, l_w = (x[ok] for x in (s_v, s_w, t_v, t_w, l_v, l_w))
     n = ok.sum()
@@ -754,9 +776,9 @@ def plot_v3c_vs_wsoe_size(agg):
 
     cats = [
         ("idéntico a WSOE", identico.sum(), "#2ca02c"),
-        ("v3c menos estados\n(minimiza más)", v3_menos.sum(), "#1f77b4"),
+        ("v3fix menos estados\n(minimiza más)", v3_menos.sum(), "#1f77b4"),
         ("= estados,\n≠ transiciones", igual_st.sum(), "#9467bd"),
-        ("v3c más estados\n(minimiza menos)", v3_mas.sum(), "#d62728"),
+        ("v3fix más estados\n(minimiza menos)", v3_mas.sum(), "#d62728"),
     ]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 5.6))
@@ -773,29 +795,35 @@ def plot_v3c_vs_wsoe_size(agg):
     ax1.set_xticklabels(labels, fontsize=8.5)
     ax1.set_ylabel("% de modelos del corpus")
     ax1.set_ylim(0, max(vals) * 1.18)
-    ax1.set_title(f"v3c vs WSOE en todo el corpus (n={n})")
+    ax1.set_title(f"v3fix vs WSOE en todo el corpus (n={n})")
     ax1.grid(True, axis="y", alpha=0.3)
 
-    # (b) entre los que difieren: estados finales v3c vs WSOE (log-log)
-    df_d = pd.DataFrame({"wsoe": s_w[difiere], "v3c": s_v[difiere]})
-    ax2.scatter(df_d["wsoe"], df_d["v3c"], s=12, alpha=0.35, color="#444444")
-    lim = [max(1, df_d.min().min()), df_d.max().max()]
-    ax2.plot(lim, lim, "k--", lw=1.2, label="igual nº de estados")
+    # (b) entre los que difieren: estados finales v3fix vs WSOE (log-log)
+    ndif = int(difiere.sum())
+    df_d = pd.DataFrame({"wsoe": s_w[difiere], "v3fix": s_v[difiere]})
     ax2.set_xscale("log"); ax2.set_yscale("log")
     ax2.set_xlabel("Estados finales WSOE (log)")
-    ax2.set_ylabel("Estados finales v3c (log)")
-    ax2.set_title("Solo casos discrepantes: tamaño v3c vs WSOE\n"
-                  "(arriba de la línea = v3c más grande = minimiza menos)")
-    # anotar el balance
-    media = (s_v[difiere] - s_w[difiere]).mean()
-    ax2.text(0.05, 0.95,
-             f"de {difiere.sum()} discrepantes:\n"
-             f"  v3c menos: {v3_menos.sum()} ({100*v3_menos.sum()/difiere.sum():.0f}%)\n"
-             f"  v3c más:  {v3_mas.sum()} ({100*v3_mas.sum()/difiere.sum():.0f}%)\n"
-             f"  Δestados medio: {media:+.1f}",
-             transform=ax2.transAxes, va="top", fontsize=9,
-             bbox=dict(boxstyle="round", fc="white", alpha=0.8))
-    ax2.legend(loc="lower right"); ax2.grid(True, which="both", alpha=0.3)
+    ax2.set_ylabel("Estados finales v3fix (log)")
+    ax2.set_title("Solo casos discrepantes: tamaño v3fix vs WSOE\n"
+                  "(arriba de la línea = v3fix más grande = minimiza menos)")
+    if ndif > 0:
+        ax2.scatter(df_d["wsoe"], df_d["v3fix"], s=12, alpha=0.35, color="#444444")
+        lim = [max(1, df_d.min().min()), df_d.max().max()]
+        ax2.plot(lim, lim, "k--", lw=1.2, label="igual nº de estados")
+        media = (s_v[difiere] - s_w[difiere]).mean()
+        ax2.text(0.05, 0.95,
+                 f"de {ndif} discrepantes:\n"
+                 f"  v3fix menos: {v3_menos.sum()} ({100*v3_menos.sum()/ndif:.0f}%)\n"
+                 f"  v3fix más:  {v3_mas.sum()} ({100*v3_mas.sum()/ndif:.0f}%)\n"
+                 f"  Δestados medio: {media:+.1f}",
+                 transform=ax2.transAxes, va="top", fontsize=9,
+                 bbox=dict(boxstyle="round", fc="white", alpha=0.8))
+        ax2.legend(loc="lower right")
+    else:
+        ax2.text(0.5, 0.5, "sin casos discrepantes\n(v3fix ≡ WSOE en todo el corpus)",
+                 transform=ax2.transAxes, ha="center", va="center", fontsize=11,
+                 bbox=dict(boxstyle="round", fc="#eafbea", alpha=0.9))
+    ax2.grid(True, which="both", alpha=0.3)
     savefig(fig, "12_v3c_vs_wsoe_size.png")
 
 
@@ -858,7 +886,7 @@ def plot_transitions_reduction(agg):
     de estados (04). Importa especialmente acá porque la discrepancia entre
     branching y WSOE se concentra en las transiciones (recordar: ~13% del corpus
     tiene IGUAL número de estados pero distinto número de transiciones). Ver el
-    factor de reducción de transiciones lado a lado muestra si v3c colapsa las
+    factor de reducción de transiciones lado a lado muestra si v3fix colapsa las
     transiciones tanto, más, o menos que WSOE —lo que afecta directamente el
     tamaño del modelo que se arrastra en la composición—.
     """
@@ -906,10 +934,10 @@ def plot_tau_advantage(agg):
     bloques, splitters) es puro overhead; sobre grafos densos esa penalidad
     hace que WSOE incluso empate o gane. Donde SÍ hay τ —el caso realista de la
     síntesis composicional, llena de pasos internos tras componer y ocultar—
-    v3c gana cómodo.
+    v3fix gana cómodo.
 
     Dos paneles, ambos en el régimen con señal (n ≥ 100; abajo todo es ~igual
-    por el overhead fijo) y midiendo speedup = T(WSOE)/T(v3c) (>1 ⇒ v3c gana):
+    por el overhead fijo) y midiendo speedup = T(WSOE)/T(v3fix) (>1 ⇒ v3fix gana):
       (a) speedup según haya o no τ-labels: la mediana ~duplica con τ.
       (b) speedup vs densidad m/n, coloreado por τ: los grafos densos (que son
           los τ=0) caen al break-even; los ralos con τ están bien arriba.
@@ -918,9 +946,9 @@ def plot_tau_advantage(agg):
     wide = agg.pivot_table(index="Model", columns="Version", values="Time_ms")
     info = agg.groupby("Model")[["InitialStates", "InitialTransitions",
                                  "TauLabelsSize"]].first()
-    d = info.join(wide[["WSOE", "v3c"]]).dropna()
-    d = d[(d["WSOE"] > 0) & (d["v3c"] > 0) & (d["InitialStates"] >= NMIN)]
-    d["sp"] = d["WSOE"] / d["v3c"]
+    d = info.join(wide[["WSOE", "v3fix"]]).dropna()
+    d = d[(d["WSOE"] > 0) & (d["v3fix"] > 0) & (d["InitialStates"] >= NMIN)]
+    d["sp"] = d["WSOE"] / d["v3fix"]
     d["dens"] = d["InitialTransitions"] / d["InitialStates"]
     sin_tau = d["TauLabelsSize"] == 0
     con_tau = ~sin_tau
@@ -938,8 +966,8 @@ def plot_tau_advantage(agg):
         ax1.text(i, dd.median(), f"{dd.median():.2f}×", ha="center",
                  va="bottom", fontsize=10, fontweight="bold")
     ax1.set_yscale("log")
-    ax1.set_ylabel("Speedup  T(WSOE) / T(v3c)   [log]")
-    ax1.set_title("La ventaja de v3c se duplica cuando hay τ\n(n ≥ %d)" % NMIN)
+    ax1.set_ylabel("Speedup  T(WSOE) / T(v3fix)   [log]")
+    ax1.set_title("La ventaja de v3fix se duplica cuando hay τ\n(n ≥ %d)" % NMIN)
     ax1.legend(); ax1.grid(True, axis="y", which="both", alpha=0.3)
 
     # (b) speedup vs densidad, coloreado por τ + tendencia
@@ -953,7 +981,7 @@ def plot_tau_advantage(agg):
     ax2.axhline(1.0, color="k", ls="--", lw=1)
     ax2.set_xscale("log"); ax2.set_yscale("log")
     ax2.set_xlabel("Densidad  m / n  (transiciones por estado, log)")
-    ax2.set_ylabel("Speedup  T(WSOE) / T(v3c)   [log]")
+    ax2.set_ylabel("Speedup  T(WSOE) / T(v3fix)   [log]")
     ax2.set_title("Grafos densos ⇒ τ=0 ⇒ se pierde la ventaja\n(la ventaja cae al break-even)")
     ax2.legend(fontsize=9); ax2.grid(True, which="both", alpha=0.3)
     savefig(fig, "15_tau_advantage.png")
@@ -967,7 +995,7 @@ def plot_time_vs_ctrl(agg):
     label controlable local (es el COMPLEMENTO de las τ dentro de las locales:
     AllLocalTransitions = transiciones τ + CtrlLocalTransitions). Graficar el
     tiempo contra ellas mide la sensibilidad del costo a la fracción controlable;
-    si v2/v3c son menos sensibles que WSOE, es un argumento a favor del reemplazo
+    si v2/v3fix son menos sensibles que WSOE, es un argumento a favor del reemplazo
     en la composición de plantas/requerimientos con muchas acciones controlables.
     Es la contraparte de 06 (que las binnea linealmente) en escala log-log con
     ajuste, y el complemento de 17_time_vs_tau (que grafica las τ propiamente).
@@ -1022,7 +1050,7 @@ def plot_time_vs_tau(agg):
     líneas 417-419), y la columna que las cuenta es InitialLocalTransitions —NO
     CtrlLocalTransitions, que es su complemento—. Graficar el tiempo contra la
     cantidad de τ mide la sensibilidad del costo a la estructura que el algoritmo
-    nuevo explota. La lectura esperada es que v2/v3c escalen con τ con
+    nuevo explota. La lectura esperada es que v2/v3fix escalen con τ con
     pendiente/constante menores que WSOE —argumento directo a favor del reemplazo
     en el régimen realista de la composición, donde tras ocultar hay muchos τ—.
 

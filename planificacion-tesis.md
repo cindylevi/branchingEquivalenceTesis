@@ -31,22 +31,21 @@ Tomada como molde la tesis de ejemplo previa (exploración on-the-fly de RA) que
 - 2.1 LTS, autómatas y composición paralela (reusable casi tal cual del cap. 2 ejemplo).
 - 2.2 Problema de control: safe y non-blocking.
 - 2.3 Síntesis composicional (Mohajerani–Malik–Fabian, Chalmers): la noción de equivalencia que usa el paper composicional.
-- 2.4 WSOE: definición, algoritmo de minimización, complejidad. Por qué escala mal.
 
 ### Cap. 3 — Branching bisimilarity
 
-- 3.1 Definición formal.
-- 3.2 Relación con otras equivalencias (weak, observational, WSOE) — clave para justificar la sustitución del Cap. 4.
-- 3.3 Algoritmo O(m log n) de Groote et al.: ideas principales, estructuras (splitters, bloques), invariantes.
+Fusiona la definición de branching con la parte teórica de equivalencia (ver "Decisiones tomadas" más abajo). El algoritmo eficiente ya no vive acá: pasó a ser el Cap. 4.
 
-### Cap. 4 — Equivalencia entre WSOE y branching bisimilarity (capítulo teórico)
+- 3.1 Definición formal de branching.
+- 3.2 WSOE: definición formal.
+- 3.3 Diferencias intuitivas y casos motivadores.
+- 3.4 Teorema de equivalencia + demostración (aporte teórico central).
+- 3.5 Corolarios: qué se preserva en el contexto composicional (control, safe, non-blocking).
+- 3.6 Relación con otras equivalencias (weak, observational, WSOE) — clave para justificar la sustitución.
 
-Ver discusión en sección "Decisiones tomadas" más abajo.
+### Cap. 4 — Algoritmo
 
-- 4.1 Recordatorio de WSOE (referencia al cap. 2).
-- 4.2 Diferencias intuitivas y casos motivadores.
-- 4.3 Teorema de equivalencia + demostración.
-- 4.4 Corolarios: qué se preserva en el contexto composicional (control, safe, non-blocking).
+- Algoritmo O(m log n) de Groote et al.: ideas principales, estructuras (splitters, bloques), invariantes.
 
 ### Cap. 5 — Adaptación e implementación
 
@@ -74,13 +73,9 @@ Ver discusión en sección "Decisiones tomadas" más abajo.
 
 ### Dónde va la demo teórica WSOE ≡ branching bisimilarity
 
-**Decisión: capítulo propio (Cap. 4).** Razones:
+**Decisión vigente (revisada): fusionada dentro del Cap. 3 (Branching bisimilarity).** El capítulo de branching ahora define branching, define WSOE, presenta las diferencias intuitivas, demuestra el teorema de equivalencia y sus corolarios, y cierra con la relación con otras equivalencias. En paralelo, el algoritmo O(m log n) de Groote et al. se separó a un capítulo propio (Cap. 4 — Algoritmo). Motivo: instrucción del usuario de reordenar los capítulos de esta forma.
 
-1. Es el aporte teórico central. Sin esa demo no se puede sustituir WSOE; darle capítulo propio lo señaliza.
-2. La demo va a necesitar lemas auxiliares (preservación bajo composición paralela, preservación de la noción de "ganador") que ensucian el cap. de branching si se meten ahí.
-3. El lector que solo quiere los resultados experimentales puede saltearlo; el que quiere el rigor teórico lo encuentra concentrado.
-
-Alternativa descartada: meterlo como sección 3.3. Solo conviene si la demo termina siendo corta (3-6 páginas).
+**Decisión anterior (descartada): capítulo propio (Cap. 4) para la demo.** Sus razones eran: (1) es el aporte teórico central y darle capítulo propio lo señaliza; (2) la demo necesita lemas auxiliares (preservación bajo composición paralela, preservación de la noción de "ganador") que podrían ensuciar el cap. de branching; (3) el lector que solo quiere resultados podría saltearlo. Se dejó de lado a favor de la fusión descrita arriba. Si la demo crece demasiado y ensucia el capítulo, se puede reconsiderar volver a separarla o mover los lemas pesados al Apéndice.
 
 ### Por dónde arrancar a escribir
 

@@ -11,14 +11,14 @@
 %   2.3 Síntesis composicional (Mohajerani-Malik-Fabian, Chalmers): la
 %       noción de equivalencia que usa el paper composicional.
 %       -> FALTA agregar. \cite{wsoe}, \cite{compositional}.
-%   2.4 WSOE: definición, algoritmo de minimización, complejidad y por
-%       qué escala mal (es el cuello de botella que la tesis ataca).
-%       -> FALTA agregar. \cite{wsoe}. La complejidad de acá se contrasta
-%          con el O(m log n) de branching bisimilarity en 3.3.
+%
+% Nota: la definición formal de WSOE se trasladó al Cap. 3, donde se
+% define junto a branching bisimilarity y se demuestra su equivalencia.
+% Su complejidad se contrasta con el O(m log n) del algoritmo de Groote
+% et al. (Cap. 4).
 %
 % Nota: el \section{Un ejemplo concreto} (TravelAgency) más abajo apunta
-% al "capítulo 4" para el benchmark; en la estructura nueva la
-% experimentación es el Cap. 6 -> actualizar esa referencia.
+% al benchmark, que en la estructura nueva es el Cap. 6.
 % =====================================================================
 
 En este capítulo agregaremos algunas definiciones y explicaciones necesarias para poder avanzar con la definición y análisis formal del problema composicional de síntesis de controladores.
@@ -106,17 +106,14 @@ Los ciclos también son esenciales para encontrar los estados perdedores, ya que
 %   - Cuál es la noción de equivalencia que habilita esa minimización y
 %     cómo la usa el paper composicional. \cite{compositional}.
 %
-% TODO(2.4): \section{WSOE (Weak Synthesis Observational Equivalence)} -- AGREGAR.
-%   - Definición de WSOE. \cite{wsoe}.
-%   - Algoritmo de minimización por WSOE y su complejidad.
-%   - Por qué escala mal -> motiva el reemplazo por branching bisimilarity
-%     (Cap. 3) y la demo de equivalencia (Cap. 4). Contrastar esta
-%     complejidad con el O(m log n) del algoritmo de Groote et al.
+% NOTA DE REORGANIZACIÓN: la definición formal de WSOE (antes planificada
+% acá como §2.4) se movió al Cap. 3 (Branching bisimilarity), donde se
+% define junto a branching y se demuestra su equivalencia.
 % =====================================================================
 
 \section{Un ejemplo concreto}
 
-Para ejemplificar y tener una noción acerca del tamaño que puede alcanzar el problema de composición y su posterior exploración, presentaremos una versión simplificada del problema \textbf{TravelAgency} que describiremos con mayor detalle posteriormente en el capítulo 4 y será usado para medir la \textit{performance} del algoritmo.
+Para ejemplificar y tener una noción acerca del tamaño que puede alcanzar el problema de composición y su posterior exploración, presentaremos una versión simplificada del problema \textbf{TravelAgency} que describiremos con mayor detalle posteriormente en el capítulo 6 y será usado para medir la \textit{performance} del algoritmo.
 
 En este problema se busca armar una agencia de venta online de paquetes vacacionales. El objetivo
 es que la misma orqueste los servicios (alquiler de auto, hotel, pasaje de avión, etc.) de forma automática de manera de obtener un paquete de vacaciones completo de ser posible, evitando pagar por paquetes incompletos.
