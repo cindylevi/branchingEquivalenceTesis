@@ -1,0 +1,28 @@
+The algorithm has as inputs a control problem $\mathcal{E} = \langle \mathcal{M}, \varphi, \Sigma_c \rangle$ and a heuristic that returns a subset of the plant of size greater than $1$.
+
+\input{sections/codigo}
+
+\vspace{0.2cm}
+The synthesis tuple is initialized and a loop that strictly monotonically reduces the size of $\mathcal{M}$ starts. 
+In the loop, the heuristic first selects and removes a subset of $\mathcal{M}$. If $\mathcal{M}$ is not empty, we project $\varphi$ to the alphabet of the subplant, compute the local alphabet ($\Upsilon$)  used to perform minimization, compute the safe controller and the controlled subplant. 
+ If there is no solution when computing the safe controller, then the algorithm returns UNREALIZABLE. Otherwise, it adds the safe controller to $\mathcal{C}$ and computes both the quotient of the controlled subplant and the events that the quotient introduces loops for.  
+
+
+  
+The loop terminates when the subplant selected has all LTS in $\mathcal{M}$. At this point we compute a live solution for the remaining control problem and return it with  all previously computed partial controllers.
+
+
+%algorithm selects subsystem, build Partial GR(1) Controllers and then reduce $M$ size by Synthesis equivalence reduction application. While doing so, it modifies a synthesis tuple that will collect partial controllers in $C$ and updates renaming in case of non-determinism. This procedure will be repeated until only one automaton remains in $M$. Then, a synthesis algorithm is used to compute last element included. At each iteration of the main loop, we will apply a series of steps to simplify $M$ and get partial controllers in $C$. Each of this steps is justified by former theorems. \\
+
+
+%% Le saca el prefijo a los algoritmos
+% Redefine the caption format for the algorithm environment
+
+
+
+Procedure \textit{getSubplant} returns a subplant of $\mathcal{M}$ using the \textit{heuristic}. Procedures \textit{getLiveController}
+and \textit{getSafeController} solve control problems of the form $\langle sp, \Sigma_c,  \Box\Diamond\bigwedge_{l\in \mu}\neg l \implies \varphi \rangle$ according to Definitions~\ref{def:control-problem} and~\ref{def:safe-controller}. Procedure \textit{getControlledSubplant} returns a controlled subplant according to Definition~\ref{partial-synthesis}, and \textit{minimize} applies minimization based for the equivalence defined in Definition~\ref{def:synth-equiv} and also returns the events for which self-loops have been introduced. 
+
+
+The correctness and completeness argument for the algorithm is as follows. The algorithm encodes the original problem $\mathcal{E}  = \langle \mathcal{M}, \Sigma_c, \varphi \rangle$ as a synthesis tuple $T = (\mathcal{M}, \emptyset, \emptyset)$. The solutions of $T$ by definition are  $Cont_{\Sigma_c, \varphi}(T)$ are exactly those of $\mathcal{E'} = \langle \mathcal{M}, \Sigma_c, \varphi \rangle$ (see Remark 1 after Definition~\ref{def:tuple-controller}). It is straightforward to see that after each iteration of the while loop, the tuple is updated via two solution preserving operations (parallel composition and partial synthesis). The loop terminates because we assume that the heuristic will never infinitely often return subsets of size 1 when $|\mathcal{M}|>1$ size greater than one is replaced in $\mathcal{M}$ with its composition. Thus, the  set of partial controllers  by the algorithm, when composed in parallel is a solution to the original problem. 
+

@@ -1,0 +1,108 @@
+We model discrete event systems by composing Labelled Transition Systems.%(referred also as automata).
+\begin{definition}[Labelled Transition System]
+    A Labelled Transition System (LTS) is a tuple $(S, \Sigma, \xrightarrow[]{}, \hat{s})$ where $S$ is a finite set of states; $\Sigma$ is a finite set of event labels; $\xrightarrow[]{} \, \subseteq S \times \Sigma \times S$ are transitions; and $\hat{s} \in S$ is the initial state.
+\end{definition}
+ 
+
+   %which models the asynchronous execution of  processes synchronising on shared events. 
+
+\begin{definition}[Parallel composition]
+    Let $M_i = (S_i, \Sigma_i, \xrightarrow[]{}_{M_i}, \hat{s}_i)$ with $i\in \{1,2\}$ be two LTSs, their parallel composition is an LTS  $M_1 || M_2 = (S_{1}  \times S_{2}, \Sigma_{1} \cup \Sigma_{2}, \xrightarrow[]{}_{M_1||M_2}, (\hat{s_1}, \hat{s_2}))$, where $\xrightarrow[]{}_{M_1||M_2}$ is the smallest relation that satisfies:
+%    \vspace{-0.2cm}
+   \begin{itemize}
+        \item if $s_1 \xrightarrow[]{l}_{M_1} s_1'$ and $l \in \Sigma_{1} \setminus \Sigma_{2}$, then $(s_1, s_2) \xrightarrow[]{l}_{M_1||M_2} (s_1', s_2)$
+        \item if $s_2 \xrightarrow[]{l}_{M_2} s_2'$ and $l \in \Sigma_{2} \setminus \Sigma_{1}$, then $(s_1, s_2) \xrightarrow[]{l}_{M_1||M_2} (s_1, s_2')$
+        \item  if $s_1 \xrightarrow[]{l}_{M_1} s_1', s_2 \xrightarrow[]{l}_{M_2} s_2'$ and $l \in \Sigma_{1} \cap \Sigma_{2}$, then $(s_1, s_2) \xrightarrow[]{l}_{M_1||M_2} (s_1', s_2')$
+   \end{itemize}
+\end{definition}
+Parallel composition is associative and commutative. If $\mathcal{M} = \{M_1, M_2, .., M_n\}$ is a set of LTS, we may refer to $M_1 || M_2 || .. ||M_n$ as $\mathcal{M}$ too.
+
+
+We use $\Sigma^{*}$ for the set of all finite sequences of labels of $\Sigma$, i.e., traces. We say $l \in \Sigma$ is enabled in $s$ if there is $s'$ such that $(s, l, s') \in  \xrightarrow[]{} $. We denote $\xrightarrow[]{}\!(s)$ as the set of enabled events in $s$. An LTS is deadlock-free if all states have outgoing transitions. An LTS is deterministic if there is no state that has two outgoing  transitions on the same event. We use $\xrightarrow[]{}$ to denote the transitive closure of transitions and assume it holds for the empty trace:  $x \xrightarrow[]{\epsilon} x$. We say a (finite or infinite) sequence $w$ of labels in $\Sigma$ is a trace of $M$ if there is an $s'$ such that $\hat{s_M} \xrightarrow[]{w} s'$. 
+The concatenation of two traces $s$ and $t$ is written as $st$. For $\Omega \subseteq \Sigma$, we define the natural projection $P_{\Omega}: \Sigma^{*} \xrightarrow[]{} \Omega^{*}$ as the operation that removes from a trace $\pi \in \Sigma^{*}$ all events not in $\Omega$. We use $\Gamma_u, \Gamma_c: S \xrightarrow[]{} S$ to denote the set of states reachable by outgoing uncontrollable (controllable) transitions from an specific state.
+
+\begin{definition}[Controllably reachable]
+Given a LTS $M = (S, \Sigma, \xrightarrow[]{}_M, \hat{s})$, $s\in S$ and $l \in \Sigma$, we say that $l$ is \textit{controllably reachable} from $s$ ($s \overset{l}\rightharpoonup_M$) if $(s \xrightarrow[]{l}) \ \vee \ ((\forall s'\in \Gamma_u(s) \ . \ s' \overset{l}\rightharpoonup_{M} ) \ \wedge \ (\Gamma_u(s) \subseteq \emptyset \implies \exists s' \in \Gamma_c(s) \ . \ s' \overset{l}\rightharpoonup_{M}))$. 
+% We say that $l$ could be forced in one step from $s$ $(s \overset{l}\rightharpoonup_{M,1})$ iff $s \xrightarrow[]{l} \ \wedge \ (\nexists \ l' \in \Sigma_u \ . \ l \neq l' \wedge s \xrightarrow[]{l'})$
+\end{definition}
+
+We model controllers with legal LTS that must not block the DES.  %If LTS $C$ is legal for LTS $M$ with respect to events $\Sigma_u$ that $C$ cannot control  then $C$ never restricts $M$ from performing an event in  $\Sigma_{u}$.
+
+\begin{definition}[Legal LTS]
+    Given LTS $M = (S_M, \Sigma, \xrightarrow[]{}_{M}, \hat{s_M})$ and $C = (S_C, \Sigma_C, \xrightarrow[]{}_{C}, \hat{s_C})$ with $\Sigma_u \in \Sigma$. We say that $C$ is a \textit{legal} LTS for $M$ with respect to $\Sigma_u$, if for all $(s_M, s_C)$ such that  $(\hat{s_M}, \hat{s_C}) \xrightarrow[]{}_{M\|C} (s_M, s_C)$ the following holds: $\xrightarrow[]{}_{M||C}\!((s_M, s_C))  \cap \Sigma_u = \, \xrightarrow[]{}_M\!(s_M)\cap \Sigma_u$
+\end{definition}
+
+
+We use Linear Temporal Logic to declaratively specify control requirements. 
+
+\begin{definition}[Linear Temporal Logic (LTL) formula]
+    An LTL formula is defined inductively using the standard Boolean connectives and temporal operators $X$ (next), $U$ (strong until) as follows: $\phi := e \ | \ \neg \phi \ | \ \phi \vee \psi \ | \ X \phi \ | \ \phi U \psi$, where $e$ is an atomic event. As usual we introduce $\Diamond$ (eventually), and $\square$ (always) as syntactic sugar. 
+    The semantics of an LTL formula is defined via a relation $\models$ between infinite traces and LTL formulae, noted $\pi \models \phi$. 
+\end{definition}
+
+We now define discrete event control problems. 
+
+\begin{definition}[Control Problem]
+\label{def:control-problem}
+Given a set of deterministic LTS $\mathcal{M}$ modelling the plant to be controlled, $\Sigma$ the union of the alphabets of the LTS in $\mathcal{M}$, a set of controllable events $\Sigma_c \subseteq \Sigma$ and an LTL formula $\varphi$ over $\Sigma$ modelling the controller goal, we define $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, \varphi  \rangle$ to be an Control Problem. A deterministic LTS $C$ is a solution for $\mathcal{E}$  (i.e., a controller) if $C$ is \textit{legal} for $\mathcal{M}$ with respect to the set of uncontrolled events $\Sigma_u = \Sigma \setminus \Sigma_c$, $\mathcal{M} || C$ is deadlock-free and for every infinite trace $\pi$ in $\mathcal{M} || C$  we have $\pi \vDash \varphi$. 
+\end{definition}
+
+$\mathcal{E}$ is realizable if a solution for $\mathcal{E}$ exists. A solution $C$ is \textit{maximally permissive}~\cite{DBLP:journals/tase/HuangK08} if for any solution $C'$, if $\pi$ is a trace of $C'$ then it is a trace of $C$. 
+
+\begin{definition}[Winning States]
+Let $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, \varphi  \rangle$ a  control problem with $\hat{s}$ the initial state of $\mathcal{M}$. We say $s \in S_{\mathcal{M}}$ is a winning state if there is a solution $C$ for $\mathcal{E}$ with initial state $\hat{c}$, a state $c \in S_c$ and a trace $\pi$ such that $(\hat{c},\hat{s}) \xrightarrow[]{\pi}_{C\|M} (c, s)$.
+
+%$ = \langle \mathcal{M}_s, \Sigma_c, \varphi  \rangle$ is realizable where $\mathcal{M}_s$ is $\mathcal{M}$ with its initial state changed to $s$.
+\end{definition}
+
+We focus on a particular form of controller goals referred to as GR(1).
+
+\begin{definition}[Generalised Reactivity(1)~\cite{Piterman:2006:SRD}] A 
+GR(1) formula $\varphi$ is an LTL formula restricted with this structure $\varphi = 
+\wedge_{i \in n} \ \always\eventually \phi_i \implies \wedge_{j \in m} \ 
+\always\eventually \gamma_j$ where $\phi_i$ and $\gamma_j$ are boolean 
+combination of events.
+\end{definition}
+
+Note that realizable GR(1) control problems may not have a maximally permissive controller. 
+An intuition is that a 
+controller may delay achieving its goal an unbounded but finite number of times. This  cannot be captured as an LTS. 
+
+ 
+Also note that that for a realizable GR(1) control problem, if a plant state is losing (i.e., not winning) it will never be traversed when the plant is being controlled. Also note that stripping a plant of its losing states not only preserves realizability but also results in the smallest sub-plant that preserves realizability.
+% We refer to the set $W \in S_{\mathcal{M}}$  of winning states as defined in \cite{piterman_synthesis_nodate}.
+% \su{No me gusta como definimos winning states. Tal vez: We refer to $s \in S_{\mathcal{M}}$ as a winning state if $\mathcal{E} = \langle \mathcal{M}_s, \Sigma_c, \varphi  \rangle$ is realizable where $\mathcal{M}_s$ is $\mathcal{M}$ with its initial state changed to $s$.} 
+
+We use an observational equivalence taken from ~\cite{mohajerani_framework_2014}. In~\cite{mohajerani_framework_2014} the relation to reduce the size of the plant, hiding local events $\Upsilon$ while preserving solutions to supervisory control problems with non-blocking goals. The equivalence does not preserve realizability of GR(1) control problems; an adaptation is required. 
+%we use it (see Theorem~\ref{PS+SOE_control}) to reduce the size of partial controllers while preserving realizability of GR(1) control problems. 
+%The equivalence relation is used in contexts where $\Upsilon$ is a set of non-observable local events (i.e., events that other LTS of the control problem do not have). 
+%\vb{Esta frase es MUY confusa y lleva a pensar que hacemos non-blocking. La def. 7 tmbi'en.  Hya que agregar algo más o vincularlo conlo que hacemos. de hecho, es una definición que no se vincula con ningún resultadado de preservación de LTL o lo que sea. Es un nombre (que cambia en el interior de la definición!) que sugiere algo que nunca se enuncia/prueba.} \su{Fijate ahora.}
+%\vb{Mejor pero la miro por arriba y me pregunto en qué se diferencia de branching equivalence. Creo que hay que hacer alguna mencion. Adem'as el nombre es feo (es el nombre que le dan en supremica)? }\su{Nombre horrible, supongo que es como se llama en supremica, Hernan?}\su{Es un branching que tiene en cuenta controlabilidad.}
+
+
+\begin{definition}[Synthesis observation equivalence~\cite{mohajerani_framework_2014}]
+    \label{def:synth-equiv}
+    Let $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ be a LTS with  $\Sigma = \ \Omega \ \dot{\cup} \ \Upsilon$, $\Sigma_c$ is the set of controllable events and $\Sigma_u$ is the set of uncontrollable events. An equivalence relation $\sim_{\Upsilon} \ \subseteq S \times S$ is a synthesis observational equivalence on $M$ with respect to $\Upsilon$ if the following conditions hold for all $x_1, x_2 \in S$ such that $x_1 \sim_{\Upsilon} x_2$:
+\vspace{-0.2pt}
+    \begin{enumerate}
+        \item if $x_1 \xrightarrow[]{u} y_1$ for $u \in \Sigma_u$, then there exist $\pi_1, \pi_2 \in (\Upsilon \cap \Sigma_u)^{*}$ such that $x_2 \xrightarrow[]{\pi_1 P_{\Omega}(u) \pi_2} y_2$ and $y_1 \sim_{\Upsilon} y_2$
+        \item if $x_1 \xrightarrow[]{c} y_1$ for $c \in \Sigma_c$, then there exists a path $x_2 = x_2^{0} \xrightarrow[]{\tau_1} ... \xrightarrow[]{\tau_n} x_2^{n} \xrightarrow[]{P_{\Omega}(c)} y_2$ such that $y_1 \sim_{\Upsilon} y_2$ and $\tau_1, .., \tau_n \in \Upsilon$, and if $\tau_{i\in\{1 .. n\}} \in \Sigma_c$ then $x_1 \sim_{\Upsilon} x_2^i$
+    \end{enumerate}
+\end{definition}
+%We use the above equivalence to reduce the size of the plant to be controlled. 
+
+%\begin{definition}[Equivalence relation\su{Candidato a volar}]
+%    Let X be a set. A relation $\sim \ \subseteq X \times X$ is called an \textbf{equivalence relation} on X if it is reflexive, symmetric and transitive. Given an equivalence relation $\sim$ on $X$, we define:
+%   \begin{itemize}
+%        \item \textit{Equivalence class} of $x \in X$ as $[x] = \{ x' \in X \ | \ x \sim x' \}$
+%        \item $X \ / \sim = \{ [x] \ | \ x \in X \}$ is the set of all equivalence class modulo $\sim$.
+%    \end{itemize}
+%\end{definition}
+\begin{definition}[Quotient LTS]
+Let $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ be an LTS, %$\Upsilon$ a set of  events 
+and $\sim
+\ \subseteq S \times  S$ be an equivalence relation. The \textit{quotient LTS} of $M$
+modulo $\sim$
+is $M \! \slash \! \!\sim\ =  (S \! \!\ \slash \! \! \sim, \Sigma, \xrightarrow[]{} \! \! \slash \! \! \sim,  [\hat{s}])$ where $S \! \slash \! \! \sim$ is the set of equivalences classes of $\sim$ and $\xrightarrow[]{} \! \! \slash \!  \! \sim =  \{ ([s], \sigma, [s']) \ \cdot \ s \xrightarrow[]{\sigma} s' \}$
+\end{definition}
+

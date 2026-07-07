@@ -1,0 +1,260 @@
+This section defines a data structure used by the compositional synthesis algorithm, two operations over the data structure, and theorems that enunciate when these operations preserve the semantics of the data structure. 
+
+
+
+%\subsection{Synthesis Tuples} 
+\label{subsection:synthesis-tuple}
+
+During algorithm execution three variables are maintained, ($\mathcal{M}$, $\mathcal{C}$ and $\mu$) that form what we refer to as a 
+synthesis tuple. They were discussed in  Section~\ref{section:overview}.
+
+\begin{definition}[Synthesis tuple] \label{def:synthesis-tuple}
+    A \textit{synthesis tuple} is tuple  $(\mathcal{M}, \mathcal{C}, \mu)$, where 
+    $\mathcal{M}$ is a set of deterministic LTSs modelling a modular plant,  $\mathcal{C}$ is a set of LTSs modelling safe controllers, 
+    %$\rho$ is a renaming function, 
+    and $\mu$ is a set of events in the alphabet of $\mathcal{M}$.
+\end{definition}
+
+When solving a control problem $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, \varphi 
+\rangle$, the algorithm starts with a synthesis tuple of the following form: 
+$(\mathcal{M}, \emptyset, \emptyset)$.  The algorithm will iteratively reduce the size of $\mathcal{M}$  while populating 
+$\mathcal{C}$ and $\mu$. 
+Each intermediate step will yield a synthesis tuple that preserves the control problem to be solved. 
+To formalize this notion of preservation we define the set of controllers that are a solution 
+to a synthesis tuple. This set of controllers will serve as an invariant. We extend the definition of \textit{composition operator} with respect to the set $\mu$ ($||_{\mu})$ in the appendix (see \ref{def:compOperatorMu}).
+
+\begin{definition}[Controllers of a Synthesis Tuple]
+    \label{def:tuple-controller}
+    Let $T = (\mathcal{M}, \mathcal{C}, \mu)$ be a synthesis tuple with 
+    $\mathcal{C} = \{C_1, \ldots, C_n\}$, 
+   $\Sigma_c \subseteq \Sigma$ a controllable alphabet, and $\varphi$ an LTL formula. We define the controllers of a synthesis tuple as
+            $Cont_{\Sigma_c, \varphi}(T) = \{ \mathcal{C}_{M} ||_{\mu} C_1 ||_{\mu} \ldots 
+            ||_{\mu} C_n \cdot \mathcal{C}_M  \mbox{ is a solution to } \mathcal{E}   \}        $  where $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, 
+     \square \Diamond \bigwedge_{l \in 
+        \mu} \neg l \!\!\! \implies \!\!\! \varphi 
+        \rangle$.
+
+        %\rho(\mathcal{C}) \}
+%    \end{equation}
+\end{definition}
+
+%Note that the definition above, when $\varphi$ is GR(1), introduces a control problem that is not GR(1). We explain how to solve it using GR(1) synthesis  in Section~\ref{section:algorithm}. 
+%\vb{Esto hay que sacarlo de acá pero es una contribución del paper al haber fijado GR (1) y ver que el método es cerrado para GR(1)}
+\begin{remark}
+Given the synthesis tuple $T = (\mathcal{M}, \emptyset, \emptyset)$ then the controllers in $Cont_{\Sigma_c, \varphi}(T)$ are the same as those for the control problem  $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, \varphi \rangle$.
+\end{remark}
+
+
+We say that two \textit{synthesis tuples} $T$ and $T'$ \textit{are }\textit{equivalent} with respect to a controllable alphabet $\Sigma_c$ and an LTL formula $\varphi$ if they have the same set of controllers: $T \cong_{\Sigma_c, \varphi} T'$ iff $Cont_{\Sigma_c, \varphi}(T) = Cont_{\Sigma_c, \varphi}(T')$
+%\begin{definition}[Synthesis tuple equivalence]
+ %   Let $\mathcal{T} = (\mathcal{M}, \mathcal{C}, \rho, \mu)$, $\mathcal{T'} = (\mathcal{M'}, \mathcal{C'}, \rho', \mu')$ two \textit{synthesis tuples}, $\Sigma_c \subseteq \Sigma$ and $\varphi$ a GR(1) formula. We say that $\mathcal{T} \cong_{\Sigma_c, \varphi} \mathcal{T'}$ iff $Cont_{\Sigma_c, \varphi}(\mathcal{T}) = Cont_{\Sigma_c, \varphi}(\mathcal{T'})$
+%\end{definition}
+% \su{ME parece que este remark no va acá. Tal vez en la parte de algoritmo. Rompe flujo}
+% \begin{remark}[Compositional controller]
+% Let $\mathcal{T} = (\mathcal{M}, \{ \}, id, \{\})$ synthesis tuple representing original input, $\mathcal{T'} = (\mathcal{M'}, \{ C_1', .., C_n' \}, \rho', \mu')$ synthesis tuple with $\mathcal{M'}$ a singleton automata, $\Sigma_c \subseteq \Sigma$ and $\varphi$ a GR(1) formula, if $\mathcal{T} \cong_{\Sigma_c, \varphi} \mathcal{T'}$ then
+%     \begin{equation}
+%        \{ \rho(\mathcal{C}_{M}), \rho(\mathcal{C}_{1}), ..,  \rho(\mathcal{C}_{n}) \}
+%     \end{equation}
+%     is the compositional representation of a controller for $\mathcal{T}$ if $\mathcal{C}_M$ is a valid controller for GR(1) \textit{finite control problem} of $\langle M', \rho^{-1}(\Sigma_c), \rho^{-1}(\varphi), \mu \rangle$     
+% \end{remark}
+
+
+
+
+
+In the following we introduce two equivalence preserving transformation 
+operations over synthesis tuples. %These operations either reduce the size of the set $\mathcal{M}$ or reduce the size of an LTS in $\mathcal{M}$. 
+The compositional 
+synthesis algorithm  in Section~\ref{section:algorithm} iteratively 
+applies these equivalence preserving transformations. 
+
+%\vb{Creo que se mejoró mi punto: No se entiende cómo la solución de arriba se vincula con el problema orginal. Qué objetos realmente solucional el problema de control original?} \su{No entiendo.}
+
+%\begin{remark}
+%A Non-Flooding GR(1) control problem $\langle \mathcal{M}, \Sigma_c, \varphi, 
+%\emptyset \rangle$ has the same solutions as the GR(1) control problem $\langle 
+%\mathcal{M}, \Sigma_c, \varphi \rangle$.   
+%\end{remark}
+
+
+
+
+\subsection{Composition}
+\label{subsection:composition}
+This synthesis tuple transformation method  reduces the size of $\mathcal{M}$ in a synthesis tuple by composing in parallel a subset of the LTS in $\mathcal{M}$. It is straightforward to see that parallel composition preserves equivalence of synthesis tuples.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Composing preserves controllability 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{theorem} [Composition preserves controllers]
+    Let $\varphi$ be an LTL formula, $\Sigma_c$ a set of controllable events,  and $T$, $T'$ synthesis tuples $(\mathcal{M}, \mathcal{C}, \mu)$ and $(\mathcal{M'}, \mathcal{C}, \mu)$ respectively. If $\mathcal{M}_1$ and $\mathcal{M}_2$ are a partition of $\mathcal{M}$ such as $\mathcal{M'} = M \cup \mathcal{M}_2$ where $M$ is the parallel composition of the LTS in $\mathcal{M}_1$, then 
+    $T \cong_{\Sigma_c, \varphi} 
+    T'$
+   % $\mu$ a set of labels, $\mathcal{M} = \{ M_1, .., M_n \}$ and $\mathcal{M'} = \{ (M_1 || M_2), .., M_n \}$ two LTS's set. Then $(\mathcal{M}, \mathcal{C}, \rho, \mu) \cong_{\Sigma_c, \varphi} (\mathcal{M'}, \mathcal{C}, \rho, \mu)$
+\end{theorem}
+%Using this theorem and following tuple rewrite operations, we seek to reduce $M$ set size and get a compositional controller as we explained above.
+The theorem follows from the fact that parallel composition is associative. %A composed subplant \hg{No sería subplant?} example that preserves controllability is shown in Fig. \ref{fig:M1_M2}.
+
+%%%%% PARTIAL SYNTHESIS
+\subsection{Partial Synthesis} 
+\label{subsection:partial-synth}
+% \vb{Se sigue llamando ``Partial''?}\su{Si, el proceso de transformación incluye la proyección, el safe controller y el controlled subplant }\vb{Por ahí hay que decirlo antes}\su{Qué cosa hay que decir antes? La primer oración explica lo que es.}\vb{``Antes'' = en el overview}
+
+Partial Synthesis is the key transformation operation over synthesis tuples. Given a tuple $(\mathcal{M}, \mathcal{C}, \mu)$ it removes one LTS $M$ from $\mathcal{M}$, computes a safe controller $C$ for a weaker property $\varphi'$ 
+%\vb{Yo sacaría esto de weaker property porque es confuso: no es controlador para Phi' sino para quedarse en los MayWin de Phi'}\su{Por eso dice safe controller en vez de simplemente controller.}
+% \vb{la frase: ``safe controller for a for it and a weaker property'' es rara: el safe controller no cumple con que las trazas cumplen la waker property phi' (?) sino que es safe para evitar loosing states}\su{No entiendo bien el punto. A estsa altura el lector ya leyó que es, intuitivamente, un safe controller y por qué se lo computa para una propiedad debilitada. Igualmente mejoré un poco la frase. Fijate.}
+and adds the safe controller to $\mathcal{C}$. It also adds a minimized LTS modelling the controlled subplant, i,e. the result of $C$ controlling $M_i$ but hiding local events $\Upsilon$. In addition it updates $\mu$. 
+
+We define the projection of a  formula the alphabet of a subsystem. 
+
+%If there are blocking states in a subsystem of the original plant, these must be removed in synthesis, no matter the behaviour of the rest of the system is. 
+
+% \begin{definition}[\textit{Formula} projection] \label{formula-projection}
+% The projection of a GR(1) formula $\varphi$ with respect to an alphabet $\Sigma$ is the formula $\varphi'$ resulting from replacing every occurrence of an event $e \in \Sigma$ with $\top$.
+% \end{definition}
+
+%Formula projection
+\begin{definition}[Formula projection] \label{formula-projection}
+A formula projection is a function $\alpha:LTL\times 2^\Sigma\rightarrow LTL$  such that for any formula $\varphi$ and set $\Sigma' \subseteq \Sigma$ we have $\varphi \implies \alpha(\varphi, \Sigma')$ and $\alpha(\varphi, \Sigma')$ is a formula that only refers to events in $\Sigma'$.
+\end{definition}
+
+%\vb{Si hay una f'ormula que dice $[]<>$A1 and $[]<>$A2 $\Rightarrow$ $[]<>$G1 and $[]<>$G2 y un subsitema es responsable de G2 y le alcanza con A2 entonces la proyeccion a ese subsistema qué daría?: TRue? Se pierde la oportunidad de eliminar estados en los que G2 no es alcanzable, por ejemplo.}\su{Eso está bien. Imaginate si G2 no es alcanzable, daría que no hay un safe controller, pero en realidad podría no ser un problema porque A2 nunca sucede infinitas veces. } \vb{Sí, escribí mal lo que se podría eliminar. Mi propuesta es esta: Neg( $[]<>$ Exists (A1).A1 and $[]<>$A2 $\Rightarrow$ $[]<>$ Exists (G1).G1 and $[]<>$G2)) =  Neg($[]<>$ TRUE and $[]<>$A2 $\Rightarrow$ $[]<>$ TRUE and $[]<>$G2)) = Neg($[]<>$A2 $\Rightarrow$ $[]<>$G2)) =  Neg((Neg($[]<>$A2) $\lor$ $[]<>$G2))) = ($[]<>$A2) $\land$ Neg($[]<>$G2)))). O sea, estados desde los cuales para toda traza, A2 se repite infinitamente y G2 deja de aparecer. De cualquier forma, sería mejor si nos los sure-loosing fueran los que el ambiente tiene una extrategia para dejarte ahí (no para toda traza). O sea calcular May Win states y luego complementar. May Win es un estado que tiene al menos una traza ganadora y puede pasar por controlable (o toda no controlable) a un MayWin. Luego hay que complementar esto y calcular todoos los que alcazan x no controlables este conjunto. Eso es sure loosing. 
+%Acá sería: May Win= conjunto más grande en los que los estados satsifacen Neg($[]<>$A2) $\lor$ $[]<>$G2)) y que pueden pasar a MayWin con controlable o x toda no controlable). Sure Loosing es todo estado que es sure loosing o alcanza x alguna no controlable x toda controlable  a sure loosing (o sea mínimo punto fijo).
+%}
+
+%\vb{Bottom line, creo que hay varias formas de sobreaproximar el conjunto de estados de la planta que podría ser visitado por una estrategia gandora (MAY-WIN (subplant)states) y creo que se puede hacer para todo LTL (y me parece que es el único motivo por el cual hoy está contado para GR{1}). Entonces,  se puede definir de manera más abstracta y luego decir adelante cómo lo hacemos en concreto (para GR[1] y sugerir para LTL). Esto sería: la proyección de fórmula (def y lema)  podría moverse a sección 5 y acá trabajar sólo con que asumimos que a la construcción de safe controllers se hace con un MAY WIN states que se pasa como parámetro. Me parece que hace las cosas más generales y ajustables a futuro.}
+%{(MáximoPuntofijo M. sigma |/= Neg(Phi') $\land$ exists c sigma-u-> M. M es might win. Sure Loosing = 1 - M}
+
+%\vb{Creo que deberíamos hacer lo siguiente para soportar todo LTL: en primer lugar decir que buscamos ``sure-loosing states'' en las subplantas. Esto se puede subaproximar como estados tales que cualquier traza que pasa por ellos no cumpliría (en la planta total) con el Phi (sin importar lo que hacen el controlador o el ambiente). A su vez esto se puede subaproximar como estados desde los cuales todas la trazas satisfacerían Not(phi) en la planta. Ahora bien, si sigma un estado tal que toda traza de la subplanta que sastiface Not(Phi')) (en dónde Phi' es la eliminación existencial en las fórumulas de estado) seguro que es un estado sigmaTotal de la planta que se proyecta a sigma tiene todas sus trazas que satisfacen Not(Phi) y es sure loosing. Notar que usaría model checking de LTL y no síntesis y ahí no hay problemas como  necesitar Parity Games o síntesis cara, etc. Otra forma mejor de aproximarlo es con los MayWin States =  }
+
+% \begin{enumerate}
+%     \item For $\gamma_i = e, \\ \alpha(\gamma_i, \Sigma) = \textbf{true}$ if $e \notin \Sigma$ \\ $\alpha(\gamma_i, \Sigma)=e$ if $e \in \Sigma$
+%     \item For $\gamma_i = \neg e, \\ \alpha(\gamma_i, \Sigma) = \textbf{true}$ if $e \notin \Sigma$ \\ $\alpha(\gamma_i, \Sigma)=\neg e$ if $e \in \Sigma$
+
+%     % \item For $\varphi = \neg f, \\ \alpha(\varphi, \Sigma) = \textbf{true}$ if $ \exists l \in (init \cup end), l \notin \Sigma$ \\ $\alpha(\varphi, \Sigma)=\neg Fluent$ if $ \forall l \in (init \cup end), l \in \Sigma$
+
+%     \item For $\gamma_i = \neg \gamma_i', \alpha(\gamma_i, \Sigma) = \neg \alpha(\gamma_i', \Sigma)$
+
+%     \item For $\gamma_i = \gamma_i' \vee \gamma_i'', \alpha(\gamma_i, \Sigma) = \alpha(\gamma_i', \Sigma) \vee \alpha(\gamma_i'', \Sigma)$
+
+%     \item For $\gamma_i = \gamma_i' \wedge \gamma_i'', \alpha(\gamma_i, \Sigma) = \alpha(\gamma_i', \Sigma) \wedge \alpha(\gamma_i'', \Sigma)$
+%     % \item For $\varphi = \bigcirc \varphi', \alpha(\varphi, \Sigma) = \bigcirc \alpha(\varphi', \Sigma)$
+% \end{enumerate}
+
+To achieve completeness, it is essential partial controllers built are maximally permissive. That is, there is a controller that is maximal in terms of traces it allows. 
+Maximally permissive controllers in general do not exist. 
+%This is also the case for goals of the form $\square \Diamond (\bigwedge_{l \in \mu} \neg l)$ $\xrightarrow[]{} \varphi$ with $\varphi$ a GR(1) formula.
+Therefore, we construct \textit{{safe controllers}} that avoid reaching a state in the plant from which achieving a the goal is certainly impossible. That is, a controller that keeps the plant in potentially winning states
+but does not guarantee traces that satisfy the liveness property.  Liveness is achieved in the algorithm's last step.
+%We explain how to build these controllers when $\varphi$ is a GR(1) formula in Section~\ref{section:algorithm}.
+
+%% Controlled Plant definition
+\begin{definition}[Safe Controller]
+    \label{def:safe-controller}
+    Let $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, 
+     \varphi \rangle$ be a control problem with $\mathcal{M} = (S, \Sigma, \xrightarrow[]{}, \hat{s})$.  If $\mathcal{E}$ is realizable, we say $(\hat{S}, \Sigma, \xrightarrow[]{}_S, \hat{s})$ is the {safe controller} for $\mathcal{E}$ where
+   % \begin{itemize}
+  %      \item 
+  $\hat{S}$ is a superset of the set of winning states in $S$ for $\mathcal{E}$ and 
+%        \item 
+$\xrightarrow[]{}_S$ contains all the transitions in $\mathcal{M}$ between states $s \in \hat{S}$. 
+\end{definition}
+
+%\vb{Primero, se necesita pasar el juego entero (y tiene que ser con el phi proyectado) para definir safe controller y por ahí es mejor pasar un set de MAY WIN states. Me parece más general.   }
+As explained in the overview, a model of the subplant controlled by the safe controller must be reintroduced into $\mathcal{M}$, however this cannot be done by simply introducing their parallel composition as the safe controller will have been built with an extended controllable alphabet. 
+We build a \textit{controlled subplant} LTS that models $M$ being controlled by the safe controller $C$ with shared uncontrollable events $\Omega$. Recall from the overview (see Fig. \ref{fig:partial-controller}) that we must add to the safe controller transitions to a deadlock state representing the safe controller's assumptions on when uncontrolled shared events should not happen.  
+
+\begin{definition}[Controlled Subplant] \label{partial-synthesis}
+%Original:   Let $\mathcal{E} = \langle \mathcal{M}, \Sigma_c, \varphi, \mu \rangle$ a Non-Flooding GR(1) Control Problem with $\mathcal{M} = \langle S_M, \Sigma_M, \xrightarrow[]{}_M, \hat{s} \rangle$, $\mu$ a set of labels and $\Upsilon \subseteq \Sigma_u$. If $\hat{\mathcal{E}} = \langle \mathcal{M}, \Sigma_c \cup (\Sigma_M - \{ \Upsilon \}), \varphi', \mu \rangle$ is realizable and $(S_C, \Sigma_C, \xrightarrow[]{}_{C}, \hat{s}_{C})$ is a Safe Non-Flooding GR(1) Controller for $\hat{\mathcal{E}}$,
+Let $C= (S_C, \Sigma_C, \xrightarrow[]{}_{C},\hat{ {s_C}})$ be a safe controller for  $\mathcal{E} = \langle M, \Sigma_c \cup \Omega, \varphi \rangle$ %\vb{No entiendo esto de la unión, no hay más cosas no controlables?}\su{la parte no controlable se da por supuesto} 
+with $M = \langle S_M, \Sigma_M, \xrightarrow[]{}_M, \hat{s_M} \rangle$, $\varphi$ an LTL formula, and $\Omega \subseteq \Sigma_u$ the set of uncontrolled shared events. 
+The controlled subplant $M$ by $C$ with respect to $\Omega$ is
+  %  \begin{equation}
+        %$\text{PC}_{\Upsilon}(\mathcal{E}) = 
+     $   \langle S_C \cup \{ \perp \}, \Sigma_C, \xrightarrow[]{}_{}, \hat{s_{C}}  \rangle$
+  %  \end{equation}
+  where $\xrightarrow[]{}_{} = \xrightarrow[]{}_{C} \ \cup \ \{ (s, l, \perp) \ | \ l \in \Omega \wedge s \in S_C \ 
+    \wedge \exists s' \in S_M \ \cdot \ s \xrightarrow[]{l}_M s' \ \wedge \forall s' \in S_M \ \cdot (s,l,s') \notin \,
+    \xrightarrow[]{}_{C} \}$. 
+\end{definition}
+%%%%% SOE
+%\subsection{Synthesis Observational equivalence}
+
+% \begin{definition}[Equivalence relation]
+%     Let X be a set. A relation $\sim \ \subseteq X \times X$ is called an \textbf{equivalence relation} on X if it is reflexive, symmetric and transitive. Given an equivalence relation $\sim$ on $X$, we define:
+
+%     \begin{itemize}
+%         \item \textit{Equivalence class} of $x \in X$ as $[x] = \{ x' \in X \ | \ x \sim x' \}$
+%         \item $X \ / \sim = \{ [x] \ | \ x \in X \}$ is the set of all equivalence class modulo $\sim$.
+%     \end{itemize}
+% \end{definition}
+
+
+
+We now enunciate how the definitions above can be used to evolve a synthesis tuple by computing a safe controller and adding a minimized controlled subplant. 
+
+Roughly, the theorem states that the solution to a synthesis tuple remains the same if given a tuple $(\mathcal{M}, \mathcal{C}, \mu)$, $(i)$ we take one of the LTS in the plant to be controlled ($M_1 \in \mathcal{M}$), $(ii)$ compute a safe controller for $M_1$, the projection of $\varphi$ to the alphabet of $M_1$, and an controllable alphabet extended with the uncontrollable events shared by $M_1$ and $\mathcal{M}\setminus \{M_1\}$, $(iii)$ add the safe controller to $\mathcal{C}$, $(iv)$ add a minimized version of the subplant $M_1$ controlled by the safe controller to  $\mathcal{M}$ by quotienting it to remove transitions on local events, and $(v)$ add any uncontrollable events on self loops induced by the quotient into $\mu$.  The proof of this theorem is included in the technical report submitted in Arxiv.
+
+
+
+
+
+%\begin{definition}[Active Labels] \hg{Candidato a volar y definirlo en el párrafo de 
+%abajo?}
+%    Given a GR(1) formula $\varphi$ and an LTS alphabet $\Sigma$, we define 
+%\textbf{ActiveLabels}($\varphi, \Sigma$) as the set of labels from $\Sigma$ that 
+%appear 
+%in the formula $\varphi$.
+%\end{definition}
+
+% \begin{definition}[Quotient automaton]
+% Let $G = <\Sigma, Q, \xrightarrow, Q^{0} >$ be an LTS and $\sim \ \subseteq Q \ x \ Q$ 
+%be an equivalence relation. The \textit{quotient automaton} of $G$ modulo $\sim$ is 
+%$G / 
+%\sim \ = < \Sigma, Q/\sim, \xrightarrow{}/\sim, \hat{Q^{0}} >$ where:
+
+% \begin{itemize}
+%     \item $\hat{Q^{0}} = \{ [x^{0}] \ | \ x^{0} \in Q^{0} \}$
+%     \item $\xrightarrow{}/\sim \ = \{ ([x], \sigma, [y]) \ | \ x \xrightarrow[]{\sigma} y 
+%\}$ 
+% %     \item $\xrightarrow{}/\sim \ = \{ ([x], \sigma, [y]) \ | \ x \xrightarrow[]{\sigma} 
+%%y \ \wedge \ (x \neq y \ \vee \ \sigma \in \Omega \ \vee \ \sigma \in \Sigma_{c}  )  \} 
+% % \cup \{ ([x], \delta(\sigma), [y]) \ | \ x \xrightarrow[]{\sigma} y  \ \wedge \ (x = y \ 
+%%\wedge \ \sigma \notin \Omega \ \wedge \ \sigma \in \Sigma_u ) \}$ 
+% \end{itemize}
+    
+% \end{definition}
+
+% \begin{definition}[Synthesis observation equivalence]
+%     Let $M = \langle \Sigma, Q, \xrightarrow, Q^{0} \rangle$ be a LTS with $\Sigma = \ 
+%\Omega \ \dot{\cup} \ \Upsilon$. An equivalence relation $\sim \ \subseteq Q$ x $Q$ is 
+%a 
+%GR(1) Synthesis equivalence on $\mathcal{M}$ with respect to $\Upsilon$, if the 
+%following conditions hold for all $x_1, x_2 \in Q$ such that $x_1 \sim x_2$:
+
+%     \begin{enumerate}
+%         \item if $x_1 \xrightarrow[]{u} y_1$ for $u \in \Sigma_u$, then there exist 
+%$\pi_1, \pi_2 \in (\Upsilon \cap \Sigma_u)^{*}$ such that $x_2 \xrightarrow[]{\pi_1 
+%P_{\Omega}(u) \pi_2} y_2$ and $y_1 \sim y_2$
+%         \item if $x_1 \xrightarrow[]{c} y_1$ for $c \in \Sigma_c$, then there exists a path 
+%$x_2 = x_2^{0} \xrightarrow[]{\tau_1} ... \xrightarrow[]{\tau_n} x_2^{n} 
+%\xrightarrow[]{P_{\Omega}(c)} y_2$ such that $y_1 \sim y_2$ and $\tau_1, .., \tau_n 
+%\in \Upsilon$, and if $\tau_i \in \Sigma_c$ then $x_1 \sim x_2^i$
+%     \end{enumerate}
+% \end{definition}
+
+%% LocalSynt / SOE preserves realizability 
+\begin{theorem} [Partial synthesis preserves controllers]
+\label{PS+SOE_control}
+    Given a synthesis tuple $(\mathcal{M}, \mathcal{C}, \mu)$, an LTL formula $\varphi$, and a set $\Sigma_c$ of controllable events.
+    Let $M \subseteq \mathcal{M}$ with alphabet $\Sigma_{M} = \Upsilon \dot{\cup} \Omega$ where $\Upsilon$ has the events not shared with any other LTS in $\mathcal{M}\setminus M$ nor in $\varphi$. Let $\varphi'$ be a projection of $\varphi$ to $\Sigma_{M}$. 
+    Let $M_{safe}$ be a safe controller for $\langle M, \Sigma_c, \Box\Diamond\bigwedge_{l\in \mu}\neg l \implies \varphi \rangle$.  
+    Let $M_{cont}$ be the subplant $M$ controlled by $M_{safe}$ with shared events $\Omega$.
+
+    If $M_{cont} \slash \! \sim_\Upsilon$ is deterministic and $\mu'$ is the set of self-loop events added by $\sim_\Upsilon$ reduction, then  $(\mathcal{M}, \mathcal{C}, \mu) \cong_{\Sigma_c, \varphi} (\mathcal{M} \setminus \{M\} \cup \{M_{cont} \slash \! \sim_\Upsilon\}, \mathcal{C} \cup \{ M_{safe} \}, \mu \cup \mu')$. 
+\end{theorem}
+
+Note that the theorem requires  $M_{cont} \slash \! \sim_\Upsilon$ to be deterministic, which is not always the case. Non-determinism can be avoided by renaming labels in $M$ and using distinguishers~\cite{mohajerani_algorithm_2012}. We avoid presenting these due to space restrictions. 
+
+
+%\input{sections/renaming}

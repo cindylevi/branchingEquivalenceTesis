@@ -1,0 +1,28 @@
+% Importancia de la teoría de síntesis de controladores y variantes (Supervisory, RS, Aut. Planning). 
+The problem of automatically constructing control rules from a specification (i.e., synthesis) has been addressed by different areas in Computer Science including  Control of Discrete Event Systems (DES)\cite{ramadge_supervisory_1987}, Reactive Synthesis \cite{pnueli_synthesis} and Automated Planning \cite{nau2004automated}. Each has distinct perspectives on representational and computational aspects. All three use different input languages to provide compact problem descriptions for an underlying semantics that can grow exponentially. These different input languages have led to different algorithmic approaches to achieve more efficient ways to solve synthesis problems.
+
+In this paper, we study control of DES described modularly as the parallel composition of  interacting transition systems. The semantics is a monolithic automaton whose state space can grow exponentially with respect to the number of intervening components. This state explosion makes tractability of DES control problems a  challenge. 
+Modularity has enabled compositional reasoning in supervisory control. Notably, in \cite{mohajerani_framework_2014} a compositional framework is described for synthesis of non-blocking supervisory controllers for safety goals. Compositional  DES control for liveness goals (e.g., \cite{Piterman:2006:SRD, DIppolito2008, thistle_control_1995})
+has not been studied.
+
+\textit{We present a compositional synthesis framework for modular DES control problems with LTL goals}. 
+Our compositional approach does not compose the transition systems describing the plant and then compute a discrete event controller as does~\cite{DIppolito2008}. Instead, roughly, we iteratively pick a subset of plant transition systems, we compute a safe controller for the subset, and replace the subset with a minimized controlled version of the subset that abstracts events not shared with the rest of the plant. Each iteration does a \textit{partial synthesis} of the original control problem.  
+
+The \textit{final result is a controller expressed as a set of controllers} that can be run in parallel to control the original plant, reducing memory footprint and mitigating state explosion of the composed controller.
+
+Our approach is inspired by~\cite{mohajerani_framework_2014} for building modular non-blocking supervisors for finite regular languages.
+
+Moving to $\omega$-regular languages such as those expressed using LTL introduces various challenges. 
+First, in contrast to supervisory control for non-blocking supervisors, maximally permissive controllers for LTL control problems are not guaranteed to exist. We compute \textit{safe controllers} for a weaker goal, that allows maximally permissive controllers and supports deferring the construction of a \textit{live controller} that ensures LTL in the final step. Second, although we use the synthesis observational equivalence~\cite{mohajerani_framework_2014} for minimization, the equivalence does not actually preserve LTL equirealizability as it introduces uncontrollable loops which require special considerations. 
+Last, in ~\cite{mohajerani_framework_2014} non-blocking conditions are represented modularly with marked states in each plant automaton. Thus, non-blocking can be analysed straightforwardly for subplants. In contrast, LTL is a condition that refers to the behaviour of the composed plant and must be decomposed when analysing subplants. 
+
+We assess if the compositional synthesis can perform better than a monolithic approach in which the plant composition is constructed in full. 
+For this we implemented the approach in the MTSA tool~\cite{MTSATool} which is the only tool we are aware of that is available and \textit{natively} supports controller synthesis for modular DES plants. MTSA supports a specific class of LTL formulae referred to as GR(1)\cite{Piterman:2006:SRD}.
+\textit{We show that using the same GR(1) explicit state synthesis engine, implemented in MTSA, the compositional approach solves control
+problems up to $1000\times$ larger than what a monolithic approach can.} In addition, we show that the compositional framework can sometimes yield more effective results when symbolic synthesis engines such as Strix\cite{meyer_strix_2018} and Spectra\cite{maoz2021spectra} are used for DES controller synthesis via a translation~\cite{majumdar_environmentally-friendly_2019}. 
+
+The remainder of this paper presents background in Section 2, an overview in Section 3, novel definitions and results for compositional synthesis in Section 4, the compositional algorithm in Section 5, and an evaluation in Section 6. We conclude in Sections 7 and 8 with related work and conclusions. 
+
+
+
+

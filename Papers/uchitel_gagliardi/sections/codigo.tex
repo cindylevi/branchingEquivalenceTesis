@@ -1,0 +1,65 @@
+\makeatletter
+\renewcommand{\fnum@algorithm}{} % Remove "Algorithm X" prefix
+\makeatother
+\noindent
+
+\vspace{-0.75cm}
+\noindent
+\begin{minipage}[t]{0.48\textwidth} % Left algorithm
+\begin{algorithm}[H]
+\scriptsize
+\caption{\scriptsize{\textbf{CompSynthesis}($\langle \mathcal{M}, \varphi, \Sigma_c \rangle$, heuristic)}}
+\begin{algorithmic}[1]
+\STATE $\mathcal{C} \gets \{\}$, $\mu \gets \{\}$
+\WHILE{$true$}
+\STATE sp $\gets$ getSubplant($\mathcal{M}$, heuristic) 
+\STATE $\mathcal{M} \gets \mathcal{M} \setminus \text{sp}$
+\IF{$|\mathcal{M}|$ == 0}
+\STATE $\text{lc} \gets \text{getLiveController}(\langle \text{sp}, \Sigma_c, \varphi \rangle, \mu)$ 
+\IF{$\neg$isRealizable(lc)}
+\STATE \textbf{return} UNREALIZABLE
+\ENDIF
+\STATE \textbf{return} $\mathcal{C} \cup \text{\{ lc \}}$
+\ENDIF
+% \STATE $\langle M_{cont}, M_{safe} \rangle \gets$ solvePartialSynthesis($asd$) \hg{chequear nombre}
+
+\STATE PartialSynthesis$(\mathcal{M}, \mathcal{C},  \text{sp}, \Sigma_c, \varphi)$
+
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+\end{minipage}
+\hspace{0.0\textwidth} % Add spacing between the two minipages
+\begin{minipage}[t]{0.5\textwidth} % Right algorithm
+\begin{algorithm}[H]
+\scriptsize
+\caption{\scriptsize{$\text{\textbf{PartialSynthesis}}(\mathcal{M}, \mathcal{C}, \text{sp}, \Sigma_c, \varphi)$}}
+\begin{algorithmic}[1]
+
+\STATE $\varphi' \gets \text{getProjection}(\varphi, \Sigma_{\text{sp}})$
+\STATE $\Sigma_{\varphi'} \gets \text{getAlphabet}(\varphi')$
+
+\STATE $\Upsilon \gets \Sigma_{\text{sp}} \setminus (\Sigma_{\mathcal{M}} \cup \Sigma_{\varphi'})$
+\STATE $M_{\mbox{\textit{\scriptsize 
+        safe}}} \!\! \gets \text{getSafeController}_{\Upsilon}(\langle \text{sp}, \Sigma_c, \varphi' \rangle, \mu)$
+        
+% \STATE $M_{\mbox{\textit{\scriptsize 
+%         safe}}}$ $\gets \text{SafeC}(\text{subp}, \mathcal{M}, \Sigma_c, \varphi, \mu)$
+\IF{$\neg$isRealizable($M_{\mbox{\textit{\scriptsize 
+        safe}}}$)}
+\STATE \textbf{return} UNREALIZABLE
+\ENDIF
+\STATE $M_{\mbox{\textit{\scriptsize 
+        cont}}} \!\! \gets \text{getControlledSubplant}_{\Upsilon}(M_{\mbox{\textit{\scriptsize 
+        safe}}}, \text{sp})$
+\STATE $\mathcal{C} \gets \mathcal{C} \ \cup M_{\mbox{\textit{\scriptsize 
+        safe}}}$
+\STATE $\langle \text{$M_{\mbox{\textit{\scriptsize 
+        cont}}}^{\sim}$}, \mu' \rangle \gets \text{minimize}(\text{$M_{\mbox{\textit{\scriptsize 
+        cont}}}$}, \Upsilon)$
+\STATE $\mu \gets \mu \cup \mu'$, $\mathcal{M} \gets \mathcal{M} \cup \{\text{$M_{\mbox{\textit{\scriptsize 
+        cont}}}^{\sim}$}\}$
+\end{algorithmic}
+\end{algorithm}
+%\vspace{0.2cm}
+\end{minipage}

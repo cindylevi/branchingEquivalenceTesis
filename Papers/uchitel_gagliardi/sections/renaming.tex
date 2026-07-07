@@ -1,0 +1,36 @@
+
+%%%%% RENAMING
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Renaming preserves controllability 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Renaming}
+\label{subsection:renaming}
+The theorem above requires the result of quotienting one of the LTS in $\mathcal{M}$ (i.e., $M_{1}^{c} \slash \! \sim_\Upsilon$) to be deterministic. This is not always the case but can be achieved by first renaming any events that may introduce non-determinism.
+
+We use \textit{renaming} to disambiguate nondeterminism as in \cite{wong1989computation}. 
+
+\begin{definition}[Renaming]
+Let $\Sigma_1$, $\Sigma_2$ two sets of events and $\Sigma_c$ a set of controllable events. We define $\rho: \ \Sigma_2 \xrightarrow[]{} \Sigma_1$ as a \textit{renaming} which \textit{preserves controllability of labels} (i.e., if $a \in \Sigma_2$, then $\rho(a) \in \Sigma_c$  iff $a \in \Sigma_c$).
+\end{definition} 
+
+Renaming to avoid nondeterminism will introduce new events. Thus controllers with a different alphabet from that of the original plant will be synthesised. This entails that, when the plant exhibits an event $e \in \Sigma$, we have to determine which of the new events $e' \in \rho(\Sigma)$ should be triggered in the controller. This is achieved using a \textit{distinguisher}\cite{mohajerani_framework_2014}.
+
+\begin{definition}[$\rho$-\textit{distinguisher} \cite{mohajerani_framework_2014}]
+Let $\rho: \ \Sigma_2 \xrightarrow[]{} \Sigma_1$ be a renaming. An LTS $D$ with alphabet $\Sigma_2$ is a $\rho$-\textit{distinguisher} if, for all traces $s, t \in \mathcal{L}(D)$,  $\rho(s) = \rho(t)$, implies $s = t$.
+\end{definition}
+
+Renaming with $\rho$-distinguishers  guarantees that only one of the renamed events is enabled in each state. \vb{No entiendo la frase anterior. No me compila.  El renaming está hecho con una función no con un automata. para empezar, además no entiendo el significado. }
+
+
+\begin{definition}[Reverse renaming]\cite{mohajerani_framework_2014}
+\label{def:reverse_renaming}
+Let $M = (S_{M}, \Sigma_1, \xrightarrow[]{}_M, s_{M_0})$ be an LTS, and let $\rho: \Sigma_2 \xrightarrow{} \Sigma_1$ be a renaming. Then $\rho^{-1}(M) = (S_M, \Sigma_2, \xrightarrow[]{}_{\rho^{-1}}, s_{M_0})$ where $x \xrightarrow[]{\sigma}_{\rho^{-1}} y$ iff $x \xrightarrow[]{\rho(\sigma)} y$.
+
+\end{definition}
+
+
+The following theorem states that renaming can be applied to a synthesis tuple without changing its solutions.  The proof follows from \cite{mohajerani_framework_2014}.
+
+\begin{theorem}[Renaming preserves controllers]
+    Let $\varphi$ a GR(1) formula, $\Sigma_c \subseteq \Sigma$ a set of controllable events, $\mu$ a set of uncontrollable events, $\mathcal{M} = \{ M_1, .., M_n \}$, let $D$ be a $\rho$-distinguisher such that $\rho(D)=M_1$ and $\mathcal{M'} = \{ D, \rho^{-1}(M_2), .., \rho^{-1}(M_n) \}$. Then $(\mathcal{M}, \mathcal{C}, \rho_{1}, \mu) \cong_{\Sigma_c, \varphi} (\mathcal{M'}, \rho^{-1}(\mathcal{C}) \cup \{ D \}, \rho_{1} \circ \rho, \mu)$
+\end{theorem}

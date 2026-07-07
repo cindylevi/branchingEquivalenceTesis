@@ -1,0 +1,26 @@
+{
+   "stamp" : true,
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "main.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "sections/references.bib"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "sections/renaming.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "splncs04.bst"
+      }
+   ],
+   "spec_version" : 1,
+   "texlive_version" : "2025",
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}

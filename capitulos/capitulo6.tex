@@ -1,10 +1,109 @@
-\chapter{Validación de correctitud y experimentación}
+\chapter{Validación y experimentación}
 
-\section{Casos de estudio}
+\section{Metodología}
+Luego de finalizar la implementación, continuamos con la evaluación del código. Por un lado, se quería evaluar la \textit{correctitud} de la versión final del código del algoritmo en MTSA, y por el otro lado se quería evaluar el \textit{rendimiento} del mismo, para luego poder compararlo con el algoritmo de WSOE previamente implementado en MTSA.
 
-\section{Métricas}
+Al comenzar a realizar estas experimentaciones, se intentó reemplazar el llamado al algoritmo de WSOE dentro del proceso de síntesis composicional, por el llamado al recién implementado algoritmo Branching bisimilarity. Sin embargo, a medida que se comenzaron a realizar estas experimentaciones, la obtención de resultados se hacía cada vez más costosa y poco escalable, ya que el tiempo que tardaba en correr el proceso de síntesis completo era muy largo, lo que no nos permitía tener flexibilidad a la hora de afinar y mejorar los resultados obtenidos. Por ello, se aplicó una metodología de captura de las instancias de minimización, de forma que se corrió una vez el algoritmo de síntesis composicional completo con los conjuntos de casos de prueba ya armados por Uchitel y Gagliardi y en el contexto de este proceso, se almacenó en diferentes archivos todos los parámetros que eran introducidos en el llamado al algoritmo de minimización. Esto nos permitió extraer 2368 instancias de casos de LTS a minimizar, con las que luego pudimos validar y experimentar de forma más flexible y eficiente con las diferentes versiones de nuestra implementación del algoritmo de Branching bisimilarity.
+
+Cada instancia capturada queda representada por un par de archivos. El primer archivo, de tipo \texttt{.lts}, contiene el autómata a minimizar en el formato FSP que interpreta MTSA, es decir, sus estados y sus transiciones etiquetadas. El segundo archivo almacena en formato JSON el resto de los parámetros que la llamada a la minimización recibe junto con el LTS, lo que incluye principalmente el alfabeto local, las etiquetas controlables y las locales. Luego, cada par \texttt{.lts}/\texttt{.json} contiene toda la información necesaria para reconstruir exactamente el problema de minimización de forma aislada, sin necesidad de reejecutar la síntesis composicional que lo generó.
+
+Cada corrida de experimentación para un algoritmo de minimización registra sus resultados en un archivo CSV en el que se agrega una fila por cada instancia, versión del algoritmo y repetición, para permitir correr varias veces cada instancia y luego tomar la mediana de los valores resultantes. Además del tamaño del resultado (cantidad de estados, de transiciones y de transiciones \textit{tau} del LTS minimizado), cada fila guarda el tiempo de ejecución y el uso de memoria. Para obtener mediciones más confiables, cada instancia se ejecutó 3 veces, y se registró también el estado final de la corrida (éxito, error o \textit{timeout}).
+
+Por último, se corrió la misma para tres versiones del nuevo algoritmo de Branching bisimilarity implementado en MTSA. En primer lugar, la v1 que es la primera implementación naive del algoritmo, presentada en la sección 5.2 \todo{agregar ref}. Luego la v2, que es la presentada en la sección 5.4 \todo{agregar ref}, con las primeras optimizaciones. Luego, la v3, que es la versión final del código con todas las optimizaciones ya implementadas, tal como se detalla en la sección 5.5 \todo{agregar ref}. Por último, se realizó a su vez una corrida de la experimentación del algoritmo de WSOE para poder utilizar sus resultados en comparación.
+
+Los experimentos fueron ejecutados en una computadora con procesador Intel i7-7700 CPU @ 3.60GHz, con 8GB de RAM.
+
+\section{Validación de correctitud}
+
+Con el objetivo de validar la correctitud del algoritmo, se buscó validar en primer lugar tomar instancias de diversos tamaños y de distintos casos, asegurando construcciones variadas, y se utilizaron a estas instancias para comparar el resultado obtenido con el algoritmo de branching con el resultado obtenido por la herramienta mCRL2, desarrollada en el contexto del paper de Jansen. Esto nos permitió validar la correctitud de nuestro algoritmo como primer paso.
+
+Luego, se corrió también una validación de correctitud más fuerte, corriendo el algoritmo de WSOE y el de Branching y validando que para cada instancia, nunca debía suceder que Branching junte dos estados que WSOE dejaba separados, ya que eso implicaría un bug en el código desarrollado, tal como se detalló en la sección de teoremas \todo{referenciar}.
+
+Luego de validar la correctitud y asegurar que el algoritmo estaba funcionando en términos teóricos tal como se esperaba, se procedió con la experimentación.
+
+\section{Resultados}
+
+Tal como se detalló anteriormente, las instancias fueron capturadas replicando los casos de prueba del procesamiento de síntesis de controladores. En este contexto, la mayor parte de las ocasiones se busca minimizar grafos lo más pequeños posibles, y son pocas las ocasiones donde se debe minimizar un grafo más grande. Es por eso que el $14,6\%$ de las instancias (322 de las 2212) tienen más de 100 estados. Los experimentos resultan más interesantes de analizar en casos donde los grafos son más grandes ya que ahí podremos ver mejor la materialización de la complejidad teórica. A su vez, la proporción entre estados y transiciones es desigual, ya que la mayoría de las instancias tiene más del doble de transiciones que de estados, lo que resulta en que más del $27\%$ de las instancias analizadas supera las 200 transiciones. Esto nos dará un enfoque particularmente interesante de analizar, ya que la complejidad de nuestro algoritmo está atada también al número de transiciones del LTS a minimizar.
 
 
-\section{Comparación WSOE vs branching bisimilarity}
+\subsection{Tamaño de la reducción final}
+
+En este contexto, nos interesaba analizar cómo impactaban para estas instancias el resultado final de la minimización realizada. En ese sentido, luego de correr la experimentación para WSOE y para la versión final de branching (v3), pudimos ver que en el $83\%$ de los casos analizados, el resultado de la minimización de WSOE fue el mismo que el obtenido por Branching Equivalence. Es decir, solo en un $17\%$ de los casos sucedió el caso ejemplificado en el capítulo \todo{agregar referencia al ejemplo aca}. Este resultado es útil para demostrar que en la mayoría de los casos, a pesar de la diferencia en la equivalencia teórica entre ambos algoritmos, los casos donde esta diferencia se materializa en la experimentación es la minoría.
+
+
+\subsection{Tiempos}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{exp_results/figures/01_time_vs_states.png}
+    \caption{Escala log-log.}
+    \label{fig:time_vs_states}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{exp_results/figures/01b_time_vs_states_lineal.png}
+    \caption{Escala lineal.}
+    \label{fig:time_vs_states_lineal}
+  \end{subfigure}
+  \caption{Tiempo de minimización en función de la cantidad de estados del LTS
+  de entrada.}
+  \label{fig:time_vs_states_ambos}
+\end{figure}
+
+
+Las Figuras~\ref{fig:time_vs_states} y~\ref{fig:time_vs_states_lineal} muestran el tiempo de minimización en función de la cantidad de estados iniciales, la primera en escala log-log y la segunda en escala lineal. En la escala log-log se ve que para instancias chicas el tiempo se ve dominado por el costo fijo de preparar la ejecución y no el algoritmo en sí, por lo que ahí no hay diferencias entre WSOE y las versiones de branching. Recién a partir de los $n \approx 100$ estados las curvas se separan y se vuelve visible el comportamiento asintótico de cada algoritmo, con v3 quedando consistentemente por debajo del resto. La escala lineal muestra de forma evidente la magnitud de esa diferencia en los grafos grandes, ya que mientras WSOE crece de forma prácticamente lineal con el tamaño y llega a tardar del orden de $7600$~ms en las instancias más grandes, v3 se mantiene por debajo de los $1000$~ms. Las versiones v1 y v2 siguen de cerca a WSOE, por momentos comportándose brevemente mejor. Esto demuestra que las optimizaciones finales sugeridas por el paper fueron claves para materializar la mejora asintótica en la complejidad del algoritmo.
+
+Como se mencionó al comienzo de este capítulo, la mayoría de las instancias tiene muchas más transiciones que estados, y la complejidad teórica del algoritmo de branching depende justamente de la cantidad de transiciones. Por eso resulta interesante analizar el tiempo también en función de las transiciones. Las Figuras~\ref{fig:time_vs_transitions} y~\ref{fig:time_vs_tau} muestran el tiempo de minimización contra la cantidad total de transiciones $m$ del LTS de entrada (izquierda) y contra la cantidad de transiciones $\tau$, ambas en escala log-log. En la Figura~\ref{fig:time_vs_transitions} se ve que v3 se mantiene por debajo de v2 y de WSOE a lo largo de casi todas las instancias, y que el tiempo de las versiones de branching queda correlacionado con $m$. La Figura~\ref{fig:time_vs_tau} analiza particularmente las transiciones $\tau$ (excluyendo las instancias sin ninguna transición $\tau$). Esto resulta interesante ya que por la naturaleza del algoritmo de branching, el algoritmo se debería comportar mejor para casos donde hay más estados posibles de minimizar, ya que allí se deben realizar menos iteraciones sobre las particiones. Este gráfico muestra justamente que la ventaja del algoritmo de branching se expone justamente sobre las instancias con más transiciones $\tau$. Por último, nuevamente podemos ver como se muestra la mejora sobre los tiempos al implementar las optimizaciones mencionadas en el paper, que fueron claves para alcanzar y mejorar los tiempos de WSOE.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{exp_results/figures/13_time_vs_transitions.png}
+    \caption{Contra la cantidad total de transiciones $m$.}
+    \label{fig:time_vs_transitions}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{exp_results/figures/17_time_vs_tau.png}
+    \caption{Contra la cantidad de transiciones $\tau$.}
+    \label{fig:time_vs_tau}
+  \end{subfigure}
+  \caption{Tiempo de minimización en función de la cantidad de transiciones del
+  LTS de entrada (mediana por bin de tamaño, escala log-log).}
+  \label{fig:time_vs_transitions_ambos}
+\end{figure}
+
+\subsection{Memoria}
+Según el paper de Jansen, la utilización del espacio de memoria del algoritmo de Branching bisimilarity es menor a varios algoritmos previos con los que los autores la comparan. Sin embargo, a partir de las experimentaciones realizadas obtuvimos el resultado graficado en la Figura~\ref{fig:memory_delta}. Como se muestra, todas las versiones de Branching utilizaron, en promedio, más memoria que la versión de WSOE. Para analizar este resultado, usamos la memoria \textit{asignada} por cada minimización, $\Delta = \text{MemAfter} - \text{MemBefore}$. Para la mayoría de las instancias, este número se mantiene estable para todas las repeticiones de las corridas del algoritmo analizado, lo que nos da la pauta de que es una medida confiable.
+
+Analizando la Figura~\ref{fig:memory_delta} podemos ver que la v2 utiliza en casi todos los casos más memoria que las demás versiones de Branching y de WSOE. Analizando esta diferencia, se puede suponer que esto se debe a que la v2 es la que menos estructuras nativas de Java utiliza. Esta versión utiliza varios índices propios para introducir las primeras optimizaciones, como el IdentityHashMap el targetStateToBunches y la IdentityQueue, manteniendo a su vez la implementación de v1 de los bloques con Set<Int> y para los bunches, Set<Triple>. Estos índices duplican las referencias a los estados y a las transiciones, y por eso aumenta tanto el uso de la memoria. A su vez, v1 al no tener estas referencias, es más liviana. Por último, v3 vuelve a ser más liviana porque al introducir las clases de RefinablePartition y LinkedTransitionPartitions, el costo de los índices se absorbe dentro de la misma estructura.
+
+Sin embargo, la comparación que más nos interesa es por qué el uso de memoria de v3 es mayor que el de WSOE. Analizando ambos algoritmos, podemos ver que WSOE utiliza una única estructura de datos para la partición de estados, por lo que no se debe mantener también nuevas estructuras para las particiones de transiciones, sino que eso se recalcula constantemente a partir de cada unificación de estados. Esto implica mayor tiempo de procesamiento pero también menos uso de memoria. Por último, también se debe considerar que el algoritmo de Branching declara varias estructuras de datos nuevas, propias del algoritmo, mientras que WSOE utiliza tipos de datos nativos para las estructuras. Esto resulta en que la recolección y optimización de memoria de Java sea más eficiente para WSOE que para Branching.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{exp_results/figures/11_memory_delta.png}
+    \caption{Escala log-log.}
+    \label{fig:memory_delta}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{exp_results/figures/11b_memory_delta_lineal.png}
+    \caption{Escala lineal.}
+    \label{fig:memory_delta_lineal}
+  \end{subfigure}
+  \caption{Memoria asignada por la minimización ($\Delta = \text{MemAfter} -
+  \text{MemBefore}$, mediana por bin de tamaño) en función de la cantidad de
+  estados del LTS de entrada, para instancias con $n \geq 100$.}
+  \label{fig:memory_delta_ambos}
+\end{figure}
 
 \section{Discusión}

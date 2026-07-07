@@ -1,0 +1,141 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.20 of 2017/10/04
+%
+\documentclass[runningheads,anonymous]{llncs}
+\usepackage{amssymb}
+\usepackage{upgreek}
+\usepackage{mathtools}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+
+
+% \usepackage{algpseudocode}
+\usepackage{listings}	
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[normalem]{ulem}
+\usepackage{amssymb}
+\usepackage{comment}
+\usepackage{tabularx,ragged2e,booktabs}
+\usepackage{etoolbox} % or use \usepackage{ifthen}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{makecell} % Add this to your preamble for \makecell
+\usepackage[firstpage]{draftwatermark} % free badge placement
+% \usepackage{showframe} % print page margins, remove when positioning is satisfying
+\usepackage{graphicx} % necessary for inserting .pdfs
+% \usepackage{hyperref} % "available" badge is a link to the actual DOI
+
+
+\usepackage{cite}  % for simple numeric citations
+  % more customizable styles if using biblatex
+% Used for displaying a sample figure. If possible, figure files should
+% be included in EPS format.
+%
+% If you use the hyperref package, please uncomment the following line
+% to display URLs in blue roman font according to Springer's eBook style:
+% \renewcommand\UrlFont{\color{blue}\rmfamily}
+
+
+\input{commands}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  mathescape=true,
+  captionpos=b,
+  frame=single,
+  keywordstyle={\color{BrickRed}},
+  keywordstyle=[2]{\color{OliveGreen}},
+  keywordstyle=[3]{\color{MidnightBlue}},
+  commentstyle=\color{OliveGreen},
+}
+
+\lstdefinelanguage{pseudocode}{
+  comment=[l]{//},
+  morekeywords=[3]{if,then,else,for,while,do,return,procedure,function,such,that,let,true,false}
+}
+
+\begin{document}
+\title{
+%A Framework for Compositional LTL Synthesis of Discrete Event Controllers - An Effective Implementation for GR(1)
+Scaling GR(1) Synthesis via a Compositional Framework for LTL Discrete Event Control\thanks{This version includes correctness modifications with respect to the version published in CAV25}}
+%
+\titlerunning{A Framework for Compositional LTL Synthesis of DES}
+% If the paper title is too long for the running head, you can set
+% an abbreviated paper title here
+%
+
+% use this block if you received only the "available" badge
+\SetWatermarkAngle{0} % <- Prevent diagonal rotation
+\SetWatermarkText{\raisebox{20.5cm}{
+\hspace{-10cm}
+\includegraphics{1-available}
+}}
+
+ \author{Hernan Gagliardi\inst{1} \and
+ Victor Braberman\inst{1}\inst{2} \and
+ Sebastian Uchitel\inst{1}\inst{2}\inst{3}}
+% %
+ \authorrunning{H. Gagliardi et al.}
+% % First names are abbreviated in the running head.
+% % If there are more than two authors, 'et al.' is used.
+% %
+ 
+ \institute{Universidad de Buenos Aires, Argentina \and
+CONICET, Argentina \and
+Imperial College London, UK}
+%
+\maketitle         
+
+\begin{abstract} 
+We present a compositional approach to controller synthesis of discrete event  system controllers with linear temporal logic (LTL) goals. We exploit the modular structure of the plant to be controlled, given as a set of labelled transition systems (LTS), to mitigate state explosion that monolithic approaches to synthesis are prone to. 
+Maximally permissive safe controllers are iteratively built for subsets of the plant LTSs by solving weaker control problems. Observational synthesis equivalence is used to reduce the size of the controlled subset of the plant by abstracting away local events. 
+The result of synthesis is also compositional, a set of controllers that when run in parallel ensure the LTL goal.
+We implement synthesis in the MTSA tool for an expressive subset of LTL, GR(1), and show it computes solutions to that can be up to 1000 times larger than those that the monolithic approach can solve.
+
+ \keywords{Modular Discrete Event System Control \and Compositional Controller Synthesis \and LTL \and GR(1)}
+\end{abstract}
+%
+%
+%
+
+
+\section{Introduction}
+\input{sections/introduction}
+
+\section{Preliminaries}
+\input{sections/background}
+
+\section{Overview}\label{section:overview}
+\input{sections/example}
+
+\section{Compositional Synthesis}
+\input{sections/compositional}
+
+\section{Compositional Synthesis Algorithm}\label{section:algorithm}
+\input{sections/algorithm}
+
+\section{Evaluation}
+\input{sections/evaluation}
+\section{Related Work}
+\input{sections/relatedwork}
+
+\section{Conclusions and Future Work}
+\input{sections/conclusions}
+
+%
+% ---- Bibliography ----
+%
+% BibTeX users should specify bibliography style 'splncs04'.
+% References will then be sorted and formatted in the correct style.
+%
+\section*{Acknowledgements}
+This work was partially supported by proyects ANPCYT PICT 2019-1442, 2021-4862, UBACYT 2023-0134, and CONICET PIP 1220220100470CO.
+
+\bibliographystyle{splncs04}
+\bibliography{sections/references}
+
+\input{sections/appendix}  % or 
+
+\end{document}

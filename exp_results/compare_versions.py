@@ -81,22 +81,22 @@ os.makedirs(FIGDIR, exist_ok=True)
 # de la tesis asocie siempre el mismo color a la misma versión).
 # v3fix hereda el rol/color de v3c: es la MISMA versión candidata con el bug de
 # sobre-fusión de peelSlice corregido (ver docstring del módulo).
-ORDER = ["WSOE", "v0", "v2", "v3fix"]
-COLORS = {"WSOE": "#999999", "v0": "#d62728", "v2": "#ff7f0e", "v3fix": "#1f77b4"}
+ORDER = ["WSOE", "v1", "v2", "v3"]
+COLORS = {"WSOE": "#999999", "v1": "#d62728", "v2": "#ff7f0e", "v3": "#1f77b4"}
 
 # Versiones del algoritmo nuevo (sin WSOE) — útiles cuando comparamos calidad
 # de minimización frente al baseline.
-NEW_ORDER = ["v0", "v2", "v3fix"]
+NEW_ORDER = ["v1", "v2", "v3"]
 
 # Versiones que SÍ exponen instrumentación interna (timings por fase y
-# MainLoopIters). v0 las dejó en -1 (sin instrumentar), así que queda afuera
+# MainLoopIters). v1 las dejó en -1 (sin instrumentar), así que queda afuera
 # de los gráficos de fases/iteraciones.
-INSTRUMENTED = ["v2", "v3fix"]
+INSTRUMENTED = ["v2", "v3"]
 
 # Para los gráficos de complejidad/calidad nos interesa comparar el baseline
-# contra las versiones "candidatas" del algoritmo nuevo (v0 quedó obsoleta:
-# no instrumentada y con resultados distintos a v2/v3fix).
-CANDIDATES_VS_WSOE = ["WSOE", "v2", "v3fix"]
+# contra las versiones "candidatas" del algoritmo nuevo (v1 quedó obsoleta:
+# no instrumentada y con resultados distintos a v2/v3).
+CANDIDATES_VS_WSOE = ["WSOE", "v2", "v3"]
 
 
 def binned_median(d, xcol, ycol, log=True, nbins=25):
@@ -169,9 +169,9 @@ def load_long():
     # --- v0 file: split BB (=v0) y WSOE en dos filas lógicas ---------------- #
     base = dfv0[["Model", "Run", "Warmup"] + INPUT_COLS].copy()
 
-    # bloque v0 (BB)
+    # bloque v0 (BB) -> se etiqueta como v1 en la tesis (primera implementación)
     v0 = base.copy()
-    v0["Version"] = "v0"
+    v0["Version"] = "v1"
     v0["FinalStates"] = dfv0["FinalStatesBB"]
     v0["FinalTransitions"] = dfv0["FinalTransitionsBB"]
     v0["FinalLocalTransitions"] = dfv0["FinalLocalTransitionsBB"]
@@ -202,6 +202,8 @@ def load_long():
     # --- v2 + v3fix (ya concatenados): vienen en formato largo -------------- #
     v23 = dfv23[["Model", "Run", "Warmup", "AlgoVersion"] + INPUT_COLS].copy()
     v23 = v23.rename(columns={"AlgoVersion": "Version"})
+    # nomenclatura de la tesis: la campaña "v3fix" es la versión final -> v3
+    v23["Version"] = v23["Version"].replace({"v3fix": "v3"})
     v23["FinalStates"] = dfv23["FinalStates"]
     v23["FinalTransitions"] = dfv23["FinalTransitions"]
     v23["FinalLocalTransitions"] = dfv23["FinalLocalTransitions"]
@@ -262,18 +264,16 @@ def plot_time_vs_states(agg):
     for v in ORDER:
         d = agg[agg["Version"] == v]
         d = d[(d["InitialStates"] > 0) & (d["Time_ms"] > 0)]
-        # binned median para que la tendencia no quede tapada por la nube de puntos
-        ax.scatter(d["InitialStates"], d["Time_ms"], s=8, alpha=0.15,
-                   color=COLORS[v])
-        # mediana por bins logarítmicos de tamaño
+        # solo la mediana por bins logarítmicos de tamaño (sin la nube de puntos,
+        # que solo agrega ruido y tapa la tendencia)
         x, y = binned_median(d, "InitialStates", "Time_ms")
         if x is not None:
             ax.plot(x, y, "-o", ms=4, color=COLORS[v], label=v, lw=2)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Estados iniciales (log)")
+    ax.set_xlabel("Cant de estados del LTS de entrada (log)")
     ax.set_ylabel("Tiempo de minimización [ms] (log)")
-    ax.set_title("Escalabilidad: tiempo vs tamaño de entrada\n(línea = mediana por bin)")
+    ax.set_title("Tiempo vs Tamaño de entrada log-log")
     ax.legend(title="Versión")
     ax.grid(True, which="both", alpha=0.3)
     savefig(fig, "01_time_vs_states.png")
@@ -293,11 +293,11 @@ def plot_speedup_boxplot(agg):
     piv = piv[(piv > 0).all(axis=1)]
 
     ratios = {
-        "WSOE / v0": piv["WSOE"] / piv["v0"],
+        "WSOE / v1": piv["WSOE"] / piv["v1"],
         "WSOE / v2": piv["WSOE"] / piv["v2"],
-        "WSOE / v3fix": piv["WSOE"] / piv["v3fix"],
-        "v0 / v3fix": piv["v0"] / piv["v3fix"],
-        "v2 / v3fix": piv["v2"] / piv["v3fix"],
+        "WSOE / v3": piv["WSOE"] / piv["v3"],
+        "v1 / v3": piv["v1"] / piv["v3"],
+        "v2 / v3": piv["v2"] / piv["v3"],
     }
     fig, ax = plt.subplots(figsize=(9, 6))
     labels = list(ratios.keys())
@@ -425,7 +425,7 @@ def plot_equals_wsoe(agg):
         ok = ok[valid]
         return ok.mean(), valid.sum()
 
-    versions = ["v0", "v2", "v3fix"]
+    versions = ["v1", "v2", "v3"]
     fig, ax = plt.subplots(figsize=(7, 5.5))
     fr = [frac_equal(v) for v in versions]
     equal = [f[0] * 100 for f in fr]
@@ -442,7 +442,7 @@ def plot_equals_wsoe(agg):
     ax.set_ylabel("% de modelos del corpus")
     ax.set_ylim(0, 100)
     ax.set_title("¿La minimización branching coincide con WSOE?\n"
-                 "(igualdad de estados+transiciones; v0 = control del proxy)")
+                 "(igualdad de estados+transiciones; v1 = control del proxy)")
     ax.legend(loc="lower right")
     ax.grid(True, axis="y", alpha=0.3)
     savefig(fig, "05_equals_wsoe.png")
@@ -587,7 +587,7 @@ def plot_complexity_slope(agg):
             xx = np.array([NMIN, d["InitialStates"].max()], dtype=float)
             axA.plot(xx, C * xx ** a, "-", color=COLORS[v], lw=2.5,
                      label=f"{v}: pend. aparente ≈ {a:.2f}")
-    yref = agg[(agg["Version"] == "v3fix") & (agg["InitialStates"] >= NMIN)]["Time_ms"].median()
+    yref = agg[(agg["Version"] == "v3") & (agg["InitialStates"] >= NMIN)]["Time_ms"].median()
     xr = np.array([NMIN, agg["InitialStates"].max()], dtype=float)
     axA.plot(xr, yref * (xr / NMIN) ** 1, "k:", lw=1, alpha=0.7, label="pendiente 1")
     axA.plot(xr, yref * (xr / NMIN) ** 2, "k--", lw=1, alpha=0.7, label="pendiente 2")
@@ -651,9 +651,9 @@ def plot_complexity_normalized(agg):
     work = {
         "WSOE": m * n,                        # O(m·n)
         "v2": m * np.log2(n.clip(lower=2)),   # O(m·log n)
-        "v3fix": m * np.log2(n.clip(lower=2)),
+        "v3": m * np.log2(n.clip(lower=2)),
     }
-    titles = {"WSOE": "T / (m·n)", "v2": "T / (m·log₂n)", "v3fix": "T / (m·log₂n)"}
+    titles = {"WSOE": "T / (m·n)", "v2": "T / (m·log₂n)", "v3": "T / (m·log₂n)"}
 
     fig, ax = plt.subplots(figsize=(8.5, 6.5))
     for v in CANDIDATES_VS_WSOE:
@@ -699,86 +699,84 @@ def plot_memory_delta(agg):
     absoluto): no hay GC forzado antes de MemBefore, por lo que el baseline
     arrastra residuos del modelo anterior (varía 25-1267 MB); por eso miramos
     el DELTA y no los valores absolutos, y restringimos a n>=100 donde la señal
-    supera al ruido del baseline. v0 se omite (versión obsoleta).
+    supera al ruido del baseline. Se muestran v1, v2 y v3: v1 y WSOE se miden en
+    la misma campaña (archivo v0), por lo que su comparación es directa.
     """
     NMIN = 100
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
+    MEM_VERSIONS = ["WSOE", "v1", "v2", "v3"]
 
-    # (a) delta de memoria vs n (mediana por bin), WSOE vs v2 vs v3fix
-    for v in CANDIDATES_VS_WSOE:
-        d = agg[agg["Version"] == v]
-        d = d[(d["InitialStates"] >= NMIN) & (d["MemDelta_MB"] > 0)]
-        x, y = binned_median(d, "InitialStates", "MemDelta_MB")
-        if x is not None:
-            ax1.plot(x, y, "-o", ms=4, color=COLORS[v], label=v, lw=2)
-    ax1.set_xscale("log"); ax1.set_yscale("log")
-    ax1.set_xlabel("Estados iniciales n (log)")
-    ax1.set_ylabel("Memoria asignada Δ = After − Before [MB] (log)")
-    ax1.set_title(f"Memoria asignada vs tamaño (n ≥ {NMIN}, mediana por bin)")
-    ax1.legend(title="Versión"); ax1.grid(True, which="both", alpha=0.3)
+    # delta de memoria vs n (mediana por bin), WSOE vs v1 vs v2 vs v3fix.
+    # Dos figuras de panel único: log-log (11) y escala lineal (11b).
+    def _plot_mem(logscale):
+        fig, ax = plt.subplots(figsize=(7, 5.5))
+        for v in MEM_VERSIONS:
+            d = agg[agg["Version"] == v]
+            d = d[(d["InitialStates"] >= NMIN) & (d["MemDelta_MB"] > 0)]
+            x, y = binned_median(d, "InitialStates", "MemDelta_MB")
+            if x is not None:
+                ax.plot(x, y, "-o", ms=4, color=COLORS[v], label=v, lw=2)
+        suf = " (log)" if logscale else ""
+        ax.set_xlabel(f"Estados iniciales n{suf}")
+        ax.set_ylabel(f"Memoria asignada Δ = After − Before [MB]{suf}")
+        ax.legend(title="Versión"); ax.grid(True, which="both", alpha=0.3)
+        if logscale:
+            ax.set_xscale("log"); ax.set_yscale("log")
+            ax.set_title(f"Memoria asignada vs tamaño (n ≥ {NMIN}, mediana por bin)")
+        else:
+            ax.set_title(f"Memoria asignada vs tamaño (n ≥ {NMIN}, escala lineal)")
+        return fig
 
-    # (b) overhead de memoria de branching RESPECTO de WSOE, por modelo.
-    #     Cociente Δ(version)/Δ(WSOE): >1 => branching asigna más que WSOE.
+    savefig(_plot_mem(logscale=True), "11_memory_delta.png")
+    savefig(_plot_mem(logscale=False), "11b_memory_delta_lineal.png")
+
+    # overhead de memoria de branching RESPECTO de WSOE, por modelo (para el
+    # texto; ya no se grafica). Cociente Δ(version)/Δ(WSOE): >1 => más que WSOE.
     wide = agg.pivot_table(index="Model", columns="Version", values="MemDelta_MB")
     sizes = agg.groupby("Model")["InitialStates"].first()
-    data, labels = [], []
-    for v in ["v2", "v3fix"]:
+    for v in ["v1", "v2", "v3"]:
         sub = wide[["WSOE", v]].copy()
         sub = sub[(sizes.reindex(sub.index) >= NMIN)]
         sub = sub[(sub["WSOE"] > 0) & (sub[v] > 0)]
         ratio = (sub[v] / sub["WSOE"]).replace([np.inf, -np.inf], np.nan).dropna()
-        data.append(ratio); labels.append(f"{v} / WSOE")
-    bp = ax2.boxplot(data, labels=labels, showfliers=False, patch_artist=True)
-    for patch, v in zip(bp["boxes"], ["v2", "v3fix"]):
-        patch.set_facecolor(COLORS[v]); patch.set_alpha(0.6)
-    ax2.axhline(1.0, color="k", ls="--", lw=1, label="igual que WSOE")
-    for i, dvals in enumerate(data, 1):
-        ax2.text(i, dvals.median(), f"{dvals.median():.2f}×", ha="center",
-                 va="bottom", fontsize=9, fontweight="bold")
-    ax2.set_ylabel("Memoria asignada vs WSOE  (Δ_version / Δ_WSOE)")
-    ax2.set_title("Overhead de memoria de branching (n ≥ 100)\n(>1 = asigna más que WSOE)")
-    ax2.legend(); ax2.grid(True, axis="y", alpha=0.3)
-    savefig(fig, "11_memory_delta.png")
+        print(f"  [mem] overhead mediano {v}/WSOE = {ratio.median():.2f}x")
 
 
-def plot_v3c_vs_wsoe_size(agg):
-    """v3fix vs WSOE: cuando difieren, ¿v3fix minimiza más o menos? (solo v3fix).
+def plot_v3_vs_wsoe_size(agg):
+    """v3 vs WSOE: cuando difieren, ¿v3 minimiza más o menos? (solo v3).
 
-    POR QUÉ INTERESA: la tesis demuestra (Cap. 4) que WSOE ≡ branching
-    bisimilarity, por lo que los cocientes deberían ser isomorfos —MISMO número
-    de estados siempre—. Este gráfico contrasta esa predicción con los datos:
-    clasifica cada modelo del corpus en idéntico a WSOE / v3fix con menos estados
-    / mismo nº de estados pero distintas transiciones / v3fix con más estados.
+    POR QUÉ INTERESA: la tesis demuestra (Cap. 4) que branching bisimilarity
+    REFINA a WSOE (⊑): la partición de branching es un refinamiento de la de
+    WSOE, así que el cociente por branching tiene SIEMPRE ≥ estados que el de
+    WSOE —nunca menos—. Este gráfico contrasta esa predicción con los datos:
+    clasifica cada modelo del corpus en idéntico a WSOE / v3 con más estados
+    (esperable: refina) / mismo nº de estados pero distintas transiciones / v3
+    con MENOS estados (que violaría el refinamiento y no debería aparecer).
 
-    Es la figura donde se ve el efecto del FIX: v3c (buggy) minimizaba de más
-    (bucket "menos estados") en cientos de modelos por el sub-refinamiento de
-    peelSlice; v3fix corrige eso, por lo que ese bucket debe colapsar a ~0 y
-    crecer "idéntico a WSOE". Los casos discrepantes que sobrevivan son la
-    diferencia REAL branching↔WSOE (conteo de τ-transiciones, aristas paralelas,
-    manejo de divergencia, etc.), no el bug. Es una verificación de CORRECTITUD,
-    no de performance: el dato que un jurado va a mirar antes de aceptar el
-    reemplazo de WSOE.
+    Los casos discrepantes son la diferencia real branching↔WSOE (WSOE es más
+    laxa y fusiona más): se concentran en que v3 conserva más estados o más
+    transiciones. Es una verificación de CORRECTITUD, no de performance: el dato
+    que un jurado va a mirar antes de aceptar el reemplazo de WSOE.
     """
     cols = ["FinalStates", "FinalTransitions", "FinalLocalTransitions"]
     wide = agg.pivot_table(index="Model", columns="Version", values=cols)
-    s_v, s_w = wide[("FinalStates", "v3fix")], wide[("FinalStates", "WSOE")]
-    t_v, t_w = wide[("FinalTransitions", "v3fix")], wide[("FinalTransitions", "WSOE")]
-    l_v, l_w = wide[("FinalLocalTransitions", "v3fix")], wide[("FinalLocalTransitions", "WSOE")]
+    s_v, s_w = wide[("FinalStates", "v3")], wide[("FinalStates", "WSOE")]
+    t_v, t_w = wide[("FinalTransitions", "v3")], wide[("FinalTransitions", "WSOE")]
+    l_v, l_w = wide[("FinalLocalTransitions", "v3")], wide[("FinalLocalTransitions", "WSOE")]
     ok = s_v.notna() & s_w.notna() & t_v.notna() & t_w.notna() & l_v.notna() & l_w.notna()
     s_v, s_w, t_v, t_w, l_v, l_w = (x[ok] for x in (s_v, s_w, t_v, t_w, l_v, l_w))
     n = ok.sum()
 
     identico = (s_v == s_w) & (t_v == t_w) & (l_v == l_w)
     difiere = ~identico
-    v3_menos = difiere & (s_v < s_w)
-    v3_mas = difiere & (s_v > s_w)
+    v3_menos = difiere & (s_v < s_w)   # violaría el refinamiento (debe ser ~0)
+    v3_mas = difiere & (s_v > s_w)     # esperable: branching es más fino
     igual_st = difiere & (s_v == s_w)  # mismos estados, distintas trans/locales
 
     cats = [
         ("idéntico a WSOE", identico.sum(), "#2ca02c"),
-        ("v3fix menos estados\n(minimiza más)", v3_menos.sum(), "#1f77b4"),
+        ("v3 más estados\n(refina a WSOE)", v3_mas.sum(), "#1f77b4"),
         ("= estados,\n≠ transiciones", igual_st.sum(), "#9467bd"),
-        ("v3fix más estados\n(minimiza menos)", v3_mas.sum(), "#d62728"),
+        ("v3 menos estados\n(violaría refinam.)", v3_menos.sum(), "#d62728"),
     ]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 5.6))
@@ -795,36 +793,36 @@ def plot_v3c_vs_wsoe_size(agg):
     ax1.set_xticklabels(labels, fontsize=8.5)
     ax1.set_ylabel("% de modelos del corpus")
     ax1.set_ylim(0, max(vals) * 1.18)
-    ax1.set_title(f"v3fix vs WSOE en todo el corpus (n={n})")
+    ax1.set_title(f"v3 vs WSOE en todo el corpus (n={n})")
     ax1.grid(True, axis="y", alpha=0.3)
 
-    # (b) entre los que difieren: estados finales v3fix vs WSOE (log-log)
+    # (b) entre los que difieren: estados finales v3 vs WSOE (log-log)
     ndif = int(difiere.sum())
-    df_d = pd.DataFrame({"wsoe": s_w[difiere], "v3fix": s_v[difiere]})
+    df_d = pd.DataFrame({"wsoe": s_w[difiere], "v3": s_v[difiere]})
     ax2.set_xscale("log"); ax2.set_yscale("log")
     ax2.set_xlabel("Estados finales WSOE (log)")
-    ax2.set_ylabel("Estados finales v3fix (log)")
-    ax2.set_title("Solo casos discrepantes: tamaño v3fix vs WSOE\n"
-                  "(arriba de la línea = v3fix más grande = minimiza menos)")
+    ax2.set_ylabel("Estados finales v3 (log)")
+    ax2.set_title("Solo casos discrepantes: tamaño v3 vs WSOE\n"
+                  "(arriba de la línea = v3 más grande = WSOE fusiona más)")
     if ndif > 0:
-        ax2.scatter(df_d["wsoe"], df_d["v3fix"], s=12, alpha=0.35, color="#444444")
+        ax2.scatter(df_d["wsoe"], df_d["v3"], s=12, alpha=0.35, color="#444444")
         lim = [max(1, df_d.min().min()), df_d.max().max()]
         ax2.plot(lim, lim, "k--", lw=1.2, label="igual nº de estados")
         media = (s_v[difiere] - s_w[difiere]).mean()
         ax2.text(0.05, 0.95,
                  f"de {ndif} discrepantes:\n"
-                 f"  v3fix menos: {v3_menos.sum()} ({100*v3_menos.sum()/ndif:.0f}%)\n"
-                 f"  v3fix más:  {v3_mas.sum()} ({100*v3_mas.sum()/ndif:.0f}%)\n"
+                 f"  v3 más estados: {v3_mas.sum()} ({100*v3_mas.sum()/ndif:.0f}%)\n"
+                 f"  v3 menos:      {v3_menos.sum()} ({100*v3_menos.sum()/ndif:.0f}%)\n"
                  f"  Δestados medio: {media:+.1f}",
                  transform=ax2.transAxes, va="top", fontsize=9,
                  bbox=dict(boxstyle="round", fc="white", alpha=0.8))
         ax2.legend(loc="lower right")
     else:
-        ax2.text(0.5, 0.5, "sin casos discrepantes\n(v3fix ≡ WSOE en todo el corpus)",
+        ax2.text(0.5, 0.5, "sin casos discrepantes\n(v3 = WSOE en todo el corpus)",
                  transform=ax2.transAxes, ha="center", va="center", fontsize=11,
                  bbox=dict(boxstyle="round", fc="#eafbea", alpha=0.9))
     ax2.grid(True, which="both", alpha=0.3)
-    savefig(fig, "12_v3c_vs_wsoe_size.png")
+    savefig(fig, "12_v3_vs_wsoe_size.png")
 
 
 def _loglog_fit_r2(x, y):
@@ -859,8 +857,6 @@ def plot_time_vs_transitions(agg):
     for v in CANDIDATES_VS_WSOE:
         d = agg[agg["Version"] == v]
         d = d[(d["InitialTransitions"] > 0) & (d["Time_ms"] > 0)]
-        ax.scatter(d["InitialTransitions"], d["Time_ms"], s=6, alpha=0.12,
-                   color=COLORS[v])
         x, y = binned_median(d, "InitialTransitions", "Time_ms")
         fitd = d[d["InitialStates"] >= NMIN]
         a, r2 = _loglog_fit_r2(fitd["InitialTransitions"].values,
@@ -869,11 +865,9 @@ def plot_time_vs_transitions(agg):
             ax.plot(x, y, "-o", ms=4, color=COLORS[v], lw=2,
                     label=f"{v}:  R²={r2:.2f}  (pend.={a:.2f})")
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlabel("Transiciones iniciales m (log)")
+    ax.set_xlabel("Cant de transiciones del LTS de entrada (log)")
     ax.set_ylabel("Tiempo [ms] (log)")
-    ax.set_title("Tiempo vs transiciones: ¿está el costo explicado solo por m?\n"
-                 f"(R² del ajuste log-log para n ≥ {NMIN}; "
-                 "branching sí, WSOE no → le falta el ×n)")
+    ax.set_title("Tiempo vs Cantidad de transiciones")
     ax.legend(title="Versión", fontsize=9)
     ax.grid(True, which="both", alpha=0.3)
     savefig(fig, "13_time_vs_transitions.png")
@@ -946,9 +940,9 @@ def plot_tau_advantage(agg):
     wide = agg.pivot_table(index="Model", columns="Version", values="Time_ms")
     info = agg.groupby("Model")[["InitialStates", "InitialTransitions",
                                  "TauLabelsSize"]].first()
-    d = info.join(wide[["WSOE", "v3fix"]]).dropna()
-    d = d[(d["WSOE"] > 0) & (d["v3fix"] > 0) & (d["InitialStates"] >= NMIN)]
-    d["sp"] = d["WSOE"] / d["v3fix"]
+    d = info.join(wide[["WSOE", "v3"]]).dropna()
+    d = d[(d["WSOE"] > 0) & (d["v3"] > 0) & (d["InitialStates"] >= NMIN)]
+    d["sp"] = d["WSOE"] / d["v3"]
     d["dens"] = d["InitialTransitions"] / d["InitialStates"]
     sin_tau = d["TauLabelsSize"] == 0
     con_tau = ~sin_tau
@@ -966,8 +960,8 @@ def plot_tau_advantage(agg):
         ax1.text(i, dd.median(), f"{dd.median():.2f}×", ha="center",
                  va="bottom", fontsize=10, fontweight="bold")
     ax1.set_yscale("log")
-    ax1.set_ylabel("Speedup  T(WSOE) / T(v3fix)   [log]")
-    ax1.set_title("La ventaja de v3fix se duplica cuando hay τ\n(n ≥ %d)" % NMIN)
+    ax1.set_ylabel("Speedup  T(WSOE) / T(v3)   [log]")
+    ax1.set_title("La ventaja de v3 se duplica cuando hay τ\n(n ≥ %d)" % NMIN)
     ax1.legend(); ax1.grid(True, axis="y", which="both", alpha=0.3)
 
     # (b) speedup vs densidad, coloreado por τ + tendencia
@@ -981,7 +975,7 @@ def plot_tau_advantage(agg):
     ax2.axhline(1.0, color="k", ls="--", lw=1)
     ax2.set_xscale("log"); ax2.set_yscale("log")
     ax2.set_xlabel("Densidad  m / n  (transiciones por estado, log)")
-    ax2.set_ylabel("Speedup  T(WSOE) / T(v3fix)   [log]")
+    ax2.set_ylabel("Speedup  T(WSOE) / T(v3)   [log]")
     ax2.set_title("Grafos densos ⇒ τ=0 ⇒ se pierde la ventaja\n(la ventaja cae al break-even)")
     ax2.legend(fontsize=9); ax2.grid(True, which="both", alpha=0.3)
     savefig(fig, "15_tau_advantage.png")
@@ -1066,8 +1060,6 @@ def plot_time_vs_tau(agg):
         d = agg[agg["Version"] == v]
         n_sin_tau[v] = int((d["InitialLocalTransitions"] == 0).sum())
         d = d[(d["InitialLocalTransitions"] > 0) & (d["Time_ms"] > 0)]
-        ax.scatter(d["InitialLocalTransitions"], d["Time_ms"], s=6, alpha=0.12,
-                   color=COLORS[v])
         x, y = binned_median(d, "InitialLocalTransitions", "Time_ms")
         fitd = d[d["InitialStates"] >= NMIN]
         # NO se muestra la pendiente: en este eje (correlacionado con n) no es un
@@ -1082,11 +1074,9 @@ def plot_time_vs_tau(agg):
         if x is not None:
             ax.plot(x, y, "-o", ms=4, color=COLORS[v], lw=2, label=label)
     ax.set_xscale("log"); ax.set_yscale("log")
-    ax.set_xlabel("Transiciones τ  (locales no controlables, log)")
+    ax.set_xlabel("Cant de transiciones τ del LTS de entrada (log)")
     ax.set_ylabel("Tiempo [ms] (log)")
-    ax.set_title("Tiempo vs cantidad de τ: sensibilidad al trabajo que\n"
-                 "branching bisimulation sabe colapsar  "
-                 f"(R² del ajuste log-log para n ≥ {NMIN})")
+    ax.set_title("Tiempo vs Cantidad de transiciones τ")
     ax.legend(title="Versión", fontsize=9)
     ax.grid(True, which="both", alpha=0.3)
     # Nota explícita de cuántos modelos quedan afuera por no tener τ.
@@ -1095,6 +1085,54 @@ def plot_time_vs_tau(agg):
             transform=ax.transAxes, fontsize=8, color="#555555",
             va="bottom", ha="left")
     savefig(fig, "17_time_vs_tau.png")
+
+
+def plot_corpus_overview(agg):
+    """Caracterización del corpus: distribución de tamaños y relación m–n.
+
+    POR QUÉ INTERESA: contextualiza TODO el resto del análisis. Muestra sobre qué
+    conjunto se mide (rango y sesgo de tamaños) y establece el hecho estructural
+    que condiciona la lectura de la complejidad: en este corpus las transiciones
+    crecen más rápido que los estados (m ~ n^a con a > 1), motivo por el cual la
+    pendiente aparente tiempo-vs-n infla el exponente (ver 08). Las métricas de
+    entrada son idénticas entre versiones, así que se toma una fila por modelo.
+    """
+    models = agg.drop_duplicates("Model")[
+        ["InitialStates", "InitialTransitions", "TauLabelsSize"]].copy()
+    models = models[(models["InitialStates"] > 0) & (models["InitialTransitions"] > 0)]
+    n_mod = len(models)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
+
+    # (a) histograma de tamaños (estados) en escala log
+    s = models["InitialStates"]
+    bins = np.logspace(np.log10(s.min()), np.log10(s.max()), 30)
+    ax1.hist(s, bins=bins, color="#4c78a8", alpha=0.85, edgecolor="white", lw=0.4)
+    ax1.set_xscale("log")
+    ax1.axvline(s.median(), color="k", ls="--", lw=1.2,
+                label=f"mediana = {s.median():.0f}")
+    ax1.set_xlabel("Estados iniciales n (log)")
+    ax1.set_ylabel("Cantidad de instancias")
+    ax1.set_title(f"Distribución de tamaños del corpus (n={n_mod})")
+    ax1.legend(); ax1.grid(True, which="both", alpha=0.3)
+
+    # (b) relación transiciones-estados con exponente ajustado (m ~ n^a)
+    a, _ = _loglog_fit_r2(models["InitialStates"].values,
+                          models["InitialTransitions"].values)
+    ax2.scatter(models["InitialStates"], models["InitialTransitions"], s=8,
+                alpha=0.2, color="#4c78a8")
+    x, y = binned_median(models, "InitialStates", "InitialTransitions")
+    if x is not None:
+        ax2.plot(x, y, "k-o", ms=4, lw=2, label="mediana por bin")
+    xr = np.array([models["InitialStates"].min(), models["InitialStates"].max()],
+                  dtype=float)
+    ax2.plot(xr, xr, "r--", lw=1, alpha=0.7, label="m = n (referencia)")
+    ax2.set_xscale("log"); ax2.set_yscale("log")
+    ax2.set_xlabel("Estados iniciales n (log)")
+    ax2.set_ylabel("Transiciones iniciales m (log)")
+    ax2.set_title(f"Relación transiciones–estados:  m ~ n^{a:.2f}")
+    ax2.legend(); ax2.grid(True, which="both", alpha=0.3)
+    savefig(fig, "00_corpus_overview.png")
 
 
 # --------------------------------------------------------------------------- #
@@ -1148,6 +1186,7 @@ def main():
     print(f"  modelos: {agg['Model'].nunique()}  | versiones: {sorted(agg['Version'].unique())}")
 
     print("\nGenerando gráficos en figures/ ...")
+    plot_corpus_overview(agg)
     plot_time_vs_states(agg)
     plot_speedup_boxplot(agg)
     plot_phase_breakdown(agg)
@@ -1159,7 +1198,7 @@ def main():
     plot_speedup_vs_states(agg)
     plot_complexity_normalized(agg)
     plot_memory_delta(agg)
-    plot_v3c_vs_wsoe_size(agg)
+    plot_v3_vs_wsoe_size(agg)
     plot_time_vs_transitions(agg)
     plot_transitions_reduction(agg)
     plot_tau_advantage(agg)
