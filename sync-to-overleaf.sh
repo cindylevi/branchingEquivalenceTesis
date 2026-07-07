@@ -30,7 +30,11 @@ while IFS= read -r file; do
 
   if [ -f "$file" ]; then
     echo "  ↑ $file"
-    cat "$file" | ./venv/bin/python3 overleaf_write.py "$PROJECT/$file"
+    case "$file" in
+      *.png|*.jpg|*.jpeg|*.gif) BINFLAG="--binary" ;;
+      *) BINFLAG="" ;;
+    esac
+    cat "$file" | ./venv/bin/python3 overleaf_write.py $BINFLAG "$PROJECT/$file"
   fi
 done <<< "$FILES"
 

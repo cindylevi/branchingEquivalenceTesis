@@ -57,9 +57,14 @@ def get_io_and_path(api, path):
 
 
 def main():
-    if len(sys.argv) != 2:
-        sys.exit("Uso: overleaf_write.py <Proyecto/ruta/archivo>")
-    path = sys.argv[1]
+    args = sys.argv[1:]
+    binary = False
+    if args and args[0] == "--binary":
+        binary = True
+        args = args[1:]
+    if len(args) != 1:
+        sys.exit("Uso: overleaf_write.py [--binary] <Proyecto/ruta/archivo>")
+    path = args[0]
     # Usamos www.overleaf.com como host: overleaf.com redirige a www y el
     # cliente de websocket no sabe seguir el redirect (rompe con "scheme
     # https is invalid"). Las cookies igual son del dominio base .overleaf.com.
@@ -75,7 +80,21 @@ def main():
     # "des-hace" y queda UTF-8 correcto. Esto solo funciona con caracteres
     # <= U+00FF (todo el español entra); si hay alguno fuera de rango
     # (em-dash, comillas tipográficas, etc.) fallamos en vez de corromper.
+    # Aseguramos que la carpeta padre exista en Overleaf (p. ej. carpetas nuevas).
+    parent = os.path.dirname(rel)
+    if parent:
+        io.mkdir(parent, parents=True, exist_ok=True)
+        # mkdir no actualiza el cache interno del árbol; lo invalidamos para
+        # que el open() posterior vuelva a leerlo y encuentre la carpeta nueva.
+        io._cached_project_files = None
+
     data = sys.stdin.buffer.read()
+    if binary:
+        # Archivos binarios (imágenes, etc.): se suben tal cual, sin la
+        # compensación Latin-1 que solo aplica a texto.
+        with io.open(rel, "wb+") as f:
+            f.write(data)
+        return
     try:
         compensated = data.decode("utf-8").encode("latin-1")
     except UnicodeDecodeError as e:
