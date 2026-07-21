@@ -1,41 +1,41 @@
 \chapter{Branching bisimilarity}
 
-En este capitulo introduciremos las definiciones de Branching bisimilarity y de Weak Sythesis Observational Equivalence (WSOE) para utilizarlos como fundamentos a la hora de minimizar un LTS. Con el objetivo de minimizar un LTS en el contexto de la sintesis composicional, utilizamos alguna definicion para poder aplicarla a la hora de procesar los estados y definir que nocion de equivalencia utilizar a la hora de decidir si son equivalentes o no. En principio, en el algoritmo de sintesis composicional presentado por Uchitel y Gagliardi se utiliza la definciion de WSOE. Tal como se explico anteriormente, esta tesis consiste en analizar el reemplazo del algoritmo que utiliza la definicion de WSOE por el algoritmo de Jansen que utiliza la defincion de Branching bisimilarity. Para ello, este capitulo introducira de forma teorica ambas equivalencias y presentara un teorema de como se relacionan entre ellas.
+En este capítulo introduciremos las definiciones de Branching bisimilarity y de Weak Synthesis Observational Equivalence (WSOE) para utilizarlos como fundamentos a la hora de minimizar un LTS. Con el objetivo de minimizar un LTS en el contexto de la síntesis composicional, utilizamos una nocion de equivalencia para poder aplicarla a la hora de procesar los estados y definir de que manera decidir si son equivalentes o no. En principio, en el algoritmo de síntesis composicional presentado por Uchitel y Gagliardi se utiliza la definición de WSOE. Tal como se explicó anteriormente, esta tesis consiste en analizar el reemplazo del algoritmo que utiliza la definición de WSOE por el algoritmo de Jansen que utiliza la definición de Branching bisimilarity. Para ello, este capítulo introducirá de forma teórica ambas equivalencias y presentará un teorema de cómo se relacionan entre ellas.
 
 \section{Definición formal}
-La Definición~\ref{def:branching} introduce la nocion de equivalencia denominada Branching bisimulation. Dada una relacion de equivalencia $R$, una transicion $s\pijl{a}t$ es denotada \textit{inerte} sii $a = \tau$ y  $\R{s}{t}$.
+La Definición~\ref{def:branching} introduce la noción de equivalencia denominada Branching bisimulation. Dada una relación de equivalencia $R$, una transición $x_1\pijl{a}y_1$ es denotada \textit{inerte} sii $a = \tau$ y  $\R{x_1}{y_1}$.
 
-El conjunto de acciones $a$ tal que $a = \tau$ forma parte del conjunto de datos que se deben proveer al comenzar el proceso de minimizacion.
+El conjunto de acciones $a$ tal que $a = \tau$ forma parte del conjunto de datos que se deben proveer al comenzar el proceso de minimización.
 
 \begin{definition}[Branching bisimilarity]
 \label{def:branching}
 Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS.
-Definimos una relacion  $R\subseteq S\times S$
-como una relacion de \emph{branching bisimulation} sii es simetrica y para todo $s,t\in $ vale que $\R{s}{t}$
-y para todas las transiciones $s \pijl{a} s'$ tenemos:
+Definimos una relación  $R\subseteq S\times S$
+como una relación de \emph{branching bisimulation} sii es simétrica y para todo $x_1,x_2\in S$ tal que $\R{x_1}{x_2}$
+y para toda transicion $x_1 \pijl{a} y_1$ tenemos:
 \begin{enumerate}
 \item
-$a=\tau$ y $\R{s'}{t}$, o
+$a=\tau$ y $\R{y_1}{x_2}$, o
 \item   \label{def:branching:simulating-transition}
 existe una secuencia
-$t\pijl{\tau}\cdots\pijl{\tau} t'\pijl{a}t''$
-tal que $\R{s}{t'}$ y $\R{s'}{t''}$.
+$x_2\pijl{\tau}\cdots\pijl{\tau} x_2'\pijl{a}y_2$
+tal que $\R{x_1}{x_2'}$ y $\R{y_1}{y_2}$.
 \end{enumerate}
-Los estados $s$ y $t$ son \emph{branching bisimilar,} denotado como $s \bbis t$,
+Los estados $x_1$ y $x_2$ son \emph{branching bisimilar,} denotado como $x_1\sim_{B}x_2$:
 sii existe una relacion de  \emph{branching bisimulation} $R$ tal que
-$\R{s}{t}$.
+$\R{x_1}{x_2}$.
 \end{definition}
 
 \section{WSOE: definición formal}
-La Definición~\ref{def:synth-equiv} introduce la nocion de equivalencia denominada Weak synthesis observation equivalence (WSOE) en el contexo de sintesis de controladores propuesto por Uchitel y Gagliardi \todo{agregar ref}.
+La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denominada Weak synthesis observation equivalence (WSOE) en el contexto de síntesis de controladores propuesto por Uchitel y Gagliardi \todo{agregar ref}.
 
 %             Set<String> tauLabelsForBB = new HashSet<>(localAlphabet);
 %            tauLabelsForBB.addAll(localAlphabet);
 %           if (translatedControllableLabels != null) tauLabelsForBB.removeAll(translatedControllableLabels);
 
-\begin{definition}[Weak synthesis observation equivalence~\cite{mohajerani_framework_2014}]
+\begin{definition}[Weak Synthesis Observational Equivalence~\cite{mohajerani_framework_2014}]
     \label{def:synth-equiv}
-    Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS y sea $\Sigma_c$ el conjunto de eventos controlables y sea $\Sigma_u$ el conjunto de eventos no-controlables. Una relacion de equivalencia $\sim_{\Upsilon} \ \subseteq S \times S$ es del tipo \textit{weak synthesis observational equivalence} con $M$ respecto al conjunto de etiquetas $\Upsilon_c$ y $\Upsilon_u$ si las siguientes condiciones valen para todo $x_1, x_2 \in S$ tal que $x_1 \sim_{\Upsilon} x_2$:
+    Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS y sea $\Sigma_c$ el conjunto de eventos controlables y sea $\Sigma_u$ el conjunto de eventos no-controlables. Una relación de equivalencia $\sim_{W} \ \subseteq S \times S$ es del tipo \textit{weak synthesis observational equivalence} con $M$ respecto al conjunto de etiquetas $\Upsilon_c$ y $\Upsilon_u$ si las siguientes condiciones valen para todo $x_1, x_2 \in S$ tal que $x_1 \sim_{W} x_2$:
 \vspace{-0.2pt}
     \begin{enumerate}
         \item si $x_1 \xrightarrow[]{u} y_1$ para $u \in \Sigma_u$, entonces existen transiciones ''invisibles'' $\tau \in \Upsilon_u^{*}$ tal que
@@ -46,24 +46,92 @@ La Definición~\ref{def:synth-equiv} introduce la nocion de equivalencia denomin
 \end{definition}
 
 
-% TODO(3.2):
-%  - Definición de WSOE (Weak Synthesis Observational Equivalence).
-%  - Algoritmo de minimización por WSOE y su complejidad.
-%  - Por qué escala mal -> motiva el reemplazo por branching bisimilarity
-%    y la demo de equivalencia de 3.4. Contrastar esta complejidad con el
-%    O(m log n) del algoritmo de Groote et al. (Cap. 4).
-%  - Fijar la notación que usará la demostración de 3.4.
+\section{Casos de ejemplo}
 
-\section{Diferencias intuitivas y casos motivadores}
+En esta sección intentaremos comprender la intuición de las definiciones de Branching Bisimilarity y WSOE primero analizando ejemplos más chicos y luego ampliándolos. Al comenzar la tesis, adoptamos la hipótesis más simple posible, es decir que las acciones internas $\tau$ son todas las acciones locales. Veamos a través de algunos ejemplos concretos si esta hipótesis resulta correcta.
 
-% TODO(3.3):
-%  - Mostrar con ejemplos chicos dónde WSOE y branching bisimilarity
-%    "se ven" distintas y dónde coinciden.
-%  - Casos motivadores: pares de LTS que ilustren por qué el matching de
-%    branching (preservar estados intermedios bajo tau) captura lo mismo
-%    que WSOE necesita para preservar control / safe / non-blocking.
-%  - Esta sección prepara la intuición para que la demostración de 3.4
-%    no caiga en frío.
+\paragraph{Ejemplo 1}
+Consideremos el LTS de la Figura~\ref{fig:cap3-ej1}. La acción $t$ es local y, bajo la hipótesis del caso base, la tomamos como transición interna $\tau$; las acciones $a$ y $b$ son observables y \emph{no controlables} ($a, b \in \Sigma_u$).
+
+La transición $s_1 \pijl{t} s_2$ es inerte, ya que $s_1$ y $s_2$ tienen el mismo comportamiento observable y ambos terminan ejecutando $b$. Por lo tanto, branching los fusiona: $s_1 \sim_{B} s_2$ por la primera cláusula de la Definición~\ref{def:branching} ($\tau$ inerte).
+
+WSOE llega a la misma conclusión. La transición visible clave es $s_2 \pijl{b} s_3$ con $b \in \Sigma_u$, donde se aplica la primera cláusula de la Definición~\ref{def:synth-equiv}, ya que $b$ es no controlable. Desde $s_1$, $b$ se puede simular con $s_1 \pijl{\tau} s_2 \pijl{b} s_3$. Por lo tanto, $s_1 \sim_{W} s_2$ usando la cláusula 1. Las particiones resultantes de ambas equivalencias coinciden: $\{s_0\}$, $\{s_1, s_2\}$, $\{s_3\}$.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[->,>=Stealth,shorten >=1pt,auto,node distance=2.4cm,on grid,semithick,initial text=]
+    \node[state,initial] (s0) {$s_0$};
+    \node[state] (s1) [right=of s0] {$s_1$};
+    \node[state] (s2) [right=of s1] {$s_2$};
+    \node[state] (s3) [right=of s2] {$s_3$};
+    \path (s0) edge node {$a$} (s1)
+          (s1) edge node {$t$} (s2)
+          (s2) edge node {$b$} (s3);
+  \end{tikzpicture}
+  \caption{Ejemplo 1. Accion local $t$ (inerte $\tau$ para Branching Bisimilarity). $a$ y $b$ son observables no controlables.  Las particiones de ambas equivalencias coinciden: $\{s_0\}$, $\{s_1, s_2\}$, $\{s_3\}$. }
+  \label{fig:cap3-ej1}
+\end{figure}
+
+\paragraph{Ejemplo 2}
+Veamos ahora un ejemplo que utilice la segunda cláusula de la Definición~\ref{def:synth-equiv}, introduciendo una acción controlable. En el LTS de la Figura~\ref{fig:cap3-ej2}, $t$ es local ($\tau$ para Branching Bisimilarity), $a$ es observable no controlable ($a \in \Sigma_u$), y $c$ es una acción observable controlable ($c \in \Sigma_c$). Para ambas equivalencias, los estados $s_3$ y $s_4$ son trivialmente equivalentes y por lo tanto, se podrían unificar en una misma partición.
+
+Observemos las equivalencias para los estados $s_1$ y $s_2$.
+Consideremos la definición de Branching Bisimilarity. Desde $s_1$, se puede realizar la acción $c$ tanto directamente ($s_1 \pijl{c} s_4$) como después de la transición interna $t$ ($s_1 \pijl{t} s_2 \pijl{c} s_3$). Podemos aplicar la segunda cláusula de la Definición~\ref{def:branching}, ya que ahora necesitamos un camino de $\tau$ para luego simular la acción visible $c$. Como $t$ es inerte y ambos caminos ofrecen la misma acción controlable $c$ hacia estados equivalentes, branching fusiona $s_1 \sim_{B} s_2$.
+
+WSOE llega a la misma partición. Como $c \in \Sigma_c$, se aplica la segunda cláusula de la Definición~\ref{def:synth-equiv}. Desde $s_2$, la transición $s_1 \pijl{c} s_4$ se puede simular con el camino $s_2 \pijl{P_{\Omega}(c)} s_3$, con $s_3 \sim_{W} s_4$. Por lo tanto, WSOE también fusiona  $s_1 \sim_{W} s_2$.
+
+Pudimos ver entonces casos simples que aplican ambas cláusulas de los dos teoremas de equivalencia.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[->,>=Stealth,shorten >=1pt,auto,node distance=2.4cm,on grid,semithick,initial text=]
+    \node[state,initial] (s0) {$s_0$};
+    \node[state] (s1) [right=of s0] {$s_1$};
+    \node[state] (s2) [above right=1.4cm and 2.2cm of s1] {$s_2$};
+    \node[state] (s3) [right=of s2] {$s_3$};
+    \node[state] (s4) [below right=1.4cm and 2.2cm of s1] {$s_4$};
+    \path (s0) edge node {$a$} (s1)
+          (s1) edge node {$t$} (s2)
+          (s2) edge node {$c$} (s3)
+          (s1) edge node[swap] {$c$} (s4);
+  \end{tikzpicture}
+  \caption{Ejemplo 2. $t$ es local ($\tau$ para Branching Bisimilarity), $a$ es observable no controlable ($a \in \Sigma_u$), y $c$ es una acción observable controlable ($c \in \Sigma_c$). Branching y WSOE producen la misma partición: $\{s_0\}$, $\{s_1, s_2\}$, $\{s_3, s_4\}$.}
+  \label{fig:cap3-ej2}
+\end{figure}
+
+Hasta acá la hipótesis ``$\tau =$ todas las acciones locales'' parece correcta. Veamos un ejemplo más complejo que pudimos descubrir a raíz de diversas experimentaciones realizadas.
+
+\paragraph{Ejemplo 3}
+La Figura~\ref{fig:cap3-ej3} ilustra un nuevo ejemplo, donde $c_L$ es controlable y local, $c_2$ es controlable pero no local, y $u$ es no controlable ($u \in \Sigma_u$). Los estados $s_0$ y $s_1$ comparten el comportamiento visible $c_2$, y además $s_0 \pijl{c_L} s_1$ y $s_1 \pijl{u} s_2$. Bajo la hipótesis del caso base, al ser $c_L$ local, se la oculta como $\tau$. Podemos nuevamente observar que $s_3$ y $s_4$ son trivialmente equivalentes, por lo que vale tanto $s_3 \sim_{B} s_4$ como $s_3 \sim_{W} s_4$.
+
+Observemos cómo se comporta la definición de Branching Bisimilarity. Tomemos $\tau =$ todas las locales tal como se había planteado. En ese caso, como $s_0$ y $s_1$ pueden realizar $c_2$ hacia estados equivalentes, y como $c_L$ es $\tau$ por lo que la acción $u$ de $s_1$ se puede alcanzar desde $s_0$ atravesando esa $\tau$, entonces vale que $s_0 \sim_{B} s_1$.
+
+Veamos cómo se comporta la definición de WSOE. El punto está en la transición no controlable $s_1 \pijl{u} s_2$, ya que para que $s_0$ la simule, la primera cláusula de la Definición~\ref{def:synth-equiv} exige un camino $s_0 \pijl{\tau}\cdots\pijl{u}\cdots$ cuyas transiciones internas sean no controlables ($\tau \in \Upsilon_u$). Pero la única forma posible desde $s_0$ de alcanzar la $u$ es a través de $c_L$, que es \emph{controlable} y por lo tanto no es un $\tau$ admisible para WSOE. No existe entonces ningún camino válido, y resulta $s_0 \not\sim_{W} s_1$.
+
+En este ejemplo entonces, se nos presenta una contradicción, ya que acá branching reduce más que WSOE, fusionando un par que WSOE mantiene separado, porque trata la controlable local $c_L$ como una $\tau$ cualquiera. Esto es algo que no queremos que ocurra, ya que necesitamos mantener la lógica de minimización utilizada para el contexto del procesamiento de síntesis de controladores, por lo que en ningún caso debería poder suceder que dos estados sean minimizados con la Definición~\ref{def:branching} de Branching Bisimilarity y no lo sean para la Definición~\ref{def:synth-equiv} de WSOE.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[->,>=Stealth,shorten >=1pt,auto,node distance=2.6cm,on grid,semithick,initial text=]
+    \node[state,initial] (s0) {$s_0$};
+    \node[state] (s1) [right=of s0] {$s_1$};
+    \node[state] (s2) [right=of s1] {$s_2$};
+    \node[state] (s3) [below=2.4cm of s0] {$s_3$};
+    \node[state] (s4) [below=2.4cm of s1] {$s_4$};
+    \path (s0) edge node {$c_L$} (s1)
+          (s1) edge node {$u$} (s2)
+          (s0) edge node[swap] {$c_2$} (s3)
+          (s1) edge node[swap] {$c_2$} (s4);
+  \end{tikzpicture}
+  \caption{Ejemplo 3. $c_L$ es controlable y local, $c_2$ es observable controlable y $u$ es observable no controlable.}
+  \label{fig:cap3-ej3}
+\end{figure}
+
+El Ejemplo~3 muestra que para poder cumplir con la condición de que Branching no minimice más que WSOE, entonces no podemos definir al conjunto de transiciones denominadas $\tau$ como ``todas las locales''. Es decir, el conjunto de acciones ${\tau}$ no puede ser equivalente a $\Upsilon_u \cup \Upsilon_c$. El problema son las acciones controlables locales, ya que podríamos incurrir en casos como este ejemplo. Por eso, tuvimos que redefinir la forma de tomar a las acciones $\tau$ en la definición de Branching, restringiéndolas a las \textbf{acciones locales no controlables}. Es decir,
+$\tau \;=\;  \Upsilon \setminus \Sigma_c = \Upsilon_u $
+Con esta definición $c_L$ vuelve a ser visible en el Ejemplo~3, por lo que la transición $s_0 \pijl{c_L} s_1$ deja de ser inerte y branching pasa a distinguir $s_0$ de $s_1$ igual que WSOE.
+
+Esta actualizacion en la forma de definir a las acciones inertes no cambia el algoritmo de minimización detallado en el paper, sino que solo recibe como conjunto de acciones internas el alfabeto local intersecado con las no controlables. Demostremos ahora de forma teórica que al definir las acciones inertes de esta manera, la definición de WSOE siempre minimiza al menos tanto como la definición de Branching Bisimilarity.
 
 \section{Teorema de equivalencia y demostración}
 
