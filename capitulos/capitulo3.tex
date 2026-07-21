@@ -1,58 +1,52 @@
 \chapter{Branching bisimilarity}
 
-% =====================================================================
-% ESTRUCTURA OBJETIVO DE ESTE CAPÍTULO (ver planificacion-tesis.md)
-%   3.1 Definición formal de branching.
-%   3.2 WSOE: definición formal.
-%   3.3 Diferencias intuitivas y casos motivadores.
-%   3.4 Teorema de equivalencia + demostración.
-%   3.5 Corolarios: qué se preserva en el contexto composicional
-%       (control, safe, non-blocking).
-%   3.6 Relación con otras equivalencias (weak, observational, WSOE)
-%       -> clave para justificar la sustitución.
-%
-% NOTA DE REORGANIZACIÓN: este capítulo fusiona lo que antes eran dos
-% capítulos separados (Branching bisimilarity + Equivalencia WSOE == branching).
-% El algoritmo O(m log n) de Groote et al. YA NO vive acá: pasó a ser un
-% capítulo propio (Cap. 4 -- Algoritmo).
-%
-% Papers de referencia:
-%   - Groote, Jansen, Keiren, Wijs (2019), arXiv:1909.10824  -> \cite{groote2019}
-%     (copia local en Papers/jansen.pdf)
-%   - WSOE (Mohajerani / Malik / Fabian, Chalmers)           -> \cite{wsoe}
-%   - Paper composicional que usa WSOE (Pousseur-Uchitel)    -> \cite{compositional}
-% =====================================================================
-
-% TODO(intro): párrafo puente desde el Cap. 2. Recordar que en el flujo
-% composicional se minimiza entre composiciones usando una noción de
-% equivalencia (WSOE) y que el costo de esa minimización es el cuello de
-% botella. Anunciar que branching bisimilarity es la equivalencia
-% candidata a reemplazarla, que este capítulo la define, define también
-% WSOE, demuestra que ambas coinciden en lo que importa para la síntesis
-% composicional, y la ubica frente a las equivalencias clásicas. El
-% algoritmo eficiente que la calcula se trata en el Cap. 4.
+En este capitulo introduciremos las definiciones de Branching bisimilarity y de Weak Sythesis Observational Equivalence (WSOE) para utilizarlos como fundamentos a la hora de minimizar un LTS. Con el objetivo de minimizar un LTS en el contexto de la sintesis composicional, utilizamos alguna definicion para poder aplicarla a la hora de procesar los estados y definir que nocion de equivalencia utilizar a la hora de decidir si son equivalentes o no. En principio, en el algoritmo de sintesis composicional presentado por Uchitel y Gagliardi se utiliza la definciion de WSOE. Tal como se explico anteriormente, esta tesis consiste en analizar el reemplazo del algoritmo que utiliza la definicion de WSOE por el algoritmo de Jansen que utiliza la defincion de Branching bisimilarity. Para ello, este capitulo introducira de forma teorica ambas equivalencias y presentara un teorema de como se relacionan entre ellas.
 
 \section{Definición formal}
+La Definición~\ref{def:branching} introduce la nocion de equivalencia denominada Branching bisimulation. Dada una relacion de equivalencia $R$, una transicion $s\pijl{a}t$ es denotada \textit{inerte} sii $a = \tau$ y  $\R{s}{t}$.
 
-% TODO(3.1):
-%  - Definir transiciones internas / no observables (acción tau) sobre el
-%    LTS ya definido en el Cap. 2; introducir notación si hace falta
-%    (reusar \step, \walk, \hop de commands.tex en lugar de inventar).
-%  - Definición de branching bisimulation entre dos estados: condición de
-%    matching que permite intercalar pasos tau preservando el estado
-%    intermedio (la diferencia clave con weak bisimulation).
-%  - Branching bisimilarity como la mayor branching bisimulation; mencionar
-%    que es relación de equivalencia.
-%  - (Opcional) variante divergence-sensitive si se usa en el contexto
-%    composicional; aclarar cuál se adopta y por qué.
-%  - Ejemplo mínimo: dos LTS branching-bisimilares y un par que NO lo es
-%    pero sí es weak-bisimilar (motiva 3.6).
+El conjunto de acciones $a$ tal que $a = \tau$ forma parte del conjunto de datos que se deben proveer al comenzar el proceso de minimizacion.
+
+\begin{definition}[Branching bisimilarity]
+\label{def:branching}
+Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS.
+Definimos una relacion  $R\subseteq S\times S$
+como una relacion de \emph{branching bisimulation} sii es simetrica y para todo $s,t\in $ vale que $\R{s}{t}$
+y para todas las transiciones $s \pijl{a} s'$ tenemos:
+\begin{enumerate}
+\item
+$a=\tau$ y $\R{s'}{t}$, o
+\item   \label{def:branching:simulating-transition}
+existe una secuencia
+$t\pijl{\tau}\cdots\pijl{\tau} t'\pijl{a}t''$
+tal que $\R{s}{t'}$ y $\R{s'}{t''}$.
+\end{enumerate}
+Los estados $s$ y $t$ son \emph{branching bisimilar,} denotado como $s \bbis t$,
+sii existe una relacion de  \emph{branching bisimulation} $R$ tal que
+$\R{s}{t}$.
+\end{definition}
 
 \section{WSOE: definición formal}
+La Definición~\ref{def:synth-equiv} introduce la nocion de equivalencia denominada Weak synthesis observation equivalence (WSOE) en el contexo de sintesis de controladores propuesto por Uchitel y Gagliardi \todo{agregar ref}.
 
-% TODO(3.2): antes estaba planificado en el Cap. 2 (§2.4) y como
-% "Recordatorio de WSOE" en el viejo Cap. 4; ahora se da la definición
-% formal completa acá. \cite{wsoe}.
+%             Set<String> tauLabelsForBB = new HashSet<>(localAlphabet);
+%            tauLabelsForBB.addAll(localAlphabet);
+%           if (translatedControllableLabels != null) tauLabelsForBB.removeAll(translatedControllableLabels);
+
+\begin{definition}[Weak synthesis observation equivalence~\cite{mohajerani_framework_2014}]
+    \label{def:synth-equiv}
+    Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS y sea $\Sigma_c$ el conjunto de eventos controlables y sea $\Sigma_u$ el conjunto de eventos no-controlables. Una relacion de equivalencia $\sim_{\Upsilon} \ \subseteq S \times S$ es del tipo \textit{weak synthesis observational equivalence} con $M$ respecto al conjunto de etiquetas $\Upsilon_c$ y $\Upsilon_u$ si las siguientes condiciones valen para todo $x_1, x_2 \in S$ tal que $x_1 \sim_{\Upsilon} x_2$:
+\vspace{-0.2pt}
+    \begin{enumerate}
+        \item si $x_1 \xrightarrow[]{u} y_1$ para $u \in \Sigma_u$, entonces existen transiciones ''invisibles'' $\tau \in \Upsilon_u^{*}$ tal que
+        existe una secuencia
+        $x_2\pijl{\tau}\cdots x_2' \pijl{u} y_2' \cdots\pijl{\tau} y_2$ y $y_1 \sim_{\Upsilon} y_2$
+        \item si $x_1 \xrightarrow[]{c} y_1$ para $c \in \Sigma_c$, entonces existe un camino $x_2 = x_2^{0} \xrightarrow[]{\tau_1} ... \xrightarrow[]{\tau_n} x_2^{n} \xrightarrow[]{P_{\Omega}(c)} y_2$ tal que $y_1 \sim_{\Upsilon} y_2$ y $\tau_1, .., \tau_n \in \Upsilon$, y si $\tau_{i\in\{1 .. n\}} \in \Sigma_c$ entonces $x_1 \sim_{\Upsilon} x_2^i$
+    \end{enumerate}
+\end{definition}
+
+
+% TODO(3.2):
 %  - Definición de WSOE (Weak Synthesis Observational Equivalence).
 %  - Algoritmo de minimización por WSOE y su complejidad.
 %  - Por qué escala mal -> motiva el reemplazo por branching bisimilarity
@@ -85,25 +79,3 @@
 %  - Si la demostración tiene huecos pendientes, marcarlos explícitamente
 %    con \todo{...} para no perderlos de vista.
 
-\section{Corolarios}
-
-% TODO(3.5): consecuencias en el contexto composicional.
-%  - Qué se preserva al minimizar con branching bisimilarity en lugar de
-%    WSOE: controlabilidad, safe, non-blocking. \cite{compositional}.
-%  - Corolario clave: la sustitución es correcta -> el controlador
-%    sintetizado tras minimizar con branching bisimilarity es el mismo
-%    (o equivalente) al obtenido con WSOE. Esto habilita el Cap. 5
-%    (implementación) y el Cap. 6 (experimentación).
-
-\section{Relación con otras equivalencias}
-
-% TODO(3.6): puente conceptual que justifica la sustitución.
-%  - Ubicar branching bisimilarity en la jerarquía: strong > branching >
-%    weak / observational. Dar la intuición de por qué branching es más
-%    fina que weak (preserva el potencial de los estados intermedios).
-%  - Relación con observational equivalence.
-%  - Relación con WSOE (definida en 3.2): reafirmar, con la equivalencia
-%    ya demostrada en 3.4, por qué coinciden en el contexto de control.
-%  - Cerrar motivando: si coinciden en lo que importa para síntesis, se
-%    puede sustituir WSOE por branching bisimilarity y ganar el algoritmo
-%    eficiente del Cap. 4.

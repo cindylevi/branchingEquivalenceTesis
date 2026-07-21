@@ -87,7 +87,7 @@
 \newcommand{\E}{\mathcal{E}}
 \newcommand{\G}{\mathcal{G}}
 \newcommand{\M}{\mathcal{M}}
-\newcommand{\R}{\mathcal{R}}
+\newcommand{\R}[2]{{#1 \mathrel{R} #2}}
 \newcommand{\W}{\mathcal{W}}
 
 \renewcommand{\L}{\mathcal{L}}
@@ -95,6 +95,21 @@
 \renewcommand{\S}{\mathcal{S}}
 
 \newcommand{\w}{\ensuremath{\omega}}
+
+% Entornos de teoremas/definiciones (Jansen et al. 2019), usados en el Cap. 3
+\theoremstyle{definition}
+\newtheorem{definition}{Definición}[section]
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{Teorema}
+\newtheorem{lemma}[definition]{Lema}
+\newtheorem{proposition}[definition]{Proposición}
+
+% Notación de branching bisimilarity (Jansen et al. 2019), usada en el Cap. 3
+\newlength{\leftrightarrowwidth}
+\settowidth{\leftrightarrowwidth}{$\leftrightarrow$}
+\newcommand{\bisauxiliary}{\raisebox{.3ex}{\makebox[\leftrightarrowwidth]{$\underline{\makebox[0.7\leftrightarrowwidth]{$\leftrightarrow$}}$}}}
+\newcommand{\bbis}{\mathrel{\bisauxiliary_b\!}}
+\newcommand{\pijl}[1]{\mathrel{\text{$\xrightarrow{\smash[t]{#1}}$}}}
 
 \newcommand{\notstep}[2]{\overset{#1}{\not\D}_{#2}}
 \newcommand{\step}[2]{\overset{#1}{\D}_{#2}}
