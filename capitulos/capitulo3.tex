@@ -11,7 +11,7 @@ El conjunto de acciones $a$ tal que $a = \tau$ forma parte del conjunto de datos
 \label{def:branching}
 Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS.
 Definimos una relación  $R\subseteq S\times S$
-como una relación de \emph{branching bisimulation} sii es simétrica y para todo $x_1,x_2\in S$ tal que $\R{x_1}{x_2}$
+como una relación de \textit{branching bisimulation} sii es simétrica y para todo $x_1,x_2\in S$ tal que $\R{x_1}{x_2}$
 y para toda transicion $x_1 \pijl{a} y_1$ tenemos:
 \begin{enumerate}
 \item
@@ -21,8 +21,8 @@ existe una secuencia
 $x_2\pijl{\tau}\cdots\pijl{\tau} x_2'\pijl{a}y_2$
 tal que $\R{x_1}{x_2'}$ y $\R{y_1}{y_2}$.
 \end{enumerate}
-Los estados $x_1$ y $x_2$ son \emph{branching bisimilar,} denotado como $x_1\sim_{B}x_2$:
-sii existe una relacion de  \emph{branching bisimulation} $R$ tal que
+Los estados $x_1$ y $x_2$ son \textit{branching bisimilar,} denotado como $x_1\sim_{B}x_2$:
+sii existe una relacion de  \textit{branching bisimulation} $R$ tal que
 $\R{x_1}{x_2}$.
 \end{definition}
 
@@ -51,7 +51,7 @@ La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denomi
 En esta sección intentaremos comprender la intuición de las definiciones de Branching Bisimilarity y WSOE primero analizando ejemplos más chicos y luego ampliándolos. Al comenzar la tesis, adoptamos la hipótesis más simple posible, es decir que las acciones internas $\tau$ son todas las acciones locales. Veamos a través de algunos ejemplos concretos si esta hipótesis resulta correcta.
 
 \paragraph{Ejemplo 1}
-Consideremos el LTS de la Figura~\ref{fig:cap3-ej1}. La acción $t$ es local y, bajo la hipótesis del caso base, la tomamos como transición interna $\tau$; las acciones $a$ y $b$ son observables y \emph{no controlables} ($a, b \in \Sigma_u$).
+Consideremos el LTS de la Figura~\ref{fig:cap3-ej1}. La acción $t$ es local y, bajo la hipótesis del caso base, la tomamos como transición interna $\tau$; las acciones $a$ y $b$ son observables y \textit{no controlables} ($a, b \in \Sigma_u$).
 
 La transición $s_1 \pijl{t} s_2$ es inerte, ya que $s_1$ y $s_2$ tienen el mismo comportamiento observable y ambos terminan ejecutando $b$. Por lo tanto, branching los fusiona: $s_1 \sim_{B} s_2$ por la primera cláusula de la Definición~\ref{def:branching} ($\tau$ inerte).
 
@@ -106,7 +106,7 @@ La Figura~\ref{fig:cap3-ej3} ilustra un nuevo ejemplo, donde $c_L$ es controlabl
 
 Observemos cómo se comporta la definición de Branching Bisimilarity. Tomemos $\tau =$ todas las locales tal como se había planteado. En ese caso, como $s_0$ y $s_1$ pueden realizar $c_2$ hacia estados equivalentes, y como $c_L$ es $\tau$ por lo que la acción $u$ de $s_1$ se puede alcanzar desde $s_0$ atravesando esa $\tau$, entonces vale que $s_0 \sim_{B} s_1$.
 
-Veamos cómo se comporta la definición de WSOE. El punto está en la transición no controlable $s_1 \pijl{u} s_2$, ya que para que $s_0$ la simule, la primera cláusula de la Definición~\ref{def:synth-equiv} exige un camino $s_0 \pijl{\tau}\cdots\pijl{u}\cdots$ cuyas transiciones internas sean no controlables ($\tau \in \Upsilon_u$). Pero la única forma posible desde $s_0$ de alcanzar la $u$ es a través de $c_L$, que es \emph{controlable} y por lo tanto no es un $\tau$ admisible para WSOE. No existe entonces ningún camino válido, y resulta $s_0 \not\sim_{W} s_1$.
+Veamos cómo se comporta la definición de WSOE. El punto está en la transición no controlable $s_1 \pijl{u} s_2$, ya que para que $s_0$ la simule, la primera cláusula de la Definición~\ref{def:synth-equiv} exige un camino $s_0 \pijl{\tau}\cdots\pijl{u}\cdots$ cuyas transiciones internas sean no controlables ($\tau \in \Upsilon_u$). Pero la única forma posible desde $s_0$ de alcanzar la $u$ es a través de $c_L$, que es \textit{controlable} y por lo tanto no es un $\tau$ admisible para WSOE. No existe entonces ningún camino válido, y resulta $s_0 \not\sim_{W} s_1$.
 
 En este ejemplo entonces, se nos presenta una contradicción, ya que acá branching reduce más que WSOE, fusionando un par que WSOE mantiene separado, porque trata la controlable local $c_L$ como una $\tau$ cualquiera. Esto es algo que no queremos que ocurra, ya que necesitamos mantener la lógica de minimización utilizada para el contexto del procesamiento de síntesis de controladores, por lo que en ningún caso debería poder suceder que dos estados sean minimizados con la Definición~\ref{def:branching} de Branching Bisimilarity y no lo sean para la Definición~\ref{def:synth-equiv} de WSOE.
 
@@ -135,15 +135,37 @@ Esta actualizacion en la forma de definir a las acciones inertes no cambia el al
 
 \section{Teorema de equivalencia y demostración}
 
-% TODO(3.4): EL CORAZÓN DE LA PARTE TEÓRICA.
-%  - Enunciar el teorema con precisión (¿igualdad de relaciones?
-%    ¿coincidencia sobre la clase de LTS del contexto composicional?
-%    Definir el alcance exacto antes de demostrar).
-%  - Demostración. Probablemente se apoye en lemas auxiliares:
-%       * preservación bajo composición paralela (||),
-%       * preservación de la noción de "ganador" / estados marcados,
-%       * manejo de eventos controlables vs no-controlables.
-%    Los lemas pesados pueden ir al Apéndice; acá la línea argumental.
-%  - Si la demostración tiene huecos pendientes, marcarlos explícitamente
-%    con \todo{...} para no perderlos de vista.
+Luego de explorar la intuición detras de la proposicion, formalizamos la equivalencia entre WSOE y Branching Bisimilarity. Queremos ver que con la definición de acciones inertes restringida a $\tau = \Upsilon_u$, WSOE nunca separa dos estados que Branching Bisimilarity une.
+
+\begin{theorem}
+\label{thm:wsoe-refina-branching}
+Sea $M=(S,\Sigma,\xrightarrow[]{},\hat{s})$ un LTS y tomemos como conjunto de acciones inertes de la Definición~\ref{def:branching} al conjunto $\tau=\Upsilon_u$ de acciones locales no controlables. Entonces $\sim_{B}\ \subseteq\ \sim_{W}$; es decir, para todo $x_1,x_2\in S$, si $x_1\sim_{B}x_2$ entonces $x_1\sim_{W}x_2$.
+\end{theorem}
+
+\begin{proof}
+Sea entonces $R$ una relación Branching Bisimilar de equivalencia simétrica, y sea $(x_1,x_2)\in R$. Tomemos $x_1 \sim_{B} x_2$ y veriquemos las dos cláusulas de la Definición~\ref{def:synth-equiv} para ver si vale que $x_1\sim_{W}x_2$.
+
+\medskip
+\noindent\textbf{Cláusula 1.} Observemos el caso donde se intenta simular una transición no controlable. Sea $x_1\pijl{u}y_1$ con
+$u\in\Sigma_u$. Como $x_1 \sim_{B} x_2$, esta transición cae en alguna de las dos cláusulas de la Definición~\ref{def:branching}:
+\begin{itemize}
+\item Si vale la cláusula~1, entonces estamos observando una transición inerte. Es decir, sabemos que $u=\tau$ y $\R{y_1}{x_2}$. Por lo tanto, $u\in\tau=\Upsilon_u$. Como $u$ es una acción local no controlable, se puede aplicar la clausula 1 de la Definición~\ref{def:synth-equiv}, ya que $u$ es exactamente una de las etiquetas admitidas en los tramos $\pijl{\tau}$ de la defincion. Asi, la cláusula~1 de WSOE se satisface con el camino vacío, tomando $y_2=x_2$, y como $\R{y_1}{x_2}$, vale $\R{y_1}{y_2}$.
+\item Si vale la cláusula~2, entonces existe una secuencia
+$x_2\pijl{\tau}\cdots\pijl{\tau}x_2'\pijl{u}y_2$ con $\R{x_1}{x_2'}$ y $\R{y_1}{y_2}$.
+Como todos los pasos intermedios son $\tau\in\Upsilon_u$, esta secuencia es un camino
+admisible para la cláusula~1 de WSOE y $\R{y_1}{y_2}$.
+\end{itemize}
+En ambos casos, la cláusula~1 de WSOE se cumple.
+
+\medskip
+\noindent\textbf{Cláusula 2.} Observemos el caso donde se intenta simular una transicion controlable. Sea $x_1\pijl{c}y_1$ con
+$c\in\Sigma_c$. Como $\tau=\Upsilon_u$ no contiene acciones controlables, $c\neq\tau$ y la
+cláusula~1 de branching no puede aplicarse. Tomemos la cláusula~2, entonces existe una secuencia $x_2\pijl{\tau}\cdots\pijl{\tau}x_2'\pijl{c}y_2$ con $\R{x_1}{x_2'}$ y $\R{y_1}{y_2}$. Esta secuencia satisface el camino de la cláusula~2 de WSOE, ya que los pasos intermedios cumplen $\tau_i\in\Upsilon_u\subseteq\Upsilon$. Como $\Upsilon_u\cap\Sigma_c=\emptyset$, ningun paso intermedio es controlable y por lo tanto la condicion ``si $\tau_i\in\Sigma_c$ entonces $\R{x_1}{x_2^i}$'' se cumple por vacuidad. 
+
+\medskip
+
+Queda demostrado que tomando $\tau=\Upsilon_u$ , entonces vale  $x_1\sim_{B}x_2 \implies x_1\sim_{W}x_2$.
+\end{proof}
+
+
 
