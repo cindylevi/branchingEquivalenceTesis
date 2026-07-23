@@ -53,7 +53,7 @@ Consideremos el LTS de la Figura~\ref{fig:cap3-ej1}. La acción $t$ es local y, 
 
 La transición $s_1 \pijl{t} s_2$ es inerte, ya que $s_1$ y $s_2$ tienen el mismo comportamiento observable y ambos terminan ejecutando $b$. Por lo tanto, branching los fusiona: $s_1 \sim_{B} s_2$ por la primera cláusula de la Definición~\ref{def:branching} ($\tau$ inerte).
 
-WSOE llega a la misma conclusión. La transición visible clave es $s_2 \pijl{b} s_3$ con $b \in \Sigma_u$, donde se aplica la primera cláusula de la Definición~\ref{def:synth-equiv}, ya que $b$ es no controlable. Desde $s_1$, $b$ se puede simular con $s_1 \pijl{\tau} s_2 \pijl{b} s_3$. Por lo tanto, $s_1 \sim_{W} s_2$ usando la cláusula 1. Las particiones resultantes de ambas equivalencias coinciden: $\{s_0\}$, $\{s_1, s_2\}$, $\{s_3\}$.
+WSOE llega a la misma conclusión. La transición visible clave es $s_2 \pijl{b} s_3$ con $b \in \Sigma_u$, donde se aplica la primera cláusula de la Definición~\ref{def:synth-equiv}, ya que $b$ es no controlable. Desde $s_1$, $b$ se puede simular con $s_1 \pijl{\tau} s_2 \pijl{b} s_3$. Por lo tanto, $s_1 \sim_{W} s_2$ usando la cláusula 1 y también  $s_1 \sim_{B} s_2$.
 
 \begin{figure}[htbp]
   \centering
@@ -66,17 +66,17 @@ WSOE llega a la misma conclusión. La transición visible clave es $s_2 \pijl{b}
           (s1) edge node {$t$} (s2)
           (s2) edge node {$b$} (s3);
   \end{tikzpicture}
-  \caption{Ejemplo 1. Acción local $t$ (inerte $\tau$ para Branching Bisimilarity). $a$ y $b$ son observables no controlables.  Las particiones de ambas equivalencias coinciden: $\{s_0\}$, $\{s_1, s_2\}$, $\{s_3\}$. }
+  \caption{Ejemplo 1. Acción local $t$ (inerte $\tau$ para Branching Bisimilarity). $a$ y $b$ son observables no controlables. Vale $s_1 \sim_{W} s_2$ y  $s_1 \sim_{B} s_2$. }
   \label{fig:cap3-ej1}
 \end{figure}
 
 \paragraph{Ejemplo 2}
-Veamos ahora un ejemplo que utilice la segunda cláusula de la Definición~\ref{def:synth-equiv}, introduciendo una acción controlable. En el LTS de la Figura~\ref{fig:cap3-ej2}, $t$ es local ($\tau$ para Branching Bisimilarity), $a$ es observable no controlable ($a \in \Sigma_u$), y $c$ es una acción observable controlable ($c \in \Sigma_c$). Para ambas equivalencias, los estados $s_3$ y $s_4$ son trivialmente equivalentes y por lo tanto, se podrían unificar en una misma partición.
+Veamos ahora un ejemplo que utilice la segunda cláusula de la Definición~\ref{def:synth-equiv}, introduciendo una acción controlable. En el LTS de la Figura~\ref{fig:cap3-ej2}, $t$ es local ($\tau$ para Branching Bisimilarity), $a$ es observable no controlable ($a \in \Sigma_u$), y $c$ es una acción observable controlable ($c \in \Sigma_c$). Para ambas equivalencias, los estados $s_3$ y $s_4$ son trivialmente equivalentes.
 
 Observemos las equivalencias para los estados $s_1$ y $s_2$.
 Consideremos la definición de Branching Bisimilarity. Desde $s_1$, se puede realizar la acción $c$ tanto directamente ($s_1 \pijl{c} s_4$) como después de la transición interna $t$ ($s_1 \pijl{t} s_2 \pijl{c} s_3$). Podemos aplicar la segunda cláusula de la Definición~\ref{def:branching}, ya que ahora necesitamos un camino de $\tau$ para luego simular la acción visible $c$. Como $t$ es inerte y ambos caminos ofrecen la misma acción controlable $c$ hacia estados equivalentes, branching fusiona $s_1 \sim_{B} s_2$.
 
-WSOE llega a la misma partición. Como $c \in \Sigma_c$, se aplica la segunda cláusula de la Definición~\ref{def:synth-equiv}. Desde $s_2$, la transición $s_1 \pijl{c} s_4$ se puede simular con el camino $s_2 \pijl{P_{\Omega}(c)} s_3$, con $s_3 \sim_{W} s_4$. Por lo tanto, WSOE también fusiona  $s_1 \sim_{W} s_2$.
+Obervemos ahora como se comporta la definición de WSOE para este caso. Como $c \in \Sigma_c$, se aplica la segunda cláusula de la Definición~\ref{def:synth-equiv}. Desde $s_2$, la transición $s_1 \pijl{c} s_4$ se puede simular con el camino $s_2 \pijl{P_{\Omega}(c)} s_3$, con $s_3 \sim_{W} s_4$. Por lo tanto,  $s_1 \sim_{W} s_2$.
 
 Pudimos ver entonces casos simples que aplican ambas cláusulas de las dos definiciones de equivalencia.
 
@@ -93,7 +93,7 @@ Pudimos ver entonces casos simples que aplican ambas cláusulas de las dos defin
           (s2) edge node {$c$} (s3)
           (s1) edge node[swap] {$c$} (s4);
   \end{tikzpicture}
-  \caption{Ejemplo 2. $t$ es local ($\tau$ para Branching Bisimilarity), $a$ es observable no controlable ($a \in \Sigma_u$), y $c$ es una acción observable controlable ($c \in \Sigma_c$). Branching y WSOE producen la misma partición: $\{s_0\}$, $\{s_1, s_2\}$, $\{s_3, s_4\}$.}
+  \caption{Ejemplo 2. $t$ es local ($\tau$ para Branching Bisimilarity), $a$ es observable no controlable ($a \in \Sigma_u$), y $c$ es una acción observable controlable ($c \in \Sigma_c$). Vale que $s_1 \sim_{W} s_2$ y también  $s_1 \sim_{B} s_2$}
   \label{fig:cap3-ej2}
 \end{figure}
 
@@ -132,7 +132,7 @@ Con esta definición $c_L$ vuelve a ser visible en el Ejemplo~3, por lo que la t
 Esta actualización en la forma de definir a las acciones inertes no cambia el algoritmo de minimización detallado en el paper, sino que solo recibe como conjunto de acciones internas el alfabeto local intersecado con las no controlables. Demostremos ahora de forma teórica que al definir las acciones inertes de esta manera, la definición de WSOE siempre minimiza al menos tanto como la definición de Branching Bisimilarity.
 
 \paragraph{Ejemplo 4}
-Veamos ahora un ejemplo, adaptado del trabajo de van Glabbeek y Weijland~\cite{glabbeek1996}, donde ambas equivalencias difieren. Este es un caso concreto en el que WSOE y Branching Bisimilarity producen particiones distintas. El LTS se ilustra en la Figura~\ref{fig:cap3-ej4}.
+Veamos ahora un ejemplo, adaptado del trabajo de van Glabbeek y Weijland~\cite{glabbeek1996}, donde ambas equivalencias difieren. Este es un caso concreto en el que WSOE y Branching Bisimilarity difieren. El LTS se ilustra en la Figura~\ref{fig:cap3-ej4}.
 
 Las acciones $\tau$ son locales no controlables ($\tau\in\Upsilon_u$). Los estados $s_4,s_5,s_6,s_{10},s_{11},s_{12}$ son trivialmente equivalentes entre sí, tanto para branching como para WSOE. 
 
