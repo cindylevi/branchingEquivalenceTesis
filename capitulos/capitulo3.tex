@@ -1,8 +1,10 @@
 \chapter{Branching bisimilarity}
+\label{cap:equivalencias}
 
 En este capítulo introduciremos las definiciones de Branching bisimilarity y de Weak Synthesis Observational Equivalence (WSOE) para utilizarlas como fundamentos a la hora de minimizar un LTS. Con el objetivo de minimizar un LTS en el contexto de la síntesis composicional, utilizamos una noción de equivalencia para poder aplicarla a la hora de procesar los estados y definir de qué manera decidir si son equivalentes o no. En principio, en el algoritmo de síntesis composicional presentado por Uchitel y Gagliardi se utiliza la definición de WSOE. Tal como se explicó anteriormente, esta tesis consiste en analizar el reemplazo del algoritmo que utiliza la definición de WSOE por el algoritmo de Jansen que utiliza la definición de Branching bisimilarity. Para ello, este capítulo introducirá de forma teórica ambas equivalencias y presentará un teorema de cómo se relacionan entre ellas.
 
 \section{Definición formal}
+\label{sec:def-branching}
 La Definición~\ref{def:branching} introduce la noción de equivalencia denominada Branching bisimulation. Dada una relación de equivalencia $R$, una transición $x_1\pijl{a}y_1$ se denomina \textit{inerte} sii $a = \tau$ y  $\R{x_1}{y_1}$.
 
 El conjunto de acciones $a$ tal que $a = \tau$ forma parte del conjunto de datos que se deben proveer al comenzar el proceso de minimización.
@@ -27,13 +29,14 @@ $\R{x_1}{x_2}$.
 \end{definition}
 
 \section{WSOE: definición formal}
-La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denominada Weak Synthesis Observational Equivalence (WSOE) en el contexto de síntesis de controladores propuesto por Uchitel y Gagliardi \todo{agregar ref}.
+\label{sec:def-wsoe}
+La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denominada Weak Synthesis Observational Equivalence (WSOE) en el contexto de síntesis de controladores propuesto por Uchitel y Gagliardi~\cite{compositional}.
 
 %             Set<String> tauLabelsForBB = new HashSet<>(localAlphabet);
 %            tauLabelsForBB.addAll(localAlphabet);
 %           if (translatedControllableLabels != null) tauLabelsForBB.removeAll(translatedControllableLabels);
 
-\begin{definition}[Weak Synthesis Observational Equivalence~\cite{mohajerani_framework_2014}]
+\begin{definition}[Weak Synthesis Observational Equivalence~\cite{wsoe}]
     \label{def:synth-equiv}
     Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS y sea $\Sigma_c$ el conjunto de eventos controlables y sea $\Sigma_u$ el conjunto de eventos no-controlables. Una relación de equivalencia $\sim_{W} \ \subseteq S \times S$ es del tipo \textit{weak synthesis observational equivalence} con $M$ respecto al conjunto de etiquetas $\Upsilon_c$ y $\Upsilon_u$ si las siguientes condiciones valen para todo $x_1, x_2 \in S$ tal que $x_1 \sim_{W} x_2$:
 \vspace{-0.2pt}
@@ -45,6 +48,7 @@ La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denomi
 
 
 \section{Casos de ejemplo}
+\label{sec:ejemplos}
 
 En esta sección intentaremos comprender la intuición de las definiciones de Branching Bisimilarity y WSOE primero analizando ejemplos más chicos y luego ampliándolos. Al comenzar la tesis, adoptamos la hipótesis más simple posible, es decir que las acciones internas $\tau$ son todas las acciones locales. Veamos a través de algunos ejemplos concretos si esta hipótesis resulta correcta.
 
@@ -201,6 +205,7 @@ Por lo tanto, vale que $s_2\sim_{W}s_8$.
 En conclusión, $s_2\sim_{W}s_8$, mientras que  $s_2 \not\sim_{B}s_8$. Este caso prueba que WSOE y Branching Bisimilarity pueden producir resultados diferentes a partir de un mismo ejemplo, por las diferencias en las nociones de equivalencia que definen. Es decir, dados los estados $x_1\sim_{W}x_2$, no siempre vale que $x_1\sim_{B}x_2$ y queda demostrado con el Ejemplo 4. Sin embargo, en la próxima sección demostraremos formalmente que si dos estados $x_1,x_2$ son Branching Equivalent, entonces debería valer que los estados $x_1,x_2$ son también equivalentes en la definición de WSOE. 
 
 \section{Teorema de equivalencia y demostración}
+\label{sec:teorema}
 
 Luego de explorar la intuición detrás de la proposición, formalizamos la equivalencia entre WSOE y Branching Bisimilarity. Queremos ver que con la definición de acciones inertes restringida a $\tau = \Upsilon_u$ entonces 
 \[ \forall x_1,x_2 \in S | x_1 \sim_{B} x_2 \implies  x_1 \sim_{W} x_2 \]

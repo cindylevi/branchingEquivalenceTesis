@@ -6,6 +6,7 @@ En este capítulo se realizará un recorrido teórico por el algoritmo presentad
 Tal como se introdujo previamente, el algoritmo utilizado en el trabajo de Uchitel y Gagliardi para obtener, a partir de un LTS, una minimización según la equivalencia de la Definición~\ref{def:synth-equiv} fue el presentado por Mohajerani et al.~\cite{wsoe}, que tiene una complejidad de $\bigo{nm}$. Analicemos el algoritmo presentado por Groote et al. para entender cómo funciona y luego comprender qué optimizaciones se utilizan para alcanzar la complejidad de $\bigo{m \log n}$.
 
 \section{Terminología}
+\label{sec:terminologia}
 
 El algoritmo se basa principalmente en utilizar particiones de conjuntos de estados y particiones de conjuntos de transiciones. Antes, definamos qué es una partición.
 
@@ -93,6 +94,7 @@ Estas marcas se utilizan para determinar qué estados bottom de un bloque tienen
 
 
 \section{Idea general}
+\label{sec:idea-general}
 
 Como primer paso, el LTS es preprocesado para contraer las componentes $\tau$-fuertemente conexas ($\tau$-SCCs) en un único estado. Luego, el algoritmo refina iterativamente las particiones $\Pi_s$ y $\Pi_t$. El objetivo principal es garantizar que, si un bloque $B$ tiene una transición en una action-block-slice $\TaB$, entonces cada estado bottom de $B$ tiene una transición en $\TaB$. Cuando esto vale para todos los bloques y todas las action-block-slices, cada bloque resulta ser exactamente una clase de estados branching bisimilares. Alcanzar ese objetivo de forma directa sería costoso, así que el algoritmo mantiene en su lugar un invariante más débil, formulado sobre los bunches en vez de sobre las action-block-slices: si un bloque $B$ tiene una transición en un bunch $T$, entonces cada estado bottom de $B$ tiene una transición en el mismo bunch $T$. Este invariante, combinado con la condición de que todo bunch contenga una única action-block-slice, implica el objetivo principal. Formalmente, el invariante es el siguiente:
 \begin{invariante}[]\label{inv:bunches}$\Pi_s$ es estable bajo $\Pi_t$, es decir, si un bunch $T \in \Pi_t$ contiene una transición con su estado origen en un bloque $B$ de $\Pi_s$, entonces cada estado bottom en el bloque $B$ tiene una transición en el bunch $T$ (de hecho, en el block-bunch-slice $\TB$).\end{invariante}
@@ -285,6 +287,7 @@ Ahora, $\Pi_s$ es estable con respecto a $\Pi_t$ y $\Pi_t$ no contiene ningún b
 \end{example}
 
 \section{Funcionamiento}
+\label{sec:funcionamiento}
 
 \begin{algorithm}[!t]
 	\caption{Pseudocódigo del algoritmo para las particiones de branching bisimulation.\label{algo:main-algorithm-abstract}}
