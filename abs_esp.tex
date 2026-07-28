@@ -4,10 +4,11 @@
 %\vspace{1cm}
 \chapter*{\runtitulo}
 
-\noindent Esta tesis presenta la definición y análisis exploratorio sobre las fases que están involucradas en el algoritmo \textit{on-the-fly} de síntesis de directores para resolver problemas de Control de Eventos Discretos con la propiedad central de tipo non-blocking. Se busca de esta manera encontrar posibilidades de mejora en la heurística RA, la cual logra actualmente buenos resultados frente a heurísticas tradicionales.
-Luego de realizada la exploración y análisis inicial sobre el comportamiento de las etapas en la exploración, implementamos algunos cambios sobre la
-heurística RA para poder experimentar y analizar los resultados. De esa manera realizamos una propuesta de mejora para fortalecer las etapas de exploración analizadas previamente y lograr mejor \textit{performance}.
+\noindent La síntesis composicional de controladores evita la explosión de estados resolviendo el problema de a partes: en cada iteración compone un subconjunto de la planta, sintetiza un controlador parcial, oculta los eventos locales y \textit{minimiza} el resultado antes de devolverlo al sistema. Ese paso de minimización es el que impide que los modelos intermedios vuelvan a crecer, y es también el que domina el costo del método: se lo resuelve calculando \textit{Weak Synthesis Observational Equivalence} (WSOE) con un algoritmo de complejidad $O(nm)$.
+
+\noindent En esta tesis proponemos reemplazar WSOE por \textit{branching bisimilarity}, para la cual existe un algoritmo de complejidad $O(m \log n)$. Mostramos que el reemplazo no es directo: bajo la hipótesis natural de ocultar todas las acciones locales, \textit{branching} fusiona estados que WSOE mantiene separados, lo que implicaría reducir de más. Demostramos que restringiendo las acciones internas a las acciones locales \textit{no controlables} vale $\sim_{B} \subseteq \sim_{W}$, y que la inclusión es estricta. Sobre esa base implementamos el algoritmo dentro de MTSA y lo integramos al flujo composicional.
+
+\noindent La evaluación se realizó sobre 2212 instancias reales de minimización capturadas del propio flujo de síntesis. La correctitud se validó contra la implementación de referencia de mCRL2 y contra el resultado de WSOE. En cuanto al rendimiento, la implementación final se mantiene por debajo de los 1000~ms en las instancias más grandes, donde WSOE alcanza los 7600~ms, y en el 83\% de los casos ambas equivalencias producen la misma reducción. El costo del cambio aparece en el uso de memoria.
 \bigskip
 
-\noindent\textbf{Palabras claves:} Sistemas de Eventos Discretos, Síntesis de Controladores, Control Di- rigido, Control Supervisado, Síntesis on-the-fly, LTS, Non-Blocking.
-
+\noindent\textbf{Palabras claves:} Sistemas de Eventos Discretos, Síntesis de Controladores, Síntesis Composicional, Minimización, Branching Bisimilarity, WSOE, Refinamiento de Particiones, LTS.

@@ -1,22 +1,6 @@
 \chapter{Introducción}
+\label{cap:introduccion}
 
-% =====================================================================
-% ESTRUCTURA OBJETIVO DE LA INTRODUCCIÓN (tema NUEVO de la tesis).
-% NO BORRAR lo de abajo: gran parte del arranque sobre síntesis de
-% controladores se reusa casi tal cual. Lo que hay que reescribir es el
-% giro hacia "on-the-fly / heurística RA" (tema de la tesis-molde) y la
-% guía de lectura, que apuntan a los capítulos viejos.
-%
-% Orden buscado:
-%   1) Síntesis automática de controladores y por qué importa.   [REUSABLE: párrafos siguientes]
-%   2) Composicionalidad: por qué se minimiza entre composiciones. [parte reusable, ver línea ~34]
-%   3) El cuello de botella: WSOE en el paper composicional.       [FALTA -> \cite{compositional}]
-%   4) Propuesta: reemplazar WSOE por branching bisimilarity con
-%      el algoritmo eficiente de Groote et al. (2019).            [FALTA -> \cite{groote2019}]
-%   5) Aportes y guía de lectura (a la estructura NUEVA: caps 2-7).[REESCRIBIR guía de lectura]
-% =====================================================================
-
-% \section{Introducción}
 {\begin{small}%
 \begin{flushright}%
 \it
@@ -43,54 +27,28 @@ En este enfoque modelamos el problema utilizando autómatas finitos, también co
 
 Por otro lado, vamos a tomar dentro de nuestro modelo a las transiciones como posibles acciones. En este caso algunas transiciones las podemos controlar y otras estarán fuera de nuestro alcance. Volviendo al ejemplo del avión, una acción \textbf{controlable} podría ser \textit{encendido de motor} mientras que la acción \textit{aterrizaje de emergencia} probablemente sea representada en nuestro modelo como una acción \textbf{no controlable}.
 
-En el autómata mencionado además existen estados distinguidos. Por un lado tomaremos un estado como \textit{inicial} y será el estado desde el cual empezaremos la exploración. Además habrá \textit{estados objetivos} que serán los estados a los cuales buscaremos llegar. En este caso de análisis y a lo largo de la tesis llamaremos \textit{marcados} a estos estados objetivo y buscaremos que el sistema no solo pueda
-alcanzarlos, sino que sea capaz de hacerlo infinitas veces y de manera segura. Esta última condición de \textit{seguridad} se refiere intuitivamente a que debemos llegar a un estado marcado mediante una secuencia de acciones que evite estados no controlables no deseados en el sistema. A esto se le agrega la condición de llegar al estado marcado infinitas veces, lo que refiere a que buscaremos poder mantenernos \textit{de forma controlable} con transiciones que nos garanticen un ciclo de permanencia en el estado marcado.
+En el autómata mencionado además existen estados distinguidos. Por un lado tomaremos un estado como \textit{inicial} y será el estado desde el cual empezaremos la exploración. Además habrá \textit{estados objetivos} que serán los estados a los cuales buscaremos llegar. Buscaremos que el sistema no solo pueda alcanzarlos, sino que sea capaz de hacerlo infinitas veces y de manera segura.
 
-El valor de este enfoque y de un algoritmo que permita realizar síntesis es la generalización a distintos problemas. El autómata descripto puede modelar un avión como el caso mencionado, o el funcionamiento de una agencia de viajes como se verá en otro ejemplo o podrá modelar el funcionamiento de diversos problemas complejos. De todas formas, nuestro algoritmo podrá generar un \textbf{controlador} sin necesitar ningún cambio específico. Para lograr esto trabajará un experto en el área, quien decide las reglas y objetivos que conformarán el autómata a analizar, por ejemplo partir de un avión en un hangar e intentando llegar a un estado marcado que describa a un avión aterrizado luego de formar un patrón en el cielo. Pero como podemos ver, este experto no debe preocuparse por como se sintetiza el controlador que resuelve el autómata que modela su problema, esa parte está garantizada por el algoritmo de síntesis que genera el controlador.
+El valor de este enfoque y de un algoritmo que permita realizar síntesis es la generalización a distintos problemas. El autómata descripto puede modelar un avión como el caso mencionado, o el funcionamiento de una agencia de viajes como se verá en otro ejemplo o podrá modelar el funcionamiento de diversos problemas complejos. De todas formas, nuestro algoritmo podrá generar un \textbf{controlador} sin necesitar ningún cambio específico. Para lograr esto trabajará un experto en el área, quien decide las reglas y objetivos que conformarán el autómata a analizar, por ejemplo partir de un avión en un hangar e intentando llegar a un estado objetivo que describa a un avión aterrizado luego de formar un patrón en el cielo. Pero como podemos ver, este experto no debe preocuparse por como se sintetiza el controlador que resuelve el autómata que modela su problema, esa parte está garantizada por el algoritmo de síntesis que genera el controlador.
 
-Por último cabe destacar que el modelado de un sistema complejo resulta prácticamente imposible utilizando un solo autómata. Por esta razón es que se suelen modelar distintas partes del problema original como autómatas independientes y luego se componen para formar el modelo completo del sistema. Esta composición a la que nos referimos debe respetar ciertas reglas y garantiza que un estado del sistema compuesto representa la combinación de estados en que está cada componente al finalizar. 
+Por último cabe destacar que el modelado de un sistema complejo resulta prácticamente imposible utilizando un solo autómata. Por esta razón es que se suelen modelar distintas partes del problema original como autómatas independientes y luego se componen para formar el modelo completo del sistema. Esta composición a la que nos referimos debe respetar ciertas reglas y garantiza que un estado del sistema compuesto representa la combinación de estados en que está cada componente al finalizar.
 
-Tradicionalmente la forma de resolver el problema consiste en tomar estos autómatas independientes, realizar la composición y obtener el autómata completo para que sea analizado por el programa para sintetizar el controlador. Sin embargo, cuando el problema a resolver escala en tamaño de estados y transiciones de forma abrupta el autómata compuesto se vuelve demasiado grande, haciendo imposible su análisis y en ocasiones resultando imposible también el proceso de composición.
+Tradicionalmente la forma de resolver el problema consiste en tomar estos autómatas independientes, realizar la composición y obtener el autómata completo para que sea analizado por el programa para sintetizar el controlador. Sin embargo, cuando el problema a resolver escala en tamaño de estados y transiciones de forma abrupta el autómata compuesto se vuelve demasiado grande, haciendo imposible su análisis y en ocasiones resultando imposible también el proceso de composición. Este fenómeno, conocido como \textit{explosión de estados}, es el obstáculo central para que la síntesis de controladores sea aplicable a problemas de tamaño realista.
 
-% TODO(giro): DESDE ACÁ el texto pertenece a la tesis-molde (on-the-fly /
-% heurística RA) y debe REEMPLAZARSE por el hilo nuevo:
-%   - Cuello de botella: la minimización por WSOE en el flujo composicional
-%     (Pousseur-Uchitel) escala mal -> \cite{compositional}, \cite{wsoe}.
-%   - Propuesta: reemplazar WSOE por branching bisimilarity usando el
-%     algoritmo O(m log n) de Groote et al. -> \cite{groote2019}.
-%   - Aportes de esta tesis (demo teórica de equivalencia + implementación
-%     en MTSA + experimentación) y guía de lectura a la estructura nueva.
-% Lo de abajo se conserva como material a reescribir, no como texto final.
-En este contexto surge el enfoque de exploración \textit{on-the-fly}, en donde la composición se construye a medida que se van explorando transiciones mediante las cuales intentamos resolver el problema de síntesis evitando, en la medida de lo posible, la composición de todo el modelo. Este enfoque fue presentado por primera vez en la tesis doctoral de Daniel Ciolek \cite{Ciolek} y luego profundizado en la tesis de Licenciatura de Matías Durán y Florencia Zanollo \cite{DuranZanollo} cuyo trabajo resulto publicado \cite{paperOTF}.
+Frente a la explosión de estados se han propuesto distintas estrategias. Una de ellas es la exploración \textit{on-the-fly}, en donde la composición se construye a medida que se van explorando transiciones, evitando en la medida de lo posible componer todo el modelo; este enfoque fue presentado en la tesis doctoral de Daniel Ciolek \cite{Ciolek} y profundizado luego en el trabajo de Matías Durán y Florencia Zanollo \cite{DuranZanollo, paperOTF}.
 
-Basándonos en este trabajo, en esta tesis analizaremos el comportamiento del algoritmo de exploración del autómata compuesto que describimos anteriormente. Vamos a definir y describir ciertas fases o etapas relevantes del proceso, buscando experimentar el desempeño de las heurísticas existentes y que posibilidades de mejora existen en base a esta información.
+La estrategia sobre la que se apoya esta tesis es distinta, y es la \textbf{síntesis composicional} \cite{compositional}. La idea es no componer nunca el sistema completo, sino trabajar de manera incremental: se selecciona un subconjunto de los componentes, se lo compone, se sintetiza un controlador \textit{parcial} sólo para esa subplanta, y se la reemplaza por una versión más chica de sí misma. Esa versión más chica se obtiene en dos pasos: primero se ocultan los eventos que la subplanta no comparte con el resto del sistema (denotados eventos locales, que al ser internos, ya no pueden influir en el comportamiento de los demás componentes), y después se \textbf{minimiza} el modelo resultante, fusionando aquellos estados que pasaron a ser indistinguibles. El resultado se devuelve al conjunto de componentes y el procedimiento se repite.
 
-% GUÍA DE LECTURA (estructura NUEVA de capítulos):
-%   Cap. 2  Antecedentes (LTS, control safe/non-blocking, síntesis
-%           composicional).
-%   Cap. 3  Branching bisimilarity: definición, definición de WSOE,
-%           teorema de equivalencia WSOE == branching (aporte teórico central)
-%           y relación con otras equivalencias.
-%   Cap. 4  Algoritmo O(m log n) de Groote et al.
-%   Cap. 5  Adaptación e implementación en MTSA.
-%   Cap. 6  Experimentación y resultados (WSOE vs branching bisimilarity).
-%   Cap. 7  Conclusiones.
-% NOTA: la prosa de abajo ya apunta a esta estructura; el hilo temático
-% completo (cuello de botella WSOE, propuesta) queda pendiente de redacción
-% según los TODO de más arriba.
-En el capítulo 2 presentaremos los antecedentes y definiciones necesarias alrededor del problema de síntesis composicional de controladores: LTS y composición paralela, el problema de control \textit{safe} y \textit{non-blocking}, y la síntesis composicional.
+De esta manera, el modelo que efectivamente hay que analizar en cada paso se mantiene acotado, y la solución final no es un controlador monolítico sino un conjunto de controladores parciales que corren en paralelo. Este enfoque permite resolver problemas de control hasta $1000$ veces más grandes que los que resuelve el enfoque monolítico \cite{compositional}.
 
-En el capítulo 3 introducimos \textit{branching bisimilarity}, damos la definición formal de WSOE y demostramos el teorema de equivalencia entre ambas ---el aporte teórico que justifica reemplazar una por la otra---, ubicándola además frente a las equivalencias clásicas.
+El paso de minimización no es un detalle de implementación sino que es el paso que se ejecuta una y otra vez, una vez por cada iteración del procedimiento. Los autores de  \cite{compositional} identifican a este paso como el cuello de botella del proceso de sintesis composicional.
 
-En el capítulo 4 presentamos el algoritmo $O(m \log n)$ de Groote et al.\ \cite{groote2019} que calcula branching bisimilarity de forma eficiente. Luego, en el capítulo 5, detallamos su adaptación e implementación dentro del flujo composicional de MTSA \cite{mtsa}.
+Para que la minimización sea correcta se utiliza una \textit{noción de equivalencia} que preserve las soluciones del problema de control. La noción que usa el algoritmo composicional es \textit{Weak Synthesis Observational Equivalence} (WSOE), tomada del marco de control supervisado de Mohajerani, Malik y Fabian \cite{wsoe}.
 
-En el capítulo 6 presentamos la experimentación, comparando la minimización por WSOE contra branching bisimilarity en tiempo, memoria y tamaño de los LTS minimizados. Finalmente, en el capítulo 7 exponemos las conclusiones y aportes del trabajo.
+El problema es su costo. El algoritmo que calcula WSOE tiene complejidad $\bigo{nm}$ sobre el modelo a minimizar, con $n$ su cantidad de estados y $m$ la de transiciones. Como se lo invoca una vez por iteración y sobre modelos que pueden ser grandes, ese costo termina dominando el tiempo total de la síntesis composicional. Mejorar la minimización es, entonces, mejorar la escalabilidad de todo el método.
 
+Existe una noción de equivalencia muy estudiada en la literatura de semántica de procesos que es cercana a WSOE, \textit{branching bisimilarity}, y para la cual Groote, Jansen, Keiren y Wijs \cite{groote2019} presentaron un algoritmo considerablemente más eficiente, que calcula las particiones en tiempo $\bigo{m \log n}$. 
 
-% Seguidamente, en el capítulo 5, exponemos detalles sobre la implementación, MTSA,
-% heurísticas diseñadas para testeo y detalles sobre la batería de tests, desarrollada utilizando
-% TDD (Test Driven Development).
-% Como paso final en el capítulo 6 presentamos el benchmark utilizado y resultados de
-% performance; tanto entre distintos resultados de SCD como versus otros algoritmos del
-% estado del arte.
-% Finalmente, en el capítulo 7 listamos las conclusiones y aportes del trabajo presentado.
+La propuesta de esta tesis es reemplazar WSOE por \textit{branching bisimilarity} como técnica de minimización dentro del flujo de síntesis composicional, e implementar el algoritmo $\bigo{m \log n}$ de Groote et al.\ dentro de la herramienta \MTSA{} \cite{mtsa}.
+
+En el Capítulo~\ref{cap:antecedentes} presentamos los antecedentes y definiciones necesarias alrededor del problema de síntesis composicional de controladores. En el Capítulo~\ref{cap:equivalencias} introducimos \textit{branching bisimilarity}, damos la definición formal de WSOE y demostramos el teorema de equivalencia entre ambas.  En el Capítulo~\ref{cap:algoritmo} presentamos el algoritmo $\bigo{m \log n}$ de Groote et al.\ \cite{groote2019} que calcula \textit{branching bisimilarity} de forma eficiente. Luego, en el Capítulo~\ref{cap:implementacion}, detallamos su adaptación e implementación dentro del flujo composicional de \MTSA{} \cite{mtsa}. En el Capítulo~\ref{cap:experimentacion} presentamos la validación y la experimentación, comparando la minimización por WSOE contra \textit{branching bisimilarity} en tiempo, memoria y tamaño de los LTS minimizados. Finalmente, en el Capítulo~\ref{cap:conclusiones} exponemos las conclusiones y el trabajo futuro.

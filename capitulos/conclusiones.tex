@@ -1,31 +1,89 @@
 \chapter{Conclusiones}
+\label{cap:conclusiones}
 
-A lo largo de este trabajo buscamos analizar la forma en la que el algoritmo DCS permite ser conceptualizado en una serie de \textit{fases}, de las cuales comprendimos su funcionamiento durante la ejecución del algoritmo general de forma agnóstica a la heurística utilizada. Mediante la identificación de estas fases pudimos ver que el algoritmo (DCS) atraviesa etapas cuyos objetivos parciales no siempre se mantienen, más allá de ser etapas que conducen a un objetivo en común (resolver el problema de control en general). Por ejemplo, para encontrar una solución, primero es necesario encontrar un estado marcado y luego encontrar la manera de llegar de forma controlable a él. 
+Esta tesis se propuso mejorar la escalabilidad de la síntesis composicional de controladores
+atacando su cuello de botella: el paso de minimización que se ejecuta una vez por iteración y
+que hasta ahora se resolvía calculando \textit{Weak Synthesis Observational Equivalence} (WSOE)
+con un algoritmo de complejidad $\bigo{nm}$. La propuesta fue reemplazarlo por
+\textit{branching bisimilarity}, para la cual existe el algoritmo $\bigo{m \log n}$ de Groote,
+Jansen, Keiren y Wijs~\cite{groote2019}.
 
-Para llegar a ese análisis, primero atravesamos un proceso exploratorio sobre el algoritmo estándar y parte de su implementación para finalmente acceder al algoritmo \textit{on-the-fly} y sus detalles. Este último, sumado a los detalles de la \textit{heurística RA} fueron estudiados con precisión para poder desarrollar este trabajo.
+El primer resultado del trabajo fue descubrir que el reemplazo no es directo. Las dos
+equivalencias no coinciden, y lo que hace falta garantizar es una dirección concreta: que
+\textit{branching} nunca fusione un par de estados que WSOE mantiene separado, ya que eso
+significaría reducir de más y potencialmente perder soluciones del problema de control. La
+hipótesis natural ---tomar como acciones internas a todas las acciones locales--- resulta
+incorrecta, y el Ejemplo~3 de la Sección~\ref{sec:ejemplos} exhibe un contraejemplo concreto: al
+ocultar una acción controlable local, \textit{branching} fusiona un par que WSOE distingue.
+Restringiendo las acciones internas a las acciones locales \textit{no controlables}
+($\tau = \Upsilon_u$) la correspondencia se restablece, y el
+Teorema~\ref{thm:wsoe-refina-branching} demuestra que en ese caso vale
+$\sim_{B} \ \C \ \sim_{W}$. La inclusión además es estricta, como muestra el Ejemplo~4 adaptado
+de van Glabbeek y Weijland~\cite{glabbeek1996}.
 
 \vspace{.5cm}
-Con este enfoque en mente y el trabajo realizado hemos logrado los siguientes objetivos:
+Con ese resultado como base, los objetivos alcanzados fueron los siguientes:
 
 \begin{itemize}
-    \item Definir y entender en profundidad las etapas que atraviesa el algoritmo (DCS) durante su ejecución y cuantificar el rendimiento de las heurísticas actuales para cada fase.
-    
-    \item Introducción de cambios a la heurística ``Ready Abstraction'' que impactaron en una de las fases de ejecución cuyo rendimiento es menor en términos relativos.  
-    
-    \item Implementación de los cambios sobre la heurística incorporados en la herramienta MTSA \cite{mtsa}
-    
-    \item Mejora del rendimiento de la heurística con los cambios introducidos, tomando los casos del \textit{benchmark} con ventana de mejora en la etapa 3.
+    \item Caracterizar formalmente la relación entre WSOE y \textit{branching bisimilarity} en
+    el contexto de la síntesis composicional, identificando la condición sobre el conjunto de
+    acciones internas bajo la cual el reemplazo es correcto.
 
+    \item Implementar el algoritmo $\bigo{m \log n}$ de Groote et al.\ dentro de \MTSA{}
+    \cite{mtsa} e integrarlo al flujo composicional en reemplazo de la llamada existente a
+    WSOE. La implementación atravesó tres iteraciones: una primera versión funcional, una
+    segunda con optimizaciones parciales, y una tercera que incorpora las estructuras
+    \texttt{RefinablePartition} y \texttt{LinkedTransitionPartitions} necesarias para alcanzar
+    efectivamente la cota teórica.
+
+    \item Desarrollar una metodología de evaluación basada en la captura de $2212$ instancias
+    reales de minimización, extraídas instrumentando una corrida completa de la síntesis
+    composicional sobre el conjunto de casos de prueba existente. Esto permitió iterar sobre la
+    implementación sin pagar el costo de reejecutar la síntesis en cada experimento.
+
+    \item Validar la correctitud de la implementación contra dos oráculos independientes: la
+    implementación de referencia de mCRL2~\cite{mcrl2}, escrita por los propios autores del
+    algoritmo, y el resultado del algoritmo de WSOE, verificando sobre cada instancia que nunca
+    ocurriera la fusión que el Teorema~\ref{thm:wsoe-refina-branching} prohíbe.
+
+    \item Evaluar empíricamente el rendimiento. La versión final se mantiene por debajo de los
+    $1000$~ms en las instancias más grandes, donde WSOE alcanza los $7600$~ms, y la ventaja se
+    acentúa sobre los modelos con mayor cantidad de transiciones internas. En el $83\%$ de las
+    instancias ambas equivalencias producen exactamente la misma reducción.
 \end{itemize}
 
+\vspace{.5cm}
+El trabajo también deja identificadas algunas limitaciones:
 
+\begin{itemize}
+    \item \textbf{Uso de memoria.} Contra lo que sugiere el análisis del paper original, todas
+    las versiones de \textit{branching} consumieron en promedio más memoria que WSOE. La razón
+    es estructural: WSOE mantiene una única partición de estados y recalcula el resto en cada
+    paso, mientras que el algoritmo de Groote et al.\ mantiene simultáneamente particiones de
+    estados y de transiciones con sus índices asociados. Es un intercambio explícito de memoria
+    por tiempo.
+
+    \item \textbf{La mejora sólo se materializa en instancias grandes.} Por debajo de los
+    $n \approx 100$ estados el tiempo está dominado por costos fijos y no hay diferencia
+    apreciable entre los algoritmos. Como la mayoría de las instancias que genera la síntesis
+    composicional son chicas, el impacto sobre el tiempo total del método depende de cuántas
+    instancias grandes aparezcan en cada problema.
+
+    \item \textbf{Las optimizaciones no son opcionales.} Las versiones v1 y v2, que implementan
+    el mismo algoritmo pero sin las estructuras de datos que el paper especifica, no superan a
+    WSOE. Recién la v3 materializa la mejora asintótica. Esto confirma que la cota
+    $\bigo{m \log n}$ es una propiedad del algoritmo \textit{junto con} sus estructuras, y no
+    del esquema de refinamiento en abstracto.
+\end{itemize}
+
+\vspace{.5cm}
 Como trabajo a futuro, presentamos las siguientes ideas:
 
 \begin{itemize}
-    \item Modificación del algoritmo de exploración on-the-fly para resolución de otros problemas, por ejemplo cambiando el objetivo de nonblocking por objetivos de tipo GR1.
-    
-    \item Análisis más profundo del impacto (positivo o negativo) que tienen los cambios propuestos en la exploración.
-    
-    \item Propuesta de nuevas modificaciones más refinadas a RA basándonos en el análisis de fases.
 
+    \item Reducir el consumo de memoria de la implementación, explorando representaciones más
+    compactas de las particiones de transiciones o el uso de arreglos primitivos en lugar de las
+    estructuras de colecciones de Java. (aca poner el nuevo paper)
+
+    \item Rep. simbolica
 \end{itemize}

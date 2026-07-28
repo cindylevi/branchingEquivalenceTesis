@@ -1,127 +1,175 @@
 \chapter{Antecedentes}
-
-% =====================================================================
-% ESTRUCTURA OBJETIVO DEL CAP. 2 (tema NUEVO). NO BORRAR lo existente:
-% 2.1 y 2.2 ya están cubiertos y se reusan casi tal cual.
-%
-%   2.1 LTS, autómatas y composición paralela.
-%       -> YA ESTÁ: \subsection{Autómatas y composición paralela}.
-%   2.2 Problema de control: safe y non-blocking.
-%       -> YA ESTÁ: \subsection{Controlador}.
-%   2.3 Síntesis composicional (Mohajerani-Malik-Fabian, Chalmers): la
-%       noción de equivalencia que usa el paper composicional.
-%       -> FALTA agregar. \cite{wsoe}, \cite{compositional}.
-%
-% Nota: la definición formal de WSOE se trasladó al Cap. 3, donde se
-% define junto a branching bisimilarity y se demuestra su equivalencia.
-% Su complejidad se contrasta con el O(m log n) del algoritmo de Groote
-% et al. (Cap. 4).
-%
-% Nota: el \section{Un ejemplo concreto} (TravelAgency) más abajo apunta
-% al benchmark, que en la estructura nueva es el Cap. 6.
-% =====================================================================
+\label{cap:antecedentes}
 
 En este capítulo agregaremos algunas definiciones y explicaciones necesarias para poder avanzar con la definición y análisis formal del problema composicional de síntesis de controladores.
 
-\section{Definiciones utilizadas}
 
-\subsection{Autómatas y composición paralela}
-\noindent \textbf{Definición 1} (\textit{Autómata Determinístico}): Un autómata determinístico es una tupla $T = (S_{T}, A_{T}, \D_T, \init{t}, M_T)$, donde:  $S_T$ es un \k{conjunto finito de estados}, $A_T$ es un \k{conjunto finito de eventos del autómata}, $\D_T : S_T \x A_T  \rightarrow S_T$ es una \k{función de transición}, $\init{t} \in S_T$ es el \k{estado inicial del autómata} y $M_T \C S_T$ es el conjunto de \k{estados marcados}.
+\section{Sistemas de transiciones etiquetados}
+\label{sec:lts}
 
-\noindent \textbf{Notación 1} (\textit{Pasos y corridas}): \ Notamos $(t,\l,t') {\in}\!\! \D_T$ como $t \step{\l}{T} t'$ y lo llamamos un \k{paso}.
-A su vez, una \k{corrida} de una palabra $w = \l_0,\ldots,\l_k$ en $T$, es una secuencia de pasos tal que $t_i \step{\l_i}{T} t_{i+1}$ para todo $0 \leq i \leq k$, notado como $t_0 \runw{w}{T} t_{k+1}$.
+Modelamos sistemas de eventos discretos componiendo \textit{sistemas de transiciones
+etiquetados} (\textit{Labelled Transition Systems} o LTS). Un LTS es la formalización de la
+noción intuitiva de autómata que presentamos en el Capítulo~\ref{cap:introduccion}.
 
+\begin{definition}[LTS]
+\label{def:lts}
+Un \textit{sistema de transiciones etiquetado} (LTS) es una tupla
+$M = (S, \Sigma, \pijl{}, \init{s})$ donde $S$ es un \k{conjunto finito de estados};
+$\Sigma$ es un \k{conjunto finito de etiquetas de eventos}; $\pijl{} \ \C \ S \x \Sigma \x S$
+es la \k{relación de transiciones}; y $\init{s} \in S$ es el \k{estado inicial}.
+\end{definition}
 
-\noindent \textbf{Notación 2}: \ Decimos que un estado $s$ es alcanzado por una palabra $w$ en una corrida comenzando en el estado $s'$, anotado como $s \in w(s')$, cuando $\exists w_{0} \ldot \exists w_{1} \ldot w = w_{0} \ldot w_{1}$ y $s' \runw{w_{0}}{E} s$.
+Notamos $(s, \l, s') \in \ \pijl{}$ como $s \pijl{\l} s'$. Esta es exactamente la estructura
+sobre la que se definen las dos nociones de equivalencia del Capítulo~\ref{cap:equivalencias} y
+sobre la que opera el algoritmo del Capítulo~\ref{cap:algoritmo}.
 
 \medskip
 
-Los autómatas definen un lenguaje, un conjunto de palabras que aceptan. Dado un conjunto de eventos A, notamos con $A^{*}$ al conjunto de palabras finitas de eventos de A. El lenguaje generado por un autómata $T$, notado como $\L(T)$, es el conjunto de palabras formadas por eventos que cumplen $\D_T$. Formalmente, si $w \in A_T^*$, entonces $w \in \L(T)$ si y sólo si existe una corrida para $w$ comenzando desde el estado inicial  $\init{t}$ de $T$, que notamos $\init{t} \runw{w}{T} t'$. Generalmente los estados marcados se utilizan para indicar el logro de una tarea. Por lo tanto, consideramos como lenguaje marcado \textit{(o aceptado)} por $T$ (lo cual notamos $\L_m(T)$) al conjunto de palabras cuya corrida termina en un estado marcado.
-
-Formalmente, sea $w \in \L(T)$, entonces $w \in \L_m(T)$ si y solo si hay una corrida de $w$ que comienza en el estado inicial $\init{t}$  y alcanza un estado marcado $t_m \in M_T$, que notamos $\init{t} \runw{w}{T} t_m$. Este último concepto es relevante para la definición de la composición paralela. Es una parte fundamental del trabajo para definir las palabras aceptadas por el problema \textit{nonblocking} ya que el lenguaje aceptado por la planta compuesta es el mismo que el aceptado por cada uno de los componentes por separado.
+\noindent\textbf{Notación.} Usamos $\Sigma^{*}$ para el conjunto de secuencias finitas de
+etiquetas de $\Sigma$, a las que llamamos \k{trazas}. Decimos que $\l \in \Sigma$ está
+\k{habilitado} en $s$ si existe $s'$ tal que $s \pijl{\l} s'$, y notamos $\pijl{}\!(s)$ al
+conjunto de eventos habilitados en $s$. Un LTS es \k{determinístico} si ningún estado tiene dos
+transiciones salientes con el mismo evento, y es \k{libre de deadlock} si todo estado tiene al
+menos una transición saliente. Extendemos $\pijl{}$ a trazas de la manera usual, asumiendo que
+vale para la traza vacía: $s \pijl{\epsilon} s$. Decimos que una secuencia $w$ de etiquetas de
+$\Sigma$, finita o infinita, es una \k{traza de $M$} si existe $s'$ tal que
+$\init{s} \pijl{w} s'$.
 
 \medskip
 
-\noindent \textbf{Definición 2} (\textit{Composición Paralela}): La composición paralela  $(\|)$ de dos autómatas $T$ y $Q$ es un operador simétrico y asociativo que produce un autómata \\ $T \| Q = (S_T 
-{\times} S_Q, A_T {\cup} A_Q, \D_{T\|Q}, \<\init{t},\init{q}\>, M_T {\times} M_Q)$, donde $\D_{T\|Q}$ es la menor relación que satisface las siguientes reglas (omitimos la versión simétrica de la primera regla):
+Tal como se anticipó en el Capítulo~\ref{cap:introduccion}, un sistema complejo rara vez se
+modela con un único LTS: se describen sus partes por separado y luego se las combina. La
+operación que las combina es la composición paralela, que sincroniza los componentes en los
+eventos que comparten y los deja evolucionar de manera independiente en el resto.
+
+\begin{definition}[Composición paralela]
+\label{def:composicion}
+Sean $M_i = (S_i, \Sigma_i, \pijl{}_{M_i}, \init{s}_i)$ con $i \in \{1,2\}$ dos LTS. Su
+\textit{composición paralela} es el LTS
+$M_1 \| M_2 = (S_1 \x S_2,\ \Sigma_1 \cup \Sigma_2,\ \pijl{}_{M_1 \| M_2},\
+\<\init{s}_1, \init{s}_2\>)$, donde $\pijl{}_{M_1 \| M_2}$ es la menor relación que satisface
+las siguientes reglas:
+\end{definition}
 
 \begin{normalsize}
 \centering
 \vspace{-10pt}
-\hspace{-50pt}
-\begin{minipage}{0.30\linewidth}
-\[ 
-\frac{t \step{\l}{T} t'}{\<t,q\> {\step{\l}{T\|Q}} 
-\<t'\!,\!q\> }{{\scriptstyle \l \in A_{T} {\setminus} 
-A_{Q}}} 
+\begin{minipage}{0.49\linewidth}
+\[
+\frac{s_1 \pijl{\l}_{M_1} s_1'}{\<s_1,s_2\> \pijl{\l}_{M_1 \| M_2} \<s_1'\!,\!s_2\>}
+{{\scriptstyle \l \in \Sigma_1 {\setminus} \Sigma_2}}
 \]
-\end{minipage} 
-\hspace{40pt}
-\begin{minipage}{0.30\linewidth}
-\[ 
-\frac{t \step{\l}{T} t' \quad q \step{\l}{Q} 
-q'}{\<t,q\> 
-\step{\l}{T\|Q} \<t',q'\>}{{\scriptstyle \l \in A_{T} 
-{\cap} A_{Q}}}
+\end{minipage}%
+\begin{minipage}{0.49\linewidth}
+\[
+\frac{s_2 \pijl{\l}_{M_2} s_2'}{\<s_1,s_2\> \pijl{\l}_{M_1 \| M_2} \<s_1\!,\!s_2'\>}
+{{\scriptstyle \l \in \Sigma_2 {\setminus} \Sigma_1}}
 \]
-\end{minipage} \\[15pt]
+\end{minipage} \\[8pt]
+\[
+\frac{s_1 \pijl{\l}_{M_1} s_1' \quad s_2 \pijl{\l}_{M_2} s_2'}
+{\<s_1,s_2\> \pijl{\l}_{M_1 \| M_2} \<s_1'\!,\!s_2'\>}
+{{\scriptstyle \l \in \Sigma_1 {\cap} \Sigma_2}}
+\]
+\\[8pt]
 \end{normalsize}
 
-Hay ciertas características de la composición paralela a destacar. En primer lugar, la última regla realiza la sincronización entre componentes. Segundo, que el número de estados en $T_0 \| \ldots T_n$ puede crecer exponencialmente con respecto al número de autómatas
-a componer. Tercero, que el lenguaje aceptado por la composición contiene las palabras
-que alcanzan estados marcados en todos los componentes simultáneamente.
+La composición paralela es asociativa y conmutativa. Si $\M = \{M_1, \ldots, M_n\}$ es un
+conjunto de LTS, abusamos de la notación y escribimos $\M$ también para referirnos a
+$M_1 \| \ldots \| M_n$; llamamos \k{planta} a ese sistema compuesto y \k{subplanta} a la
+composición de un subconjunto de $\M$.
 
-\subsection{Controlador}
+Hay dos características de la composición paralela que conviene destacar. La primera es que la
+tercera regla es la que realiza la sincronización entre componentes: un evento compartido sólo
+puede ocurrir si todos los componentes que lo tienen en su alfabeto pueden ejecutarlo
+simultáneamente. La segunda, y la que motiva todo este trabajo, es que el número de estados de
+$M_1 \| \ldots \| M_n$ puede crecer \textbf{exponencialmente} con respecto al número de
+autómatas a componer, ya que su espacio de estados es un subconjunto del producto cartesiano
+$S_1 \x \ldots \x S_n$. Este fenómeno se conoce como \k{explosión de estados} y es lo que vuelve
+intratable el enfoque monolítico de construir la composición completa antes de analizarla.
 
-Dado un (conjunto de) autómata(s) y una partición de sus eventos en dos subconjuntos (controlables y no controlables), lo que buscamos es un \textit{controlador} que limite el vocabulario aceptado por el autómata de forma tal de mantener un camino posible a los estados marcados del mismo.
+Cuando trabajamos con una subplanta $M$ dentro de un sistema modular más grande, no todos sus
+eventos tienen el mismo estatus. Algunos son la interfaz de $M$ con el resto del sistema: son
+los que aparecen también en el alfabeto de otros componentes y, por la tercera regla de la
+Definición~\ref{def:composicion}, son los puntos en los que $M$ se sincroniza. Otros son
+internos a $M$: ningún otro componente los tiene en su alfabeto y, por lo tanto, ninguna
+decisión del resto del sistema depende de ellos. Esta distinción es la que habilita a abstraer,
+y por lo tanto la que habilita a minimizar.
+
+Particionamos entonces el alfabeto de un LTS de dos maneras distintas y \textbf{ortogonales}
+entre sí, y es importante no confundirlas porque el resto de la tesis las usa simultáneamente.
+
+La primera partición separa según la \textbf{visibilidad}:
+\[
+\Sigma \;=\; \Omega \ \dot{\cup} \ \Upsilon
+\]
+donde $\Omega$ es el conjunto de eventos \k{compartidos} (u \k{observables}) ---los que $M$
+comparte con algún otro componente del sistema o los que aparecen en el objetivo de control--- y
+$\Upsilon$ es el conjunto de eventos \k{locales}, propios de $M$. A $\Upsilon$ lo llamamos
+también el \k{alfabeto local} de $M$.
+
+La segunda partición separa según la \textbf{controlabilidad}, tal como se introdujo en el
+Capítulo~\ref{cap:introduccion}:
+\[
+\Sigma \;=\; \Sigma_c \ \dot{\cup} \ \Sigma_u
+\]
+donde $\Sigma_c$ es el conjunto de eventos \k{controlables}, aquellos que el controlador puede
+deshabilitar, y $\Sigma_u = \Sigma \setminus \Sigma_c$ es el conjunto de eventos
+\k{no controlables}, que el controlador puede observar pero no impedir.
+
+Al cruzar ambas particiones obtenemos cuatro clases de eventos. Dos de ellas van a ser centrales
+en el Capítulo~\ref{cap:equivalencias} y merecen nombre propio:
+\[
+\Upsilon_c \;=\; \Upsilon \cap \Sigma_c
+\qquad\qquad
+\Upsilon_u \;=\; \Upsilon \cap \Sigma_u
+\]
+es decir, las acciones locales controlables y las acciones locales no controlables,
+respectivamente. Notar que $\Upsilon = \Upsilon_c \ \dot{\cup} \ \Upsilon_u$. 
+
+Para hablar de lo que un observador externo percibe de una traza, usamos la proyección natural.
+
+\begin{definition}[Proyección natural]
+\label{def:proyeccion}
+Dado $\Omega \C \Sigma$, definimos la \textit{proyección natural}
+$P_{\Omega} : \Sigma^{*} \into \Omega^{*}$ como la operación que borra de una traza
+$\pi \in \Sigma^{*}$ todos los eventos que no pertenecen a $\Omega$.
+\end{definition}
+
+Es decir, $P_{\Omega}(\pi)$ es lo que queda de $\pi$ una vez que se descartan los eventos
+locales. En particular, si $\l \in \Omega$ entonces $P_{\Omega}(\l) = \l$, y si
+$\l \in \Upsilon$ entonces $P_{\Omega}(\l) = \epsilon$. 
+
+\medskip
 
 
-Un controlador observa las transiciones no controlables y puede deshabilitar algunas transiciones controlables para generar una planta restringida. Una palabra $w$ pertenece al lenguaje generado por $T$ restringido por una función del controlador $\sigma: A_T^* \into 2^{A_T}$ (anotado como $\L^\sigma(T)$) si cada prefijo de $w$ \textit{sobrevive} a $\sigma$. Formalmente, sea $w = \l_0, \ldots , \l_k$ una palabra en $\L(T)$, entonces $w \in \L^\sigma(T)$ si y solo si para todo $0 \leq i \leq k : \init{t} \runw{\l_0, \ldots , \l_i}{T} t_{i+1}  \wedge \l_i \in \sigma(\l_0, \ldots , \l_{i-1})$.
-
-\noindent \textbf{Definición 3} (\textit{Problema de control \textbf{Safe} y \textbf{Non-Blocking}}): Un \textit{problema de control} con objetivos \textbf{Safe} y \textbf{Non-Blocking} composicional es una tupla $\E = (E, A_E^C, S_E^I)$, donde $E$ es un conjunto de autómatas $\{ E_0, \ldots, E_n\}$. En nuestro caso haremos un abuso de notación y usaremos $E =(S_E, A_E, \D_E, \init{e}, M_E)$ para referirnos a la composición $E_0 \| \ldots \| E_n$. Por otro lado, $A_E^C \subseteq  A_E$ es el conjunto de eventos controlables y definimos analogamente a $A_E^{U} = A_E \setminus A_E^{C}$ como el conjunto de eventos \textbf{no} controlables.
-
-Una solución para $\E$ es un supervisor $\sigma : A_E^* \into 2^{A_E}$, tal que $\sigma$ es:
-
-\begin{itemize}
-    \item \textit{Controlable}: $A_E^{U} \subseteq \sigma(w)$ con $w \in A_E^{*}$
-    \item \textit{Safe y non-blocking}: para cada palabra $w \in \L^\sigma(E)$ existe una palabra no vacía $w' \in A_E^*$ tal que la concatenación $ww' \in \L^\sigma(E)$ y $\init{e} \runw{ww'}{E} e_m$ con $e_m \in M_E$ (un estado marcado de E).
-\end{itemize}
-
-Por lo tanto concluímos que un supervisor $\sigma$ es \textit{controlable} si deshabilita solamente eventos controlables, y es \textit{safe y non-blocking} si podemos garantizar para cualquier palabra del lenguaje una extensión que le permita llegar a un estado marcado. A continuación definiremos como \textit{ganadores} (\textit{perdedores}) a los estados que podemos (no podemos) incluir en un controlador.
-
-Decimos que un estado $s$ es \textbf{ganador} en el problema $\E = (E, A_E^C, S_E^I)$ si hay una solución $(E_s, A_E^{C})$ donde $E_s$ es el resultado de cambiar al estado inicial de $E$ a $s$.
-
-Podemos pensar en un controlador \textit{non-blocking} como un jugador optimista que se encarga de no perder, y solo requiere conocer un futuro camino posible para llegar a un estado ganador. Es importante notar que como se busca que cualquier palabra sea extensible a otro estado marcado, lo que se busca es pasar por algún estado marcado infinitas veces. Es
-decir, un estado \textit{e} marcado que tenga un camino para que el jugador pueda volver \textit{controlablemente} al mismo estado \textit{e}.
-
-Por esto es que a lo largo de este trabajo analizaremos detenidamente la estructura de ciclo en nuestro algoritmo ya que sirve para deducir propiedades como que los primeros estados ganadores son aquellos que están en un loop controlable con un estado marcado dentro. Luego anotamos como ganador también a cualquier estado que controlablemente alcanza un estado ganador.
-
-Los ciclos también son esenciales para encontrar los estados perdedores, ya que la única forma de que un estado sea perdedor es que no pueda alcanzar un estado ganador. En otras palabras, los estados perdedores son aquellos que forman parte de un loop que no tiene estados marcados ni transiciones salientes, asímismo los que llevan a un deadlock.
-
-
-% =====================================================================
-% TODO(2.3): \section{Síntesis composicional} -- AGREGAR.
-%   - Marco de Mohajerani / Malik / Fabian (Chalmers): minimización entre
-%     composiciones para evitar la explosión de estados. \cite{wsoe}.
-%   - Cuál es la noción de equivalencia que habilita esa minimización y
-%     cómo la usa el paper composicional. \cite{compositional}.
-%
-% NOTA DE REORGANIZACIÓN: la definición formal de WSOE (antes planificada
-% acá como §2.4) se movió al Cap. 3 (Branching bisimilarity), donde se
-% define junto a branching y se demuestra su equivalencia.
-% =====================================================================
+Todo el trabajo de esta tesis se realizó sobre \MTSA{} (\textit{Modal Transition System
+Analyser})~\cite{mtsa}, la herramienta desarrollada en el LaFHIS (Laboratorio de Fundamentos y
+Herramientas para la Ingeniería del Software) de esta facultad. \MTSA{} es un entorno escrito en
+Java para el modelado, análisis y verificación de sistemas concurrentes, que soporta además de
+manera nativa la síntesis de controladores para plantas modulares descriptas como composición de
+LTS. 
 
 \section{Un ejemplo concreto}
+\label{sec:ejemplo-ta}
 
-Para ejemplificar y tener una noción acerca del tamaño que puede alcanzar el problema de composición y su posterior exploración, presentaremos una versión simplificada del problema \textbf{TravelAgency} que describiremos con mayor detalle posteriormente en el capítulo 6 y será usado para medir la \textit{performance} del algoritmo.
+Para ejemplificar y tener una noción acerca del tamaño que puede alcanzar el problema de
+composición, presentaremos una versión simplificada del problema \textbf{TravelAgency}.
 
-En este problema se busca armar una agencia de venta online de paquetes vacacionales. El objetivo
-es que la misma orqueste los servicios (alquiler de auto, hotel, pasaje de avión, etc.) de forma automática de manera de obtener un paquete de vacaciones completo de ser posible, evitando pagar por paquetes incompletos.
+En este problema se busca armar una agencia de venta online de paquetes vacacionales. El
+objetivo es que la misma orqueste los servicios (alquiler de auto, hotel, pasaje de avión, etc.)
+de forma automática de manera de obtener un paquete de vacaciones completo de ser posible,
+evitando pagar por paquetes incompletos.
 
-Para cada servicio que se desea sub-contratar se consulta (query) si ese servicio está disponible. En caso de tener éxito y confirmar la disponibilidad, se espera a confirmar el resto para comprar todos al mismo tiempo. En caso de que algún otro servicio no esté disponible, se cancela la compra y se vuelve al estado inicial, lo cual no implica un gasto.
+Para cada servicio que se desea sub-contratar se consulta (query) si ese servicio está
+disponible. En caso de tener éxito y confirmar la disponibilidad, se espera a confirmar el resto
+para comprar todos al mismo tiempo. En caso de que algún otro servicio no esté disponible, se
+cancela la compra y se vuelve al estado inicial, lo cual no implica un gasto.
 
-Este problema, descripto por ahora en términos generales, puede escalar de forma muy rápida si se incrementa la cantidad de servicios a contratar o la cantidad de pasos para reservar cada servicio,
-por lo que para este ejemplo ilustrativo asumimos que no hacen falta múltiples pasos para reservar un servicio, y solo mostramos el problema con 1 y 2 sub-servicios.
+Este problema, descripto por ahora en términos generales, puede escalar de forma muy rápida si
+se incrementa la cantidad de servicios a contratar o la cantidad de pasos para reservar cada
+servicio, por lo que para este ejemplo ilustrativo asumimos que no hacen falta múltiples pasos
+para reservar un servicio, y solo mostramos el problema con 1 y 2 sub-servicios.
 
 \begin{figure}[h!]
     \centering
@@ -130,17 +178,28 @@ por lo que para este ejemplo ilustrativo asumimos que no hacen falta múltiples 
     \label{fig:ejemploTAProblema}
 \end{figure}
 
-En el ejemplo, la figura \ref{fig:ejemploTAProblema}a es la representación de la agencia que busca confirmar la compra, el estado 2 es nuestro estado marcado, objetivo que queremos alcanzar infinitas veces. En cambio, al detectar algún \textit{query.falla}, se mueve al estado 1, señalando que hubo un problema y solo permite cancelar la compra de todos los otros servicios consultados.
+En el ejemplo, la figura \ref{fig:ejemploTAProblema}a es la representación de la agencia que
+busca confirmar la compra, el estado 2 es nuestro estado objetivo, al que queremos alcanzar
+infinitas veces. En cambio, al detectar algún \textit{query.falla}, se mueve al estado 1,
+señalando que hubo un problema y solo permite cancelar la compra de todos los otros servicios
+consultados.
 
-El componente del \textit{subservicio} (figura \ref{fig:ejemploTAProblema}b) también tiene el evento \textit{agencia.exito}, pero debe previamente haber recibido la consulta y confirmado su disponibilidad tomando el evento \textit{query.exito.0}. 
+El componente del \textit{subservicio} (figura \ref{fig:ejemploTAProblema}b) también tiene el
+evento \textit{agencia.exito}, pero debe previamente haber recibido la consulta y confirmado su
+disponibilidad tomando el evento \textit{query.exito.0}.
 
-En caso de no ser posible la reserva, solo permite la cancelación de la compra, yendo del estado 2 al 0; si se
-quisiera confirmar la compra (\textit{agencia.exito}) se llega al \textbf{estado -1}, reservado para los errores
-que el controlador debe evitar.
+En caso de no ser posible la reserva, solo permite la cancelación de la compra, yendo del estado
+2 al 0; si se quisiera confirmar la compra (\textit{agencia.exito}) se llega al
+\textbf{estado -1}, el estado de error reservado para las situaciones que el controlador debe
+evitar.
 
-Podemos observar la representación del sistema complejo en la sincronización que se ve reflejada en la figura \ref{fig:ejemploTAProblema}c, que muestra la planta que representa al sistema con los dos componentes previamente descriptos.
+Podemos observar la representación del sistema complejo en la sincronización que se ve reflejada
+en la figura \ref{fig:ejemploTAProblema}c, que muestra la planta que representa al sistema con
+los dos componentes previamente descriptos.
 
-Finalmente, \ref{fig:ejemploTAProblema}d muestra un posible controlador para este problema. Destacamos que todos los eventos controlables que llevaban al estado -1 (el estado error), no son una posibilidad permitida por el controlador.
+Finalmente, \ref{fig:ejemploTAProblema}d muestra un posible controlador para este problema.
+Destacamos que todos los eventos controlables que llevaban al estado -1, no son una posibilidad
+permitida por el controlador.
 
 \begin{figure}[h!]
     \centering
@@ -151,9 +210,14 @@ Finalmente, \ref{fig:ejemploTAProblema}d muestra un posible controlador para est
 
 \FloatBarrier
 
-Si analizamos el tamaño que adquiere la planta compuesta expresada en la figura \ref{fig:ejemploTAPlanta} podemos notar que es un tipo de problema que escala rápidamente cuando se incrementan los autómatas que se van a componer. También podemos ver que el controlador posee un subconjunto de estados y transiciones de la planta compuesta total. 
+Si analizamos el tamaño que adquiere la planta compuesta expresada en la figura
+\ref{fig:ejemploTAPlanta} podemos notar que es un tipo de problema que escala rápidamente cuando
+se incrementan los autómatas que se van a componer. También podemos ver que el controlador posee
+un subconjunto de estados y transiciones de la planta compuesta total.
 
-Por esta razón reafirmamos el enfoque de exploración \textit{on-the-fly} para resolver el problema de síntesis evitando, en la medida de lo posible, la composición de todo el modelo. 
-
-\vspace{5cm}
-
+Este ejemplo ilustra por qué el enfoque composicional evita construir la planta completa: en
+lugar de componer los dos sub-servicios y la agencia para después analizar el resultado, la
+síntesis composicional resolvería primero la subplanta formada por la agencia y un sub-servicio,
+la reemplazaría por su versión controlada y minimizada y recién entonces compondría
+con el sub-servicio restante. El tamaño del modelo que efectivamente hay que analizar en cada
+paso depende entonces, de manera directa, de cuánto reduzca la minimización.
