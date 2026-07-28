@@ -1,19 +1,19 @@
 \chapter{Branching bisimilarity}
 \label{cap:equivalencias}
 
-En este capítulo introduciremos las definiciones de Branching bisimilarity y de Weak Synthesis Observational Equivalence (WSOE) para utilizarlas como fundamentos a la hora de minimizar un LTS. Con el objetivo de minimizar un LTS en el contexto de la síntesis composicional, utilizamos una noción de equivalencia para poder aplicarla a la hora de procesar los estados y definir de qué manera decidir si son equivalentes o no. En principio, en el algoritmo de síntesis composicional presentado por Gagliardi et al.~\cite{compositional} se utiliza la definición de WSOE. Tal como se explicó anteriormente, esta tesis consiste en analizar el reemplazo del algoritmo que utiliza la definición de WSOE por el algoritmo de Groote et al.~\cite{groote2019} que utiliza la definición de Branching bisimilarity. Para ello, este capítulo introducirá de forma teórica ambas equivalencias y presentará un teorema de cómo se relacionan entre ellas.
+En este capítulo introduciremos las definiciones de Branching bisimilarity y de Weak Synthesis Observational Equivalence (WSOE) para utilizarlas como fundamentos a la hora de minimizar un LTS. Con el objetivo de minimizar un LTS en el contexto de la síntesis composicional, utilizamos una noción de equivalencia para poder aplicarla a la hora de procesar los estados y definir de qué manera decidir si son equivalentes o no. En principio, en el algoritmo de síntesis composicional presentado por Gagliardi et al.~\cite{compositional} se utiliza la definición de WSOE. Tal como se explicó anteriormente, esta tesis consiste en analizar el reemplazo del algoritmo que utiliza la definición de WSOE por el algoritmo de Groote, Jansen et al.~\cite{groote2019} que utiliza la definición de Branching bisimilarity. Para ello, este capítulo introducirá de forma teórica ambas equivalencias y presentará un teorema de cómo se relacionan entre ellas.
 
 \section{Definición formal}
 \label{sec:def-branching}
-La Definición~\ref{def:branching} introduce la noción de equivalencia denominada Branching bisimulation, propuesta originalmente por van Glabbeek y Weijland~\cite{glabbeek1996}. A diferencia de la \textit{observational equivalence} (o \textit{weak bisimulation}) de Milner~\cite{milner1989}, branching bisimilarity preserva además la estructura de ramificación del LTS, es decir, exige que los estados intermedios que atraviesa un camino de acciones internas sigan siendo equivalentes al estado que se está simulando. Adoptamos la formulación de Groote et al.~\cite{groote2019}, que es la que utiliza el algoritmo del Capítulo~\ref{cap:algoritmo}.
+La Definición~\ref{def:branching} introduce la noción de equivalencia denominada Branching bisimulation, propuesta originalmente por van Glabbeek y Weijland~\cite{glabbeek1996}. A diferencia de la \textit{observational equivalence} (o \textit{weak bisimulation}) de Milner~\cite{milner1989}, branching bisimilarity preserva además la estructura de ramificación del LTS, es decir, exige que los estados intermedios que atraviesa un camino de acciones internas sigan siendo equivalentes al estado que se está simulando. Adoptamos la formulación de Groote, Jansen et al.~\cite{groote2019}, que es la que utiliza el algoritmo del Capítulo~\ref{cap:algoritmo}.
 
 Dada una relación de equivalencia $R$, una transición $x_1\pijl{a}y_1$ se denomina \textit{inerte} sii $a = \tau$ y  $\R{x_1}{y_1}$.
 
-El conjunto de acciones $a$ tal que $a = \tau$ forma parte del conjunto de datos que se deben proveer al comenzar el proceso de minimización.
+Recordemos del Capítulo~\ref{cap:antecedentes} que las transiciones $\tau$ son el resultado de ocultar eventos locales. Qué eventos se ocultan (y por lo tanto cuáles son las acciones internas) es un dato que se debe proveer al comenzar el proceso de minimización.
 
 \begin{definition}[Branching bisimilarity~\cite{groote2019}]
 \label{def:branching}
-Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS.
+Sea $M = (S, \Sigma, \xrightarrow[]{}, \init{s})$ un LTS.
 Definimos una relación  $R\subseteq S\times S$
 como una relación de \textit{branching bisimulation} sii es simétrica y para todo $x_1,x_2\in S$ tal que $\R{x_1}{x_2}$
 y para toda transición $x_1 \pijl{a} y_1$ tenemos:
@@ -25,12 +25,12 @@ existe una secuencia
 $x_2\pijl{\tau}\cdots\pijl{\tau} x_2'\pijl{a}y_2$
 tal que $\R{x_1}{x_2'}$ y $\R{y_1}{y_2}$.
 \end{enumerate}
-Los estados $x_1$ y $x_2$ son \textit{branching bisimilar,} denotado como $x_1\sim_{B}x_2$:
+Los estados $x_1$ y $x_2$ son \textit{branching bisimilar,} denotado como $x_1\sim_{B}x_2$
 sii existe una relación de \textit{branching bisimulation} $R$ tal que
 $\R{x_1}{x_2}$.
 \end{definition}
 
-\section{WSOE: definición formal}
+\section{Definición formal de WSOE}
 \label{sec:def-wsoe}
 La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denominada Weak Synthesis Observational Equivalence (WSOE) en el contexto de síntesis de controladores propuesto por Gagliardi et al.~\cite{compositional}.
 
@@ -40,7 +40,7 @@ La Definición~\ref{def:synth-equiv} introduce la noción de equivalencia denomi
 
 \begin{definition}[Weak Synthesis Observational Equivalence~\cite{wsoe}]
     \label{def:synth-equiv}
-    Sea $M = (S, \Sigma, \xrightarrow[]{}, \hat{s})$ un LTS y sea $\Sigma_c$ el conjunto de eventos controlables y sea $\Sigma_u$ el conjunto de eventos no-controlables. Una relación de equivalencia $\sim_{W} \ \subseteq S \times S$ es del tipo \textit{weak synthesis observational equivalence} con $M$ respecto al conjunto de etiquetas $\Upsilon_c$ y $\Upsilon_u$ si las siguientes condiciones valen para todo $x_1, x_2 \in S$ tal que $x_1 \sim_{W} x_2$:
+    Sea $M = (S, \Sigma, \xrightarrow[]{}, \init{s})$ un LTS y sea $\Sigma_c$ el conjunto de eventos controlables y sea $\Sigma_u$ el conjunto de eventos no-controlables. Una relación de equivalencia $\sim_{W} \ \subseteq S \times S$ es del tipo \textit{weak synthesis observational equivalence} con $M$ respecto al conjunto de etiquetas $\Upsilon_c$ y $\Upsilon_u$ si las siguientes condiciones valen para todo $x_1, x_2 \in S$ tal que $x_1 \sim_{W} x_2$:
 \vspace{-0.2pt}
     \begin{enumerate}
         \item si $x_1 \xrightarrow[]{u} y_1$ para $u \in \Sigma_u$, entonces existen $\pi_1, \pi_2 \in \Upsilon_u^{*}$ tales que $x_2 \xrightarrow[]{\pi_1\, P_{\Omega}(u)\, \pi_2} y_2$ y $y_1 \sim_{W} y_2$
@@ -57,7 +57,7 @@ Recordemos que $P_{\Omega}$ es la proyección natural de la Definición~\ref{def
 En esta sección intentaremos comprender la intuición de las definiciones de Branching Bisimilarity y WSOE primero analizando ejemplos más chicos y luego ampliándolos. Al comenzar la tesis, adoptamos la hipótesis más simple posible, es decir que las acciones internas $\tau$ son todas las acciones locales. Veamos a través de algunos ejemplos concretos si esta hipótesis resulta correcta.
 
 \paragraph{Ejemplo 1}
-Consideremos el LTS de la Figura~\ref{fig:cap3-ej1}. La acción $t$ es local y, bajo la hipótesis del caso base, la tomamos como transición interna $\tau$; las acciones $a$ y $b$ son observables y \textit{no controlables} ($a, b \in \Sigma_u$).
+Consideremos el LTS de la Figura~\ref{fig:cap3-ej1}. La acción $t$ es local y, bajo la hipótesis del caso base, la tomamos como transición interna $\tau$, las acciones $a$ y $b$ son observables y \textit{no controlables} ($a, b \in \Sigma_u$).
 
 La transición $s_1 \pijl{t} s_2$ es inerte, ya que $s_1$ y $s_2$ tienen el mismo comportamiento observable y ambos terminan ejecutando $b$. Por lo tanto, branching los fusiona: $s_1 \sim_{B} s_2$ por la primera cláusula de la Definición~\ref{def:branching} ($\tau$ inerte).
 
@@ -139,7 +139,7 @@ El Ejemplo~3 muestra que para poder cumplir con la condición de que Branching n
 \]
 Con esta definición $c_L$ vuelve a ser visible en el Ejemplo~3, por lo que la transición $s_0 \pijl{c_L} s_1$ deja de ser inerte y branching pasa a distinguir $s_0$ de $s_1$ igual que WSOE.
 
-Esta actualización en la forma de definir a las acciones inertes no cambia el algoritmo de minimización detallado por Groote et al.~\cite{groote2019}, sino que solo recibe como conjunto de acciones internas el alfabeto local intersecado con las no controlables. Veremos más adelante, en la Sección~\ref{sec:teorema}, que al definir las acciones inertes de esta manera la definición de WSOE siempre minimiza al menos tanto como la definición de Branching Bisimilarity.
+Esta actualización en la forma de definir a las acciones inertes no cambia el algoritmo de minimización detallado por Groote, Jansen et al.~\cite{groote2019}, sino que solo recibe como conjunto de acciones internas el alfabeto local intersecado con las no controlables. Veremos más adelante, en la Sección~\ref{sec:teorema}, que al definir las acciones inertes de esta manera la definición de WSOE siempre minimiza al menos tanto como la definición de Branching Bisimilarity.
 
 \paragraph{Ejemplo 4}
 Veamos ahora un ejemplo concreto, adaptado del trabajo de van Glabbeek y Weijland~\cite{glabbeek1996}, en el que WSOE y Branching Bisimilarity difieren. El LTS se ilustra en la Figura~\ref{fig:cap3-ej4}.
@@ -210,15 +210,15 @@ Por lo tanto, vale que $s_2\sim_{W}s_8$.
 
 En conclusión, $s_2\sim_{W}s_8$, mientras que  $s_2 \not\sim_{B}s_8$. Este caso prueba que WSOE y Branching Bisimilarity pueden producir resultados diferentes a partir de un mismo ejemplo, por las diferencias en las nociones de equivalencia que definen. Es decir, dados los estados $x_1\sim_{W}x_2$, no siempre vale que $x_1\sim_{B}x_2$ y queda demostrado con el Ejemplo 4. Sin embargo, en la próxima sección demostraremos formalmente que si dos estados $x_1,x_2$ son Branching Equivalent, entonces debería valer que los estados $x_1,x_2$ son también equivalentes en la definición de WSOE. 
 
-\section{Teorema de equivalencia y demostración}
+\section{Teorema de inclusión y demostración}
 \label{sec:teorema}
 
-Luego de explorar la intuición detrás de la proposición, formalizamos la equivalencia entre WSOE y Branching Bisimilarity. Queremos ver que con la definición de acciones inertes restringida a $\tau = \Upsilon_u$ entonces 
+Luego de explorar la intuición detrás de la proposición, formalizamos la relación de inclusión entre Branching Bisimilarity y WSOE. Queremos ver que con la definición de acciones inertes restringida a $\tau = \Upsilon_u$ entonces 
 \[ \forall x_1,x_2 \in S | x_1 \sim_{B} x_2 \implies  x_1 \sim_{W} x_2 \]
 
 \begin{theorem}
 \label{thm:wsoe-refina-branching}
-Sea $M=(S,\Sigma,\xrightarrow[]{},\hat{s})$ un LTS y tomemos como conjunto de acciones inertes de la Definición~\ref{def:branching} al conjunto $\tau=\Upsilon_u$ de acciones locales no controlables. Entonces $\sim_{B}\ \subseteq\ \sim_{W}$; es decir, para todo $x_1,x_2\in S$, si $x_1\sim_{B}x_2$ entonces $x_1\sim_{W}x_2$.
+Sea $M=(S,\Sigma,\xrightarrow[]{},\init{s})$ un LTS y tomemos como conjunto de acciones inertes de la Definición~\ref{def:branching} al conjunto $\tau=\Upsilon_u$ de acciones locales no controlables. Entonces $\sim_{B}\ \subseteq\ \sim_{W}$; es decir, para todo $x_1,x_2\in S$, si $x_1\sim_{B}x_2$ entonces $x_1\sim_{W}x_2$.
 \end{theorem}
 
 \begin{proof}

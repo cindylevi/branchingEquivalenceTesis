@@ -14,9 +14,9 @@ noción intuitiva de autómata que presentamos en el Capítulo~\ref{cap:introduc
 \begin{definition}[LTS]
 \label{def:lts}
 Un \textit{sistema de transiciones etiquetado} (LTS) es una tupla
-$M = (S, \Sigma, \pijl{}, \init{s})$ donde $S$ es un \k{conjunto finito de estados};
-$\Sigma$ es un \k{conjunto finito de etiquetas de eventos}; $\pijl{} \ \C \ S \x \Sigma \x S$
-es la \k{relación de transiciones}; y $\init{s} \in S$ es el \k{estado inicial}.
+$M = (S, \Sigma, \pijl{}, \init{s})$ donde $S$ es un \k{conjunto finito de estados},
+$\Sigma$ es un \k{conjunto finito de etiquetas de eventos}, $\pijl{} \ \C \ S \x \Sigma \x S$
+es la \k{relación de transiciones} y $\init{s} \in S$ es el \k{estado inicial}.
 \end{definition}
 
 Notamos $(s, \l, s') \in \ \pijl{}$ como $s \pijl{\l} s'$. Esta es exactamente la estructura
@@ -31,14 +31,15 @@ etiquetas de $\Sigma$, a las que llamamos \k{trazas}. Decimos que $\l \in \Sigma
 conjunto de eventos habilitados en $s$. Un LTS es \k{determinístico} si ningún estado tiene dos
 transiciones salientes con el mismo evento, y es \k{libre de deadlock} si todo estado tiene al
 menos una transición saliente. Extendemos $\pijl{}$ a trazas de la manera usual, asumiendo que
-vale para la traza vacía: $s \pijl{\epsilon} s$. Decimos que una secuencia $w$ de etiquetas de
+para la traza vacía vale $s \pijl{\epsilon} s$. Decimos que una secuencia $w$ de etiquetas de
 $\Sigma$, finita o infinita, es una \k{traza de $M$} si existe $s'$ tal que
 $\init{s} \pijl{w} s'$.
 
 \medskip
 
 Tal como se anticipó en el Capítulo~\ref{cap:introduccion}, un sistema complejo rara vez se
-modela con un único LTS: se describen sus partes por separado y luego se las combina. La
+modela con un único LTS. En cambio, se describen sus partes por separado y luego se las
+combina. La
 operación que las combina es la composición paralela, que sincroniza los componentes en los
 eventos que comparten y los deja evolucionar de manera independiente en el resto.
 
@@ -48,7 +49,7 @@ Sean $M_i = (S_i, \Sigma_i, \pijl{}_{M_i}, \init{s}_i)$ con $i \in \{1,2\}$ dos 
 \textit{composición paralela} es el LTS
 $M_1 \| M_2 = (S_1 \x S_2,\ \Sigma_1 \cup \Sigma_2,\ \pijl{}_{M_1 \| M_2},\
 \<\init{s}_1, \init{s}_2\>)$, donde $\pijl{}_{M_1 \| M_2}$ es la menor relación que satisface
-las siguientes reglas:
+las reglas que se muestran a continuación.
 \end{definition}
 
 \begin{normalsize}
@@ -76,40 +77,40 @@ las siguientes reglas:
 
 La composición paralela es asociativa y conmutativa. Si $\M = \{M_1, \ldots, M_n\}$ es un
 conjunto de LTS, abusamos de la notación y escribimos $\M$ también para referirnos a
-$M_1 \| \ldots \| M_n$; llamamos \k{planta} a ese sistema compuesto y \k{subplanta} a la
+$M_1 \| \ldots \| M_n$. Llamamos \k{planta} a ese sistema compuesto y \k{subplanta} a la
 composición de un subconjunto de $\M$.
 
 Hay dos características de la composición paralela que conviene destacar. La primera es que la
-tercera regla es la que realiza la sincronización entre componentes: un evento compartido sólo
-puede ocurrir si todos los componentes que lo tienen en su alfabeto pueden ejecutarlo
-simultáneamente. La segunda, y la que motiva todo este trabajo, es que el número de estados de
+tercera regla es la que realiza la sincronización entre componentes, ya que un evento
+compartido sólo puede ocurrir si todos los componentes que lo tienen en su alfabeto pueden
+ejecutarlo simultáneamente. La segunda, y la que motiva todo este trabajo, es que el número de estados de
 $M_1 \| \ldots \| M_n$ puede crecer \textbf{exponencialmente} con respecto al número de
 autómatas a componer, ya que su espacio de estados es un subconjunto del producto cartesiano
 $S_1 \x \ldots \x S_n$. Este fenómeno se conoce como \k{explosión de estados} y es lo que vuelve
 intratable el enfoque monolítico de construir la composición completa antes de analizarla.
 
 Cuando trabajamos con una subplanta $M$ dentro de un sistema modular más grande, no todos sus
-eventos tienen el mismo estatus. Algunos son la interfaz de $M$ con el resto del sistema: son
-los que aparecen también en el alfabeto de otros componentes y, por la tercera regla de la
+eventos tienen el mismo estatus. Algunos son la interfaz de $M$ con el resto del sistema, ya que
+aparecen también en el alfabeto de otros componentes y, por la tercera regla de la
 Definición~\ref{def:composicion}, son los puntos en los que $M$ se sincroniza. Otros son
-internos a $M$: ningún otro componente los tiene en su alfabeto y, por lo tanto, ninguna
+internos a $M$. Ningún otro componente los tiene en su alfabeto y, por lo tanto, ninguna
 decisión del resto del sistema depende de ellos. Esta distinción es la que habilita a abstraer,
 y por lo tanto la que habilita a minimizar.
 
 Particionamos entonces el alfabeto de un LTS de dos maneras distintas y \textbf{ortogonales}
 entre sí, y es importante no confundirlas porque el resto de la tesis las usa simultáneamente.
 
-La primera partición separa según la \textbf{visibilidad}:
+La primera partición separa el alfabeto según su \textbf{visibilidad} en
 \[
 \Sigma \;=\; \Omega \ \dot{\cup} \ \Upsilon
 \]
-donde $\Omega$ es el conjunto de eventos \k{compartidos} (u \k{observables}) ---los que $M$
-comparte con algún otro componente del sistema o los que aparecen en el objetivo de control--- y
-$\Upsilon$ es el conjunto de eventos \k{locales}, propios de $M$. A $\Upsilon$ lo llamamos
+donde $\Omega$ es el conjunto de eventos \k{compartidos} (u \k{observables}), es decir, los
+que $M$ comparte con algún otro componente del sistema o los que aparecen en el objetivo de
+control, y $\Upsilon$ es el conjunto de eventos \k{locales}, propios de $M$. A $\Upsilon$ lo llamamos
 también el \k{alfabeto local} de $M$.
 
 La segunda partición separa según la \textbf{controlabilidad}, tal como se introdujo en el
-Capítulo~\ref{cap:introduccion}:
+Capítulo~\ref{cap:introduccion}, en
 \[
 \Sigma \;=\; \Sigma_c \ \dot{\cup} \ \Sigma_u
 \]
@@ -118,7 +119,7 @@ deshabilitar, y $\Sigma_u = \Sigma \setminus \Sigma_c$ es el conjunto de eventos
 \k{no controlables}, que el controlador puede observar pero no impedir.
 
 Al cruzar ambas particiones obtenemos cuatro clases de eventos. Dos de ellas van a ser centrales
-en el Capítulo~\ref{cap:equivalencias} y merecen nombre propio:
+en el Capítulo~\ref{cap:equivalencias} y merecen nombre propio, por lo que definimos
 \[
 \Upsilon_c \;=\; \Upsilon \cap \Sigma_c
 \qquad\qquad
@@ -138,7 +139,30 @@ $\pi \in \Sigma^{*}$ todos los eventos que no pertenecen a $\Omega$.
 
 Es decir, $P_{\Omega}(\pi)$ es lo que queda de $\pi$ una vez que se descartan los eventos
 locales. En particular, si $\l \in \Omega$ entonces $P_{\Omega}(\l) = \l$, y si
-$\l \in \Upsilon$ entonces $P_{\Omega}(\l) = \epsilon$. 
+$\l \in \Upsilon$ entonces $P_{\Omega}(\l) = \epsilon$.
+
+\medskip
+
+En el flujo composicional, los eventos locales dejan de ser relevantes para el resto del
+sistema, ya que ningún otro componente se sincroniza con ellos. Por eso, antes de minimizar una
+subplanta, se los renombra a cada uno con una etiqueta
+distinguida $\tau$ que representa una acción interna, invisible para un observador
+externo~\cite{wsoe}. Siguiendo a Groote, Jansen et al.~\cite{groote2019}, de acá en más
+asumimos que el alfabeto de un LTS puede incluir la acción interna $\tau$, y llamamos
+\k{visibles} al resto de las acciones.
+
+Una vez ocultos los eventos locales, la \k{minimización} consiste en fusionar los estados que
+alguna relación de equivalencia $\sim$ sobre $S$ declara indistinguibles, reemplazando el LTS
+por su \k{cociente}.
+
+\begin{definition}[LTS cociente~\cite{compositional}]
+\label{def:cociente}
+Sea $M = (S, \Sigma, \pijl{}, \init{s})$ un LTS y sea $\sim\ \C S \x S$ una relación de
+equivalencia. El \textit{LTS cociente} de $M$ módulo $\sim$ es
+$M/\!\!\sim\ = (S/\!\!\sim,\ \Sigma,\ \pijl{}/\!\!\sim,\ [\init{s}])$, donde $S/\!\!\sim$ es
+el conjunto de clases de equivalencia de $\sim$, $[s]$ denota la clase del estado $s$, y
+$\pijl{}/\!\!\sim\ = \{([s], \l, [s']) \mid s \pijl{\l} s'\}$.
+\end{definition}
 
 \medskip
 
@@ -149,6 +173,51 @@ Herramientas para la Ingeniería del Software) de esta facultad. \MTSA{} es un e
 Java para el modelado, análisis y verificación de sistemas concurrentes, que soporta además de
 manera nativa la síntesis de controladores para plantas modulares descriptas como composición de
 LTS. 
+
+\section{El problema de control}
+\label{sec:problema-control}
+
+Con estos elementos podemos precisar el problema que la síntesis resuelve. Las siguientes dos
+definiciones están tomadas de Gagliardi et al.~\cite{compositional}. La primera captura el
+requisito de que un controlador no puede impedir la ocurrencia de eventos no controlables.
+
+\begin{definition}[LTS legal~\cite{compositional}]
+\label{def:legal}
+Dados dos LTS $M = (S_M, \Sigma, \pijl{}_{M}, \init{s}_M)$ y
+$C = (S_C, \Sigma_C, \pijl{}_{C}, \init{s}_C)$ con $\Sigma_u \C \Sigma$, decimos que $C$ es un
+LTS \textit{legal} para $M$ con respecto a $\Sigma_u$ si para todo $(s_M, s_C)$ tal que
+$\<\init{s}_M, \init{s}_C\> \pijl{}_{M\|C} \<s_M, s_C\>$ vale la siguiente igualdad
+\[
+\pijl{}_{M\|C}\!(\<s_M, s_C\>) \cap \Sigma_u \;=\; \pijl{}_M\!(s_M) \cap \Sigma_u
+\]
+\end{definition}
+
+Es decir, en todo estado alcanzable del sistema controlado, los eventos no controlables
+habilitados son exactamente los que la planta habilita por sí sola. Dicho de otra manera, el
+controlador sólo puede restringir eventos de $\Sigma_c$.
+
+\begin{definition}[Problema de control~\cite{compositional}]
+\label{def:control}
+Dados un conjunto $\M$ de LTS determinísticos que modela la planta a controlar, $\Sigma$ la
+unión de los alfabetos de los LTS de $\M$, un conjunto de eventos controlables
+$\Sigma_c \C \Sigma$ y una fórmula LTL $\varphi$ sobre $\Sigma$ que modela el objetivo del
+controlador, definimos $\E = \<\M, \Sigma_c, \varphi\>$ como un \textit{problema de control}.
+Un LTS determinístico $C$ es una \textit{solución} de $\E$ (es decir, un \textit{controlador})
+si $C$ es legal para $\M$ con respecto al conjunto de eventos no controlables
+$\Sigma_u = \Sigma \setminus \Sigma_c$, $\M \| C$ es libre de deadlock y toda traza infinita
+$\pi$ de $\M \| C$ satisface $\pi \vDash \varphi$.
+\end{definition}
+
+Decimos que $\E$ es \k{realizable} si existe una solución para $\E$. No introducimos aquí el
+aparato completo de la Lógica Temporal Lineal (LTL), ya que para esta tesis alcanza con saber
+que $\varphi$ describe objetivos como los del Capítulo~\ref{cap:introduccion}, es decir,
+alcanzar los estados objetivo infinitas veces evitando los estados de error.
+
+Esta noción es la que da sentido a una frase que aparecerá varias veces en los capítulos
+siguientes, la de que una minimización \k{preserva las soluciones} del problema de control.
+Significa que reemplazar una subplanta por su cociente no cambia la realizabilidad del
+problema y que los controladores obtenidos sobre el modelo minimizado siguen siendo soluciones del
+problema original.
 
 \section{Un ejemplo concreto}
 \label{sec:ejemplo-ta}
@@ -179,7 +248,7 @@ para reservar un servicio, y solo mostramos el problema con 1 y 2 sub-servicios.
 \end{figure}
 
 En el ejemplo, la figura \ref{fig:ejemploTAProblema}a es la representación de la agencia que
-busca confirmar la compra, el estado 2 es nuestro estado objetivo, al que queremos alcanzar
+busca confirmar la compra, el estado 2 es nuestro estado objetivo, que queremos alcanzar
 infinitas veces. En cambio, al detectar algún \textit{query.falla}, se mueve al estado 1,
 señalando que hubo un problema y solo permite cancelar la compra de todos los otros servicios
 consultados.
@@ -215,7 +284,7 @@ Si analizamos el tamaño que adquiere la planta compuesta expresada en la figura
 se incrementan los autómatas que se van a componer. También podemos ver que el controlador posee
 un subconjunto de estados y transiciones de la planta compuesta total.
 
-Este ejemplo ilustra por qué el enfoque composicional evita construir la planta completa: en
+Este ejemplo ilustra por qué el enfoque composicional evita construir la planta completa. En
 lugar de componer los dos sub-servicios y la agencia para después analizar el resultado, la
 síntesis composicional resolvería primero la subplanta formada por la agencia y un sub-servicio,
 la reemplazaría por su versión controlada y minimizada y recién entonces compondría

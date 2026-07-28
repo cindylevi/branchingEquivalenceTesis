@@ -1,9 +1,9 @@
-\chapter{El algoritmo $O(m \log n)$ de Groote et al.}
+\chapter{El algoritmo $O(m \log n)$ de Groote, Jansen et al.}
 \label{cap:algoritmo}
 
-En este capítulo se realizará un recorrido teórico por el algoritmo presentado por Groote et al.~\cite{groote2019}, dando una intuición de cómo funciona la idea general. Luego, en el Capítulo~\ref{cap:implementacion}, se explicarán más detalles de la implementación del algoritmo.
+En este capítulo se realizará un recorrido teórico por el algoritmo presentado por Groote, Jansen et al.~\cite{groote2019}, dando una intuición de cómo funciona la idea general. Luego, en el Capítulo~\ref{cap:implementacion}, se explicarán más detalles de la implementación del algoritmo.
 
-Tal como se introdujo previamente, el algoritmo utilizado en el trabajo de Gagliardi et al.~\cite{compositional} para obtener, a partir de un LTS, una minimización según la equivalencia de la Definición~\ref{def:synth-equiv} fue el presentado por Mohajerani et al.~\cite{wsoe}, que tiene una complejidad de $\bigo{nm}$. Analicemos el algoritmo presentado por Groote et al. para entender cómo funciona y luego comprender qué optimizaciones se utilizan para alcanzar la complejidad de $\bigo{m \log n}$.
+Tal como se introdujo previamente, el algoritmo utilizado en el trabajo de Gagliardi et al.~\cite{compositional} para obtener, a partir de un LTS, una minimización según la equivalencia de la Definición~\ref{def:synth-equiv} fue el presentado por Mohajerani et al.~\cite{wsoe}, que tiene una complejidad de $\bigo{nm}$. Analicemos el algoritmo presentado por Groote, Jansen et al. para entender cómo funciona y luego comprender qué optimizaciones se utilizan para alcanzar la complejidad de $\bigo{m \log n}$.
 
 \section{Terminología}
 \label{sec:terminologia}
@@ -21,8 +21,8 @@ Nos referimos a los elementos de $\Pi_s$ como \textit{blocks,} denotados usando 
 La partición $\Pi_t$ particiona las transiciones no inertes del LTS.
 Nos referimos a los elementos de $\Pi_t$ como \textit{bunches}, denotados usando la letra $T$.
 
-La partición de estados $\Pi_s$ registra el conocimiento actual sobre los estados branching bisimilares:
-dos estados están en bloques diferentes si y solo si el algoritmo encontró una prueba de que no son branching bisimilares.
+La partición de estados $\Pi_s$ registra el conocimiento actual sobre los estados branching bisimilares.
+Dos estados están en bloques diferentes si y solo si el algoritmo encontró una prueba de que no son branching bisimilares.
 La idea principal detrás del algoritmo es refinar iterativamente $\Pi_s$
 hasta llegar a la partición más chica cuyos bloques sean clases de estados branching bisimilares.
 En cada iteración, un conjunto de transiciones con etiqueta $a$ y bloque destino $B'$ se selecciona como el \emph{splitter},
@@ -37,8 +37,8 @@ entonces cada estado en ese bloque puede alcanzar de forma inerte una transició
 de tal manera que se satisfaga la condición de la Definición~\ref{def:branching}.
 Siempre que un bloque y un bunch particular satisfacen este invariante, decimos que el bloque es \emph{estable} con respecto a ese bunch.
 
-Sin embargo, la Definición~\ref{def:branching} viene con algunas restricciones sobre la transición $t' \pijl{a} t''$:
-primero, necesita tener la misma etiqueta de acción que $s \pijl{a} s'$,
+Sin embargo, la Definición~\ref{def:branching} viene con algunas restricciones sobre la transición $t' \pijl{a} t''$.
+Primero, necesita tener la misma etiqueta de acción que $s \pijl{a} s'$,
 y segundo, $s'$ y $t''$ necesitan estar en el mismo bloque destino.
 Si se violan estas restricciones,
 parece que nuestra suposición inicial sobre el bunch era incorrecta,
@@ -96,7 +96,7 @@ Estas marcas se utilizan para determinar qué estados bottom de un bloque tienen
 \section{Idea general}
 \label{sec:idea-general}
 
-Como primer paso, el LTS es preprocesado para contraer las componentes $\tau$-fuertemente conexas ($\tau$-SCCs) en un único estado. Luego, el algoritmo refina iterativamente las particiones $\Pi_s$ y $\Pi_t$. El objetivo principal es garantizar que, si un bloque $B$ tiene una transición en una action-block-slice $\TaB$, entonces cada estado bottom de $B$ tiene una transición en $\TaB$. Cuando esto vale para todos los bloques y todas las action-block-slices, cada bloque resulta ser exactamente una clase de estados branching bisimilares. Alcanzar ese objetivo de forma directa sería costoso, así que el algoritmo mantiene en su lugar un invariante más débil, formulado sobre los bunches en vez de sobre las action-block-slices: si un bloque $B$ tiene una transición en un bunch $T$, entonces cada estado bottom de $B$ tiene una transición en el mismo bunch $T$. Este invariante, combinado con la condición de que todo bunch contenga una única action-block-slice, implica el objetivo principal. Formalmente, el invariante es el siguiente:
+Como primer paso, el LTS es preprocesado para contraer las componentes $\tau$-fuertemente conexas ($\tau$-SCCs) en un único estado. Luego, el algoritmo refina iterativamente las particiones $\Pi_s$ y $\Pi_t$. El objetivo principal es garantizar que, si un bloque $B$ tiene una transición en una action-block-slice $\TaB$, entonces cada estado bottom de $B$ tiene una transición en $\TaB$. Cuando esto vale para todos los bloques y todas las action-block-slices, cada bloque resulta ser exactamente una clase de estados branching bisimilares. Alcanzar ese objetivo de forma directa sería costoso, así que el algoritmo mantiene en su lugar un invariante más débil, formulado sobre los bunches en vez de sobre las action-block-slices. Este invariante pide que, si un bloque $B$ tiene una transición en un bunch $T$, entonces cada estado bottom de $B$ tenga una transición en el mismo bunch $T$. Este invariante, combinado con la condición de que todo bunch contenga una única action-block-slice, implica el objetivo principal. Formalmente, el invariante es el siguiente:
 \begin{invariante}[]\label{inv:bunches}$\Pi_s$ es estable bajo $\Pi_t$, es decir, si un bunch $T \in \Pi_t$ contiene una transición con su estado origen en un bloque $B$ de $\Pi_s$, entonces cada estado bottom en el bloque $B$ tiene una transición en el bunch $T$ (de hecho, en el block-bunch-slice $\TB$).\end{invariante}
 
 Ahora bien, si un bunch contiene múltiples action-block-slices (lo denominamos un bunch \emph{no trivial}), para acercarnos a nuestro objetivo principal debemos refinar $\Pi_t$ separando una action-block-slice. Al mismo tiempo, para preservar el invariante principal, cuando dividimos un bunch necesitamos reflejar este cambio en los bloques. Por lo tanto, los bloques que tenían una transición alcanzable de forma inerte en el bunch original se dividen en subbloques según puedan alcanzar de forma inerte el nuevo bunch, el resto del bunch original, o ambos. Esta idea se desarrolla en el Algoritmo~\ref{algo:main-algorithm-abstract}.
@@ -388,12 +388,12 @@ es decir, para toda block-bunch-slice $\TB$ no vacía (donde $B$ es necesariamen
 Si hay bunches no triviales,
 esos bunches deben dividirse hasta que terminen siendo triviales.
 El ciclo externo del algoritmo (Líneas~\ref{algo:main:outerloop}--\ref{algo:main:outerloop-end}) toma un bunch no trivial $T$ de $\Pi_t$,
-y de él mueve una action-block-slice $\TaB$ \emph{chica} (que contiene a lo sumo la mitad de las transiciones del bunch)
+y mueve una action-block-slice $\TaB$ \emph{chica} (que contiene a lo sumo la mitad de las transiciones del bunch)
 a un bunch propio dentro de $\Pi_t$ (Línea~\ref{alg:split_transitions}).
 De esta manera, el bunch $T$ queda reducido a $T\setminus \TaB$.
 
-Entonces, ahora en $\Pi_t$ tenemos un bunch nuevo más chico, cuyas transiciones tienen todas la misma etiqueta y el mismo bloque destino. Esto puede romper la estabilidad de algún bloque: antes cada estado bottom del bloque tenía alguna transición en el bunch original, pero ahora esas transiciones quedaron repartidas entre los dos bunches nuevos, y puede pasar que algunos estados bottom tengan transiciones en $\TaB$ y otros solamente en $T \setminus \TaB$. Por lo tanto, debemos recuperar la estabilidad particionando esos bloques. El conjunto $\splittableBlocks(\TaB)$ contiene todos los bloques que tienen transiciones en ambos bunches nuevos, $\TaB$ y $T\setminus \TaB$;
-estos son los bloques que hay que investigar. El primer ciclo interno (Líneas~\ref{alg-line-markloop-begin}--\ref{alg-line-markloop-end})
+Entonces, ahora en $\Pi_t$ tenemos un bunch nuevo más chico, cuyas transiciones tienen todas la misma etiqueta y el mismo bloque destino. Esto puede romper la estabilidad de algún bloque. Antes, cada estado bottom del bloque tenía alguna transición en el bunch original, pero ahora esas transiciones quedaron repartidas entre los dos bunches nuevos, y puede pasar que algunos estados bottom tengan transiciones en $\TaB$ y otros solamente en $T \setminus \TaB$. Por lo tanto, debemos recuperar la estabilidad particionando esos bloques. El conjunto $\splittableBlocks(\TaB)$ contiene todos los bloques que tienen transiciones en ambos bunches nuevos, $\TaB$ y $T\setminus \TaB$.
+Estos son los bloques que hay que investigar. El primer ciclo interno (Líneas~\ref{alg-line-markloop-begin}--\ref{alg-line-markloop-end})
 sirve para insertar todas esas block-bunch-slices en la splitter list.
 Las block-bunch-slices de la forma $\TBaB$ que están en la splitter list se etiquetan como primarias,
 y todas las demás block-bunch-slices de esa lista se etiquetan como secundarias.
@@ -426,7 +426,7 @@ todo estado bottom de $U$ debe tener una transición en $\TB \setminus \TBaB$.
 Por lo tanto, en la Línea~\ref{alg:line-remove-TU-after-primary-split} la block-bunch-slice $T_{U\pijl{}} \setminus T_{U\pijl{a} B'}$ puede eliminarse de la splitter list
 sin necesidad de investigarla.
 
-Algunas transiciones invisibles pueden haber pasado a ser no inertes: precisamente, las transiciones $\tau$ que van de $R$ a $U$.
+Algunas transiciones invisibles pueden haber pasado a ser no inertes, precisamente las transiciones $\tau$ que van de $R$ a $U$.
 Las nuevas transiciones no inertes todavía no formaban parte de ningún bunch de $\Pi_t$.
 Por eso se forma un nuevo bunch $R\pijl{\tau}U$ que las contiene. Todas las transiciones de este nuevo bunch salen del bloque
 $R$ y por lo tanto $R$ es el único bloque que puede no ser estable respecto de este bunch nuevo. Para restablecer la estabilidad
@@ -1037,7 +1037,7 @@ En la Figura~\ref{fig:exa:split-e} se muestra la situación después de dos paso
 Cada una visitó dos transiciones adicionales.
 Hay dos estados nuevos destinados a $R_1$, marcados con \redstatetext,
 y hay un estado destinado a $U_1$ con $0$ transiciones inertes restantes,
-del cual sabemos inmediatamente que no tiene ninguna transición en $T \setminus \TaB$; está marcado con \bluestatetext.
+del cual sabemos inmediatamente que no tiene ninguna transición en $T \setminus \TaB$, por lo que está marcado con \bluestatetext.
 En este punto, la corrutina de $R_1$ se aborta, ya que su conjunto contiene más de $\frac{1}{2}\size{R}$ estados,
 y se visitan las transiciones entrantes restantes de los estados de $U_1$.
 Esto no extiende más a $U_1$, porque todos los estados ya están destinados a $R_1$ o a $U_1$.
@@ -1073,7 +1073,7 @@ Cuando $\mathsf{split}$ termina, no hay estados adicionales en $U_2$, y los esta
 
 La situación después de dividir $R_1$ en $R_2$ y $U_2$ se muestra en la Figura~\ref{fig:exa:split-i}.
 Una de las transiciones inertes pasa a ser no inerte, y está marcada con {\color{red}$m$}.
-Además, $R_2$ contiene un nuevo estado bottom: es el estado de $R_2$ con una transición hacia $T'$, y está marcado con nb.
+Además, $R_2$ contiene un nuevo estado bottom, que es el estado de $R_2$ con una transición hacia $T'$ y está marcado con nb.
 
 Nos queda seguir estabilizando $R_2$ respecto del bunch $R_2 \pijl{\tau} U_2$,
 lo cual no genera una nueva división,
@@ -1279,7 +1279,7 @@ En el Algoritmo~\ref{algo:main-algorithm-abstract} esto aparece como
 \end{align*}
 Además, como $R \pijl{\tau} U \subseteq U_{\lijp{}} \cap R_{\pijl{}}$, el término $\bigo{\size{R \pijl{\tau} U}}$ de las Líneas~\ref{alg:split-call2}--\ref{alg:extend_bunch} se atribuye a $U$ o a $R$, al que sea más chico. Sumando sobre todos los estados: cada estado $s$ aporta a lo sumo $\bigo{\log n}$ veces un costo proporcional a su cantidad de transiciones entrantes y salientes, y como la suma de esas cantidades sobre todos los estados es $\bigo{m}$, el total atribuido a la división de bloques es también $\bigo{m \log n}$.
 
-\textbf{Nuevos estados bottom.} Cuando en un bloque aparecen nuevos estados bottom, ese bloque puede volverse inestable respecto de algún bunch, así que hay que volver a poner en la splitter list todas las block-bunch-slices que salen de él y marcar transiciones en cada una (Líneas~\ref{alg:line-make-all-slices-unstable}--\ref{alg:line-mark-bb-of-new-bottom}).
+\textbf{Nuevos estados bottom.} Cuando en un bloque aparecen nuevos estados bottom, ese bloque puede volverse inestable respecto de algún bunch, así que hay que volver a poner en la splitter list todas las block-bunch-slices que salen de ahi y marcar transiciones en cada una (Líneas~\ref{alg:line-make-all-slices-unstable}--\ref{alg:line-mark-bb-of-new-bottom}).
 
 $\Bottom(N)_{\pijl{}}$ es el conjunto de las transiciones salientes de los estados bottom de $N$. Cada vez que un estado $s$ se convierte en un nuevo estado bottom, la complejidad es proporcional a la cantidad de transiciones que salen de $s$, sumada sobre los nuevos estados bottom de $N$, tal como se ve en la anotación $\bigo{\size{\Bottom(N)_{\pijl{}}}}$ de las Líneas~\ref{alg:line:callsplit1}--\ref{alg:line-mark-bb-of-new-bottom}.
 
