@@ -1,22 +1,1302 @@
-\chapter{El algoritmo de Groote et al.}
+\chapter{El algoritmo $O(m \log n)$ de Groote et al.}
 \label{cap:algoritmo}
 
-\section{\texorpdfstring{Algoritmo $O(m \log n)$}{Algoritmo O(m log n)} de Groote et al.}
+En este capítulo se realizará un recorrido teórico por el algoritmo presentado por Groote et al.~\cite{groote2019}, dando una intuición de cómo funciona la idea general. Luego, en el Capítulo~\ref{cap:implementacion}, se explicarán más detalles de la implementación del algoritmo.
 
-% TODO: basado en \cite{groote2019} (Papers/jansen.pdf).
-%  - Idea general: partition refinement. Partir de una partición inicial
-%    de los estados en bloques y refinarla hasta el punto fijo.
-%  - Estructuras de datos clave: bloques, partición refinable, splitters,
-%    y la maquinaria que da la cota O(m log n) (estrategia "process the
-%    smaller half" / constellations-bloques del paper).
-%  - Invariantes que mantiene el refinamiento (estabilidad de bloques
-%    respecto de los splitters) y por qué garantizan correctitud.
-%  - Complejidad: enunciar O(m log n) (m transiciones, n estados) y
-%    contrastar con la complejidad de la minimización por WSOE vista en
-%    3.2 -> ESTE es el argumento de escalabilidad de toda la tesis.
-%  - El pseudocódigo extendido va al Apéndice; acá solo las ideas y
-%    estructuras principales (usar el lstdefinelanguage 'pseudocode' de
-%    tesis.tex si se incluye algún fragmento).
-%  - Nota: la adaptación concreta de este algoritmo al contexto
-%    composicional (eventos controlables/no-controlables, estados
-%    marcados) y su implementación se tratan en el Cap. 5.
+Tal como se introdujo previamente, el algoritmo utilizado en el trabajo de Uchitel y Gagliardi para obtener, a partir de un LTS, una minimización según la equivalencia de la Definición~\ref{def:synth-equiv} fue el presentado por Mohajerani et al.~\cite{wsoe}, que tiene una complejidad de $\bigo{nm}$. Analicemos el algoritmo presentado por Groote et al. para entender cómo funciona y luego comprender qué optimizaciones se utilizan para alcanzar la complejidad de $\bigo{m \log n}$.
+
+\section{Terminología}
+
+El algoritmo se basa principalmente en utilizar particiones de conjuntos de estados y particiones de conjuntos de transiciones. Antes, definamos qué es una partición.
+
+\begin{definition}[Partición]
+Para un conjunto $X$, una partición $\Pi$ de $X$ es un recubrimiento disjunto de $X$, es decir, $\Pi=\{ B_i \subseteq X \mid B_i \not= \emptyset, 1\leq i\leq k\}$
+tal que $B_i\cap B_j=\emptyset$ para todo $1\leq i<j\leq k$ y $X =\bigcup_{1\leq i\leq k}B_i$.
+\end{definition}
+
+El algoritmo usa dos particiones principales.
+La partición $\Pi_s$ es una partición de los estados del LTS.
+Nos referimos a los elementos de $\Pi_s$ como \textit{blocks,} denotados usando la letra $B$.
+La partición $\Pi_t$ particiona las transiciones no inertes del LTS.
+Nos referimos a los elementos de $\Pi_t$ como \textit{bunches}, denotados usando la letra $T$.
+
+La partición de estados $\Pi_s$ registra el conocimiento actual sobre los estados branching bisimilares:
+dos estados están en bloques diferentes si y solo si el algoritmo encontró una prueba de que no son branching bisimilares.
+La idea principal detrás del algoritmo es refinar iterativamente $\Pi_s$
+hasta llegar a la partición más chica cuyos bloques sean clases de estados branching bisimilares.
+En cada iteración, un conjunto de transiciones con etiqueta $a$ y bloque destino $B'$ se selecciona como el \emph{splitter},
+y para cada bloque $B$ se determina si un subconjunto estricto de sus estados puede alcanzar silenciosamente una transición en el splitter.
+Si este es el caso, $B$ se divide basándose en este criterio.
+
+La partición de transiciones $\Pi_t$ registra el conocimiento actual sobre los splitters.
+Para cada bunch de transiciones, inicialmente asumimos que sus transiciones pueden simularse entre sí de a pares, es decir, que pueden cumplir el papel de las transiciones $s \pijl{a} s'$ y $t' \pijl{a} t''$ de la Definición~\ref{def:branching}, hasta que se demuestre lo contrario.
+El algoritmo mantiene el invariante (formalizado en el Invariante~\ref{inv:bunches}) de que
+siempre que un estado en un bloque tiene una transición en un bunch,
+entonces cada estado en ese bloque puede alcanzar de forma inerte una transición en el mismo bunch,
+de tal manera que se satisfaga la condición de la Definición~\ref{def:branching}.
+Siempre que un bloque y un bunch particular satisfacen este invariante, decimos que el bloque es \emph{estable} con respecto a ese bunch.
+
+Sin embargo, la Definición~\ref{def:branching} viene con algunas restricciones sobre la transición $t' \pijl{a} t''$:
+primero, necesita tener la misma etiqueta de acción que $s \pijl{a} s'$,
+y segundo, $s'$ y $t''$ necesitan estar en el mismo bloque destino.
+Si se violan estas restricciones,
+parece que nuestra suposición inicial sobre el bunch era incorrecta,
+e intentamos corregir esto dividiendo el bunch en partes
+que sí satisfagan las restricciones.
+Hacemos esto separando una \emph{action-block-slice}, un subconjunto de transiciones en un bunch con la misma etiqueta de acción y el mismo bloque destino, y colocándola en un nuevo bunch.
+El nuevo bunch se denomina splitter \emph{primario},
+el resto del bunch del cual se separó se denomina splitter \emph{secundario}.
+Después de esta división, los bloques en $\Pi_s$ necesitan dividirse con respecto a ambos splitters para restablecer el invariante.
+
+El algoritmo utiliza una serie de términos derivados de las dos particiones $\Pi_s$ y $\Pi_t$.
+Para bunches $T\in \Pi_t$, acciones $a \in \Sigma$ y bloques $B, B' \in \Pi_s$, tenemos:
+\begin{itemize}
+\item   Las \textit{block-bunch-slices}, es decir, las transiciones en $T$ que comienzan en $B$:
+$
+\TB = \{ s \pijl{b} s' \in T \mid s \in B \}
+$.
+\item   Las \textit{action-block-slices}, es decir, las transiciones en $T$ que tienen etiqueta $a$ y terminan en $B'$:
+$
+\TaB = \{ s \pijl{a} s' \in T \mid s' \in B' \}
+$.
+\item   Una block-bunch-slice intersecada con una action-block-slice:\\
+\hspace*{1cm}$\TBaB = \TB \cap \TaB = \{ s \pijl{a} s' \in T \mid s \in B \wedge s' \in B' \}$.
+\item   Los \textit{estados bottom} de un bloque, es decir, los estados sin una transición inerte saliente:\\
+\hspace*{1cm}$
+\Bottom(B) = \{ s \in B \mid \neg\exists s' \in B . s \pijl{\tau} s' \}
+$.
+\item   Los estados en un bloque con una transición en un bunch:
+$
+\BT = \{ s \mid s \pijl{a} s' \in \TB \}
+$.
+\item   Los bloques divisibles por una action-block-slice:\\
+\hspace*{1cm}
+$\splittableBlocks(\TaB) = \{ B \in \Pi_s \mid  \emptyset \subset \TBaB \subset \TB \}$.
+\item   El número de action-block-slices contenidas en un bunch:\\
+\hspace*{1cm}$\nraB(T) = \left| \{ \TaB \mid a \in \Sigma, B' \in
+\Pi_s \} \setminus \{ \emptyset \} \right|$.
+\item   Si $B, B' \in \Pi_s$ y $B \neq B'$, entonces $B \pijl{\tau} B'$ son las transiciones $\tau$ no inertes entre $B$ y $B'$.
+\item   Las transiciones salientes de un bloque:
+$B_{\pijl{}}=\{ s\pijl{a}s'\mid s\in B, a\in\Sigma \text{ y } s'\in S\}$.
+\item   Las transiciones entrantes de un bloque:
+$B_{\lijp{}}=\{ s\pijl{a}s'\mid s\in S, a\in\Sigma \text{ y } s'\in B\}$.
+\end{itemize}
+
+El algoritmo itera sobre $\Pi_s$ y $\Pi_t$. Cuando $\Pi_t$ se modifica, el invariante necesita ser restablecido dividiendo bloques.
+Para marcar los bloques que necesitan ser divididos, clasificamos las block-bunch-slices en \textit{estables} e \textit{inestables}.
+Una block-bunch-slice $\TB$ es estable si sabemos que no es un splitter para ningún bloque en $\Pi_s$.
+De lo contrario, es inestable y se debe comprobar si el bloque $B$ debe ser dividido.
+Si una block-bunch-slice es inestable,
+se almacena en la \emph{splitter list}, ya sea como un splitter \textit{primario} o como un splitter \textit{secundario}.
+Además, si una block-bunch-slice es inestable, distinguimos sus transiciones entre \textit{marcadas} y \textit{no marcadas}.
+Estas marcas se utilizan para determinar qué estados bottom de un bloque tienen una transición en un bunch particular, y son esenciales para la división eficiente de los bloques. Denotamos las transiciones marcadas de una block-bunch-slice $\TB$ como $\Marked(\TB)$.
+
+
+\section{Idea general}
+
+Como primer paso, el LTS es preprocesado para contraer las componentes $\tau$-fuertemente conexas ($\tau$-SCCs) en un único estado. Luego, el algoritmo refina iterativamente las particiones $\Pi_s$ y $\Pi_t$. El objetivo principal es garantizar que, si un bloque $B$ tiene una transición en una action-block-slice $\TaB$, entonces cada estado bottom de $B$ tiene una transición en $\TaB$. Cuando esto vale para todos los bloques y todas las action-block-slices, cada bloque resulta ser exactamente una clase de estados branching bisimilares. Alcanzar ese objetivo de forma directa sería costoso, así que el algoritmo mantiene en su lugar un invariante más débil, formulado sobre los bunches en vez de sobre las action-block-slices: si un bloque $B$ tiene una transición en un bunch $T$, entonces cada estado bottom de $B$ tiene una transición en el mismo bunch $T$. Este invariante, combinado con la condición de que todo bunch contenga una única action-block-slice, implica el objetivo principal. Formalmente, el invariante es el siguiente:
+\begin{invariante}[]\label{inv:bunches}$\Pi_s$ es estable bajo $\Pi_t$, es decir, si un bunch $T \in \Pi_t$ contiene una transición con su estado origen en un bloque $B$ de $\Pi_s$, entonces cada estado bottom en el bloque $B$ tiene una transición en el bunch $T$ (de hecho, en el block-bunch-slice $\TB$).\end{invariante}
+
+Ahora bien, si un bunch contiene múltiples action-block-slices (lo denominamos un bunch \emph{no trivial}), para acercarnos a nuestro objetivo principal debemos refinar $\Pi_t$ separando una action-block-slice. Al mismo tiempo, para preservar el invariante principal, cuando dividimos un bunch necesitamos reflejar este cambio en los bloques. Por lo tanto, los bloques que tenían una transición alcanzable de forma inerte en el bunch original se dividen en subbloques según puedan alcanzar de forma inerte el nuevo bunch, el resto del bunch original, o ambos. Esta idea se desarrolla en el Algoritmo~\ref{algo:main-algorithm-abstract}.
+Primero ilustramos un paso del algoritmo utilizando el ejemplo de la Figura~\ref{fig:example-highlevel}.
+
+\begin{figure}[ht]
+	\small
+	\centering
+	\begin{subfigure}[t]{.47\linewidth}
+	\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (5.2,1.1)
+			(0,-1) rectangle (1.75,-2.1)
+			(1.95,-1) rectangle (5.2,-2.1)
+			;
+		\node at(0.3,0.55){$B$};
+		\node at(0.3,-1.55){$B'$};
+		\node at(2.25,-1.55){$B''$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-0.8) rectangle (5.2,-0.2)
+			;
+
+		\node at(4.9,-0.5) {$T$};
+
+		%block
+		\node     [state](sr0) at (0.8,0.55){\makebox[\statetextwidth]{$s_0$}};
+		\node     [state](sr1) at (2.9,0.55){\makebox[\statetextwidth]{$s_1$}};
+		\node     [state](sr2) at (4.4,0.55){\makebox[\statetextwidth]{$s_2$}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) edge node[left,yshift=4pt]{$a$} (0.7,-1.55);
+			\draw (sr1) edge node[above]{$\tau$} (sr0);
+			\draw (sr1) edge node[right,yshift=4pt]{$b$} (2.9,-1.55);
+			\draw (sr2) edge node[left,yshift=4pt]{$b$} (4.4,-1.55);
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption
+    {Parte de un LTS con tres estados, $s_0$, $s_1$ y $s_2$, divididos en tres bloques, $B$, $B'$ y $B''$, y un solo bunch no trivial $T$.\label{fig:example-highlevel-start}}
+	\end{subfigure}
+	%
+	\hfill
+	%
+	\begin{subfigure}[t]{.47\linewidth}
+	\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (5.2,1.1)
+			(0,-1) rectangle (1.75,-2.1)
+			(1.95,-1) rectangle (5.2,-2.1)
+			;
+		\node at(0.3,0.55){$B$};
+		\node at(0.3,-1.55){$B'$};
+		\node at(2.25,-1.55){$B''$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-0.8) rectangle (1.75,-0.2)
+			(1.95,-0.8) rectangle (5.2,-0.2)
+			;
+
+		\node at(4.9,-0.5) {$T$};
+		\node at(1.45,-0.5) {$T'$};
+
+		%block
+		\node     [state](sr0) at (0.8,0.55){\makebox[\statetextwidth]{$s_0$}};
+		\node     [state](sr1) at (2.9,0.55){\makebox[\statetextwidth]{$s_1$}};
+		\node     [state](sr2) at (4.4,0.55){\makebox[\statetextwidth]{$s_2$}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) edge node[left,yshift=4pt]{$a$} (0.7,-1.55);
+			\draw (sr1) edge node[above]{$\tau$} (sr0);
+			\draw (sr1) edge node[right,yshift=4pt]{$b$} (2.9,-1.55);
+			\draw (sr2) edge node[left,yshift=4pt]{$b$} (4.4,-1.55);
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{Situación después de mover una action-block-slice chica $T_{\pijl{a}B'}$ a su propio bunch $T'$.\label{fig:example-highlevel-split-bunch}}
+	\end{subfigure}
+
+	\medskip
+
+	\begin{subfigure}[t]{.47\linewidth}
+	\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (3.7,1.1)
+			(3.9,0) rectangle (5.2,1.1)
+			(0,-1) rectangle (1.75,-2.1)
+			(1.95,-1) rectangle (5.2,-2.1)
+			;
+		\node at(0.3,0.55){$R$};
+		\node at(4.9,0.55){$U$};
+		\node at(0.3,-1.55){$B'$};
+		\node at(2.25,-1.55){$B''$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-0.8) rectangle (1.75,-0.2)
+			(1.95,-0.8) rectangle (5.2,-0.2)
+			;
+
+		\node at(4.9,-0.5) {$T$};
+		\node at(1.45,-0.5) {$T'$};
+
+		%block
+		\node     [state](sr0) at (0.8,0.55){\makebox[\statetextwidth]{$s_0$}};
+		\node     [state](sr1) at (2.9,0.55){\makebox[\statetextwidth]{$s_1$}};
+		\node     [state](sr2) at (4.4,0.55){\makebox[\statetextwidth]{$s_2$}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) edge node[left,yshift=4pt]{$a$} (0.7,-1.55);
+			\draw (sr1) edge node[above]{$\tau$} (sr0);
+			\draw (sr1) edge node[right,yshift=4pt]{$b$} (2.9,-1.55);
+			\draw (sr2) edge node[left,yshift=4pt]{$b$} (4.4,-1.55);
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{
+		Situación después de dividir $B$ con respecto a~$T'$.\label{fig:example-highlevel-split-block-vs-splitter}
+	}
+	\end{subfigure}
+	%
+	\hfill
+	%
+	\begin{subfigure}[t]{.47\linewidth}
+	\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (1.4,1.1)
+			(2.4,0) rectangle (3.7,1.1)
+			(3.9,0) rectangle (5.2,1.1)
+			(0,-1) rectangle (1.75,-2.1)
+			(1.95,-1) rectangle (5.2,-2.1)
+			;
+		\node at(0.3,0.55){$U'$};
+		\node at(3.4,0.55){$R'$};
+		\node at(4.9,0.55){$U$};
+		\node at(0.3,-1.55){$B'$};
+		\node at(2.25,-1.55){$B''$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-0.8) rectangle (1.75,-0.2)
+			(1.95,-0.8) rectangle (5.2,-0.2)
+			(1.6,0) rectangle (2.2,1.1)
+			;
+
+		\node at(4.9,-0.5) {$T$};
+		\node at(1.45,-0.5) {$T'$};
+		\node at(1.9,0.25) {$T_{\tau}$};
+
+		%block
+		\node     [state](sr0) at (0.8,0.55){\makebox[\statetextwidth]{$s_0$}};
+		\node     [state](sr1) at (2.9,0.55){\makebox[\statetextwidth]{$s_1$}};
+		\node     [state](sr2) at (4.4,0.55){\makebox[\statetextwidth]{$s_2$}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) edge node[left,yshift=4pt]{$a$} (0.7,-1.55);
+			\draw (sr1) edge node[above]{$\tau$} (sr0);
+			\draw (sr1) edge node[right,yshift=4pt]{$b$} (2.9,-1.55);
+			\draw (sr2) edge node[left,yshift=4pt]{$b$} (4.4,-1.55);
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{
+		Situación después de dividir $R$ con respecto a~$T$.\label{fig:example-highlevel-split-block-vs-cosplitter}
+	}
+	\end{subfigure}
+
+\caption{Un paso del algoritmo de branching bisimulation.}\label{fig:example-highlevel}
+\end{figure}
+
+\begin{example}
+Analicemos cómo se comporta un paso del algoritmo de branching bisimulation para una parte de un LTS, ilustrada en la Figura~\ref{fig:example-highlevel-start}. Tenemos tres estados, $s_0$, $s_1$ y $s_2$, con una transición inerte $s_1 \pijl{\tau} s_0$, y varias transiciones en el bunch $T$. Notemos que $T$ es no trivial: contiene dos action-block-slices, $T_{\pijl{a}B'}$ y $T_{\pijl{b}B''}$.
+
+Para acercarnos a la situación en la que cada bunch contiene exactamente una action-block-slice, el algoritmo separa una action-block-slice chica de $T$ y la coloca en su propio bunch $T'$. Esto se muestra en la Figura~\ref{fig:example-highlevel-split-bunch}.
+
+Ahora, el invariante principal está roto. Para arreglarlo, necesitamos dividir el bloque $B$ con respecto a $T'$ y a $T$. Primero dividimos con respecto a $T'$. Esto divide el bloque $B$ en dos bloques: $R$, que contiene los estados que pueden alcanzar de forma inerte una transición en $T'$, y $U$, que contiene aquellos estados desde los cuales $T'$ es inalcanzable de forma inerte. Esto ubica a $s_0$ y $s_1$ en $R$, y a $s_2$ en $U$, tal como se muestra en la Figura~\ref{fig:example-highlevel-split-block-vs-splitter}.
+
+El bloque $U$ es estable con respecto a $T$. El bloque $R$, sin embargo, aún no lo es.
+Por lo tanto, $R$ debe ser dividido en dos conjuntos de estados: $U'$ serán los estados desde los cuales una transición en $T$ es inalcanzable, y $R'$ los estados desde los cuales una transición en $T$ es alcanzable. Esto se muestra en la Figura~\ref{fig:example-highlevel-split-block-vs-cosplitter}.
+
+Ahora, $\Pi_s$ es estable con respecto a $\Pi_t$ y $\Pi_t$ no contiene ningún bunch no trivial, por lo que alcanzamos las particiones requeridas de branching bisimilarity para esta parte del LTS.
+\end{example}
+
+\section{Funcionamiento}
+
+\begin{algorithm}[!t]
+	\caption{Pseudocódigo del algoritmo para las particiones de branching bisimulation.\label{algo:main-algorithm-abstract}}
+	\algsetup{indent=0.85cm}
+	\parbox{0.79\textwidth}{
+	\small\begin{algorithmic}[1]
+	\STATE	Encontrar las $\tau$-SCCs y contraerlas a un solo estado
+		\label{alg-line-contract-SCCs}
+		\rightbrace{4}{$\bigo{m}$}%
+	\STATE $B_\text{vis} := \{ s \in S \mid s \text{ puede alcanzar de forma inerte alguna } s' \pijl{a} s'' \}$;
+	\label{alg-line-initialize-partitions-begin} \quad
+		$B_\text{invis} := S \setminus B_\text{vis}$
+	\STATE	$\Pi_s := \{ B_\text{vis}, B_\text{invis} \} \setminus \{ \emptyset \}$
+		\label{alg-line-initialize-Pi_s-end}
+	\STATE	$\Pi_t := \{ \{ s \pijl{a} s' \mid a \in \Sigma \setminus \{\tau\}, s,s' \in S \} \cup B_\text{vis} \pijl{\tau} B_\text{invis} \}$
+		\label{alg-line-initialize-partitions-end}
+	\WHILE{exista un $T \in \Pi_t$ con $\nraB(T) > 1$} \label{algo:main:outerloop}
+		\STATE	Tomar algún $a \in \Sigma$ y $B' \in \Pi_s$ tal que $\size{\TaB} \leq \frac{1}{2}\size{T}$
+			\label{alg-line-select-small-bunch}
+			\rightbrace[-1]{1}{$\leq m$ iteraciones}
+		\STATE	$\Pi_t := (\Pi_t \setminus \{ T \}) \cup \{ \TaB, T \setminus \TaB \}$\label{alg:split_transitions}
+		\rightbrace[-1]{9}{$\bigo{\size{\TaB}}$}%
+		\FORALL {$B \in \splittableBlocks(\TaB)$\label{alg-line-markloop-begin}}
+			\STATE	Agregar primero $\TBaB$ y después $\TB \setminus \TBaB$ a la splitter list%
+				\label{alg-line-find-splittable-block}. Etiquetar $\TBaB$ como primaria y $\TB \setminus \TBaB$ como secundaria%
+	%		\STATE	Move source states of transitions in $\TBaB$ to the marked bottom/non bottom states in their blocks
+					\STATE  Marcar todas las transiciones en $\TBaB$\label{alg-line-mark-all-transitions-in-primary}
+			\STATE	Por cada estado que tenga tanto transiciones salientes marcadas como una transición saliente en $\TB \setminus \TBaB$, marcar alguna de estas últimas
+				\label{alg-line-mark-one-transition-in-secondary-splitter}
+		\ENDFOR\label{alg-line-markloop-end}
+		\FORALL	{$\TB'$ en la splitter list  \label{alg-line-stabilize-begin}}
+			\STATE	\label{alg:line:callsplit1}%
+				$\langle R, U \rangle := \mathsf{split}(B, \TB')$%}
+				\COMMENT{$R \supseteq B_{\pijl{T'}}$ puede alcanzar $\TB'$ y}%
+			\item[]	\mbox{}\COMMENT{\makebox[0cm][l]{$U = B \setminus R$ no puede alcanzarlo}\phantom{$R \supseteq B_{\pijl{T'}}$ puede alcanzar $\TB'$ y}}%
+			\STATE  Eliminar $\TB' = T'_{R \pijl{}}$ de la splitter list\label{alg:removeTBpijl}
+				\rightbrace[-3]{1}{$\leq \size{\TaB}$ iteraciones}
+			\STATE	$\Pi_s := (\Pi_s \setminus \{ B \}) \cup (\{ R, U \} \setminus \{ \emptyset \})$\label{alg-split1}
+				% Replace $B$ in $\Pi_s$ by the blocks $R$ and $U$
+				\rightbrace[-3]{10}{\parbox[l]{0.3\textwidth}{%
+					$\bigO(\size{\Marked(\TB')} + \mbox{}$ \\
+					$\phantom{\bigO(\!}\size{U_{\pijl{}}} + \size{U_{\lijp{}}} + \mbox{}$ \phantom{)}\\    % Phantom bracket for matching
+					$\phantom{\bigO(\!}\size{\Bottom(N)_{\pijl{}}})$ \phantom{)}\\   % Phantom bracket for matching
+					o $\bigo{\size{R_{\pijl{}}} + \size{R_{\lijp{}}}}$}}%
+			\IF	{$\TB'$ es primario}
+					\STATE	Eliminar $T_{U\pijl{}} \setminus T_{U\pijl{a} B'}$ de la splitter list\label{alg:line-remove-TU-after-primary-split}
+					%\rightbrace[-1]{3}{$\bigo{1}$}%
+			\ENDIF
+			\IF	{$R \pijl{\tau} U \neq \emptyset$}\label{alg:inert_condition}
+				\STATE	Crear un nuevo bunch que contenga exactamente $R \mathbin{\pijl{\tau}} U$,
+						agregar $R \mathbin{\pijl{\tau}} U = (R \pijl{\tau} U)_{R \pijl{}}$ a la splitter list,
+						y marcar todas sus transiciones\label{alg:new_bunch}
+						%\rightbrace[-2]{3}{$\bigo{\size{R_{\pijl{}}}}$ or $\bigo{\size{U_{\lijp{}}}}$}%
+				\STATE	$\langle N, R' \rangle :=\mathsf{split}(R, R \pijl{\tau} U)$
+							\label{alg:split-call2}
+					\COMMENT{$N \supseteq R_{\pijl{R \pijl{\tau} U}}$ contiene los}%
+				\item[]	\mbox{}\COMMENT{\makebox[0cm][l]{nuevos estados bottom}\phantom{$N \supseteq R_{\pijl{R \pijl{\tau} U}}$ contiene los}}%
+				\STATE	Eliminar $R \pijl{\tau} U = (R \pijl{\tau} U)_{N \pijl{}}$ de la splitter list
+					\rightbrace[-2]{5}{\parbox[l]{0.3\textwidth}{%
+						$\bigO(\size{R \pijl{\tau} U} + \mbox{}$ \\
+						$\phantom{\bigO(\!}\size{R'_{\pijl{}}} + \size{R'_{\lijp{}}} + \mbox{}$ \phantom{)}\\   %Phantom closing bracket.
+						$\phantom{\bigO(\!}\size{\Bottom(N)_{\pijl{}}})$ \phantom{)} \\    %Added phantom closing bracket.
+						o $\bigo{\size{N_{\pijl{}}} + \size{N_{\lijp{}}}}$}}%
+				\STATE	% Replace $R$ in $\Pi_s$ by the blocks $N$ and $R'$
+									$\Pi_s := (\Pi_s \setminus \{ R \}) \cup (\{ N, R' \} \setminus \{ \emptyset \})$\label{alg-split2}
+				\STATE	Agregar $N \pijl{\tau} R'$ al bunch que contiene $R \pijl{\tau} U$\label{alg:extend_bunch}
+				\STATE	Agregar $T_{N \pijl{}}$ a la splitter list y etiquetarla como secundaria
+						\label{alg:line-make-all-slices-unstable}
+						\rightbrace{1}{$\bigo{\size{\Bottom^{*}(N)_{\pijl{}}}}$}%
+				\STATE	Para cada estado bottom, marcar una de sus transiciones salientes en cada $T_{N \pijl{}}$ 
+						\label{alg:line-mark-bb-of-new-bottom}
+						\rightbrace[-1]{2}{$\bigo{\size{\Bottom(N)_{\pijl{}}}}$}%
+			\ENDIF
+		\ENDFOR\label{alg-line-stabilize-end}
+	\ENDWHILE\label{algo:main:outerloop-end}
+	\end{algorithmic}
+	}
+	\end{algorithm}
+
+
+El pseudocódigo se detalla en el Algoritmo~\ref{algo:main-algorithm-abstract}.
+Primero, en la Línea~\ref{alg-line-contract-SCCs},
+todas las $\tau$-SCCs se contraen en un único estado cada una.
+Como todos los estados de una $\tau$-SCC son branching bisimilares, esta contracción no altera el resultado;
+además, el preprocesamiento garantiza que no haya $\tau$-ciclos en el LTS
+y que desde cada estado no bottom se pueda alcanzar un estado bottom mediante transiciones inertes.
+
+Luego, en las Líneas~\ref{alg-line-initialize-partitions-begin}--\ref{alg-line-initialize-partitions-end},
+creamos las particiones iniciales $\Pi_s$ y $\Pi_t$.
+Sea $B_\text{vis}$ el conjunto de estados desde los cuales una transición visible es alcanzable de forma inerte,
+y sea $B_\text{invis}$ el resto de los estados,
+entonces $\Pi_s = \{ B_\text{vis}, B_\text{invis} \} \setminus \{ \emptyset \}$.
+Inicialmente, $\Pi_t$ contiene un único bunch formado por todas las transiciones no inertes.
+Todos los block-bunch-slices inducidos por $\Pi_s$ y $\Pi_t$ son estables inicialmente,
+es decir, para toda block-bunch-slice $\TB$ no vacía —donde $B$ es necesariamente $B_\text{vis}$— cada estado bottom de $B$ tiene una transición en $\TB$.
+
+
+Si hay bunches no triviales,
+esos bunches deben dividirse hasta que terminen siendo triviales.
+El ciclo externo del algoritmo (Líneas~\ref{algo:main:outerloop}--\ref{algo:main:outerloop-end}) toma un bunch no trivial $T$ de $\Pi_t$,
+y de él mueve una action-block-slice $\TaB$ \emph{chica} (que contiene a lo sumo la mitad de las transiciones del bunch)
+a un bunch propio dentro de $\Pi_t$ (Línea~\ref{alg:split_transitions}).
+De esta manera, el bunch $T$ queda reducido a $T\setminus \TaB$.
+
+Entonces, ahora en $\Pi_t$ tenemos un bunch nuevo más chico, cuyas transiciones tienen todas la misma etiqueta y el mismo bloque destino. Esto puede romper la estabilidad de algún bloque: antes cada estado bottom del bloque tenía alguna transición en el bunch original, pero ahora esas transiciones quedaron repartidas entre los dos bunches nuevos, y puede pasar que algunos estados bottom tengan transiciones en $\TaB$ y otros solamente en $T \setminus \TaB$. Por lo tanto, debemos recuperar la estabilidad particionando esos bloques. El conjunto $\splittableBlocks(\TaB)$ contiene todos los bloques que tienen transiciones en ambos bunches nuevos, $\TaB$ y $T\setminus \TaB$;
+estos son los bloques que hay que investigar. El primer ciclo interno (Líneas~\ref{alg-line-markloop-begin}--\ref{alg-line-markloop-end})
+sirve para insertar todas esas block-bunch-slices en la splitter list.
+Las block-bunch-slices de la forma $\TBaB$ que están en la splitter list se etiquetan como primarias,
+y todas las demás block-bunch-slices de esa lista se etiquetan como secundarias.
+
+Este ciclo también marca algunas transiciones, lo cual sirve para determinar rápidamente si un estado bottom tiene una transición en un splitter secundario $\TB \setminus \TBaB$. Las transiciones marcadas se almacenan por separado dentro de la block-bunch-slice
+y por lo tanto pueden recorrerse sin gastar tiempo en las transiciones no marcadas del bloque.
+Esto es esencial para obtener la complejidad temporal del algoritmo,
+ya que se nos permite realizar una unidad de trabajo por cada transición en $\TaB$
+(el más chico de los dos bunches nuevos),
+y como $\size{\Marked(\TB \setminus \TBaB)} \leq \size{\TBaB}$, no marcamos demasiadas transiciones.
+
+
+En el segundo ciclo (Líneas~\ref{alg-line-stabilize-begin}--\ref{alg-line-stabilize-end}) se toma un splitter $\TB'$ de la splitter list
+por vez
+y su bloque origen se divide en $R$ (la parte que puede alcanzar de forma inerte alguna transición en $\TB'$) y $U$ (la parte que no puede alcanzar $\TB'$ de forma inerte),
+para restablecer la estabilidad.
+Formalmente, la rutina $\mathsf{split}(B,T)$ devuelve el par $\langle R,U\rangle$ definido por:
+\begin{equation}\begin{array}{l}
+\label{eqn:splitproperty}
+R =\{ s\in B\mid s\pijl{\tau}s_1\pijl{\tau}\cdots\pijl{\tau}s_n\pijl{a}s'\textrm{ donde } s_1,\ldots, s_{n} \in B, s_n\pijl{a}s'\in T\},\\
+U = B\setminus R.
+\end{array}\end{equation}
+En la Sección~\ref{sec:splitting_blocks} se detalla esta función.
+
+Si $\TB'$ era un splitter primario de la forma $\TBaB$ agregado a la splitter list en la Línea~\ref{alg-line-find-splittable-block},
+entonces sabemos que $U$ debe ser estable respecto de $T_{U\pijl{}} \setminus T_{U\pijl{a} B'}$, ya que
+todo estado bottom de $B$ tiene una transición en la block-bunch-slice original $\TB$,
+y como los estados de $U$ no tienen transiciones en $\TBaB$,
+todo estado bottom de $U$ debe tener una transición en $\TB \setminus \TBaB$.
+Por lo tanto, en la Línea~\ref{alg:line-remove-TU-after-primary-split} la block-bunch-slice $T_{U\pijl{}} \setminus T_{U\pijl{a} B'}$ puede eliminarse de la splitter list
+sin necesidad de investigarla.
+
+Algunas transiciones invisibles pueden haber pasado a ser no inertes: precisamente, las transiciones $\tau$ que van de $R$ a $U$.
+Las nuevas transiciones no inertes todavía no formaban parte de ningún bunch de $\Pi_t$.
+Por eso se forma un nuevo bunch $R\pijl{\tau}U$ que las contiene. Todas las transiciones de este nuevo bunch salen del bloque
+$R$ y por lo tanto $R$ es el único bloque que puede no ser estable respecto de este bunch nuevo. Para restablecer la estabilidad
+dividimos $R$ en los bloques $\langle N, R'\rangle$ (Línea~\ref{alg:split-call2}). Observemos que puede haber transiciones $N\pijl{\tau}R'$ que también pasen a ser
+no inertes, y las agregamos al nuevo bunch $R\pijl{\tau}U$.
+
+En $N$, es decir, el conjunto de estados que pueden alcanzar de forma inerte alguna transición en $R \pijl{\tau} U$,
+algunos estados son nuevos estados bottom, mientras que $R'$ contiene todos los estados bottom originales de $R$.
+Los bloques que contienen nuevos estados bottom pueden volverse inestables respecto de cualquier
+block-bunch-slice. Por lo tanto, hay que restablecer la estabilidad respecto de todas esas block-bunch-slices, y en consecuencia todas las block-bunch-slices
+que salen del bloque $N$ se colocan en la splitter list.
+Marcamos una de las transiciones de cada nuevo estado bottom
+para poder encontrar los estados bottom con una transición en $T_{N\pijl{}}$ en tiempo proporcional a la cantidad de esos nuevos estados bottom.
+
+Este ciclo se repite hasta que cada bunch coincide con una única action-block-slice.
+Ilustramos el algoritmo en el siguiente ejemplo. Notemos que el ejemplo también ilustra algunos de los detalles de la subrutina $\mathsf{split}$, que se discute en detalle en la Sección~\ref{sec:splitting_blocks}.
+
+\begin{figure}[!htp]
+	\centering
+	\begin{subfigure}[t]{.3\linewidth}
+	\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (4.5,2.8);
+		\node at(2.9,2.55){$B$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-a}}
+	\end{subfigure}
+	%
+	\hfill\hfill
+	%
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (4.5,2.8);
+		\node at(2.9,2.55){$B$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [blue state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [red state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [red state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [red state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to node[gray,pos=0.615]{\small $m$} (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to node[red,pos=0.7723]{\small $m$} (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to node[red,pos=0.68]{\small $m$} (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to (sr5);
+			\draw[out=250,in=110] (sr5) to node[red,pos=0.8]{\small $m$} (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-b}}
+	\end{subfigure}
+	%
+	\hfill\hfill
+	%
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(3.75,1.1){$U$};
+
+		\draw[block]
+			(0,0) -- (0,2.8) [sharp corners] -- (3.55,2.8) arc[radius=0.55cm,start angle=90,end angle=-55.79454]
+			-- ++(214.20546:0.4) arc[radius=0.75cm,start angle=124.20546,end angle=180] [rounded corners=4.95mm] -- (3.2,0) -- cycle;
+		\node at(1.45,2.55){$R$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [red state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [blue state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to node[red,pos=0.615]{\small $m$} (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-c}}
+	\end{subfigure}
+
+	\bigskip
+
+	\bigskip
+
+	\bigskip
+
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(3.75,1.1){$U$};
+
+		\draw[block]
+			(0,0) -- (0,2.8) [sharp corners] -- (3.55,2.8) arc[radius=0.55cm,start angle=90,end angle=-55.79454]
+			-- ++(214.20546:0.4) arc[radius=0.75cm,start angle=124.20546,end angle=180] [rounded corners=4.95mm] -- (3.2,0) -- cycle;
+		\node at(1.45,2.55){$R$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [red state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{\raisebox{-0.3ex}{2}}};
+		\node     [blue state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to (3.1,-1.8);
+			\draw (sr1) to node[red,pos=0.635]{\small\,\checkmark} (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to node[blue,pos=0.45]{\small\checkmark} (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-d}}
+	\end{subfigure}
+	%
+	\hfill\hfill
+	%
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(3.75,1.1){$U$};
+
+		\draw[block]
+			(0,0) -- (0,2.8) [sharp corners] -- (3.55,2.8) arc[radius=0.55cm,start angle=90,end angle=-55.79454]
+			-- ++(214.20546:0.4) arc[radius=0.75cm,start angle=124.20546,end angle=180] [rounded corners=4.95mm] -- (3.2,0) -- cycle;
+		\node at(1.45,2.55){$R$};
+
+		% Bunches
+		\draw[bunch]
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [red state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [red state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [blue state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{\raisebox{-0.3ex}{0}}};
+		\node     [red state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{\raisebox{-0.3ex}{2}}};
+		\node     [blue state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to (3.1,-1.8);
+			\draw (sr1) to node[red,pos=0.635]{\small\,\checkmark} (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to node[blue,pos=0.45]{\small\checkmark} (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to node[red,pos=0.47]{\small\checkmark} (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to node[blue,pos=0.45]{\small\checkmark} (sr5);
+			\draw (sr4) to node[red,pos=0.45]{\small\checkmark} (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to node[blue,pos=0.45]{\small\checkmark} (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-e}}
+	\end{subfigure}
+	%
+	\hfill\hfill
+	%
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (1.1,2.8)
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(0.85,1.4){$U_1$};
+		\node at(3.75,1.1){$U$};
+
+		\draw[block]
+			(1.7,0) -- (1.7,2.8) [sharp corners] -- (3.55,2.8) arc[radius=0.55cm,start angle=90,end angle=-55.79454]
+			-- ++(214.20546:0.4) arc[radius=0.75cm,start angle=124.20546,end angle=180] [rounded corners=4.95mm] -- (3.2,0) -- cycle;
+		\node at(2.9,2.55){$R_1$};
+
+		% Bunches
+		\draw[bunch]
+			(1.2,0) rectangle (1.6,2.8)
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{\raisebox{-0.3ex}{nb}}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to node[red,pos=0.632]{\small $m$} (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to node[red,pos=0.762]{\small $m$} (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to node[red,pos=0.5]{\small $m$} (sr3);
+			\draw (sr4) to node[red,pos=0.5]{\small $m$} (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-f}}
+	\end{subfigure}
+
+	\bigskip
+
+	\bigskip
+
+	\bigskip
+
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (1.1,2.8)
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(0.85,1.4){$U_1$};
+		\node at(3.75,1.1){$U$};
+
+		\draw[block]
+			(1.7,0) -- (1.7,2.8) [sharp corners] -- (3.55,2.8) arc[radius=0.55cm,start angle=90,end angle=-55.79454]
+			-- ++(214.20546:0.4) arc[radius=0.75cm,start angle=124.20546,end angle=180] [rounded corners=4.95mm] -- (3.2,0) -- cycle;
+		\node at(2.9,2.55){$R_1$};
+
+		% Bunches
+		\draw[bunch]
+			(1.2,0) rectangle (1.6,2.8)
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{\raisebox{-0.3ex}{nb}}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to node[gray,pos=0.615]{\small $m$} (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to node[gray,pos=0.7723]{\small $m$} (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-g}}
+	\end{subfigure}
+	%
+	\hfill\hfill
+	%
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (1.1,2.8)
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(0.85,1.4){$U_1$};
+		\node at(3.75,1.1){$U$};
+
+		\draw[block]
+			(1.7,0) -- (1.7,2.8) [sharp corners] -- (3.55,2.8) arc[radius=0.55cm,start angle=90,end angle=-55.79454]
+			-- ++(214.20546:0.4) arc[radius=0.75cm,start angle=124.20546,end angle=180] [rounded corners=4.95mm] -- (3.2,0) -- cycle;
+		\node at(2.9,2.55){$R_1$};
+
+		% Bunches
+		\draw[bunch]
+			(1.2,0) rectangle (1.6,2.8)
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [blue state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-h}}
+	\end{subfigure}
+	%
+	\hfill\hfill
+	%
+	\begin{subfigure}[t]{.3\linewidth}
+		\centering
+	\begin{tikzpicture}[bunchpic,>=Stealth,scale=0.9]
+
+		% Blocks
+		\draw[block]
+			(0,0) rectangle (1.1,2.8)
+			(1.7,1.7) rectangle (4.1,2.8)
+			(1.7,0) rectangle (3.2,1.1)
+			(3.4,0) rectangle (4.5,1.5);
+		\node at(0.85,1.4){$U_1$};
+		\node at(2.15,0.8){$U_2$};
+		\node at(2.9,2.55){$R_2$};
+		\node at(3.75,1.1){$U$};
+
+		% Bunches
+		\draw[bunch]
+			(1.2,0) rectangle (1.6,2.8)
+			(2.5,1.2) rectangle (3.3,1.6)
+			(0,-1.2) rectangle (1.6,-0.2)
+			(1.8,-1.2) rectangle (4.5,-0.2)
+			(0,3) rectangle (4.5,4);
+
+		\node at(1.1,-0.5) {$\TaB$};
+		\node[align=left] at(2.3,-0.7) {$T \setminus \mbox{}$ \\ $\TaB$};
+		\node at(0.3,3.7) {$T'$};
+
+
+		%block
+
+		\node     [state](sr0) at (3.95,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr1) at (2.65,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr2) at (3.55,2.25){\makebox[\statetextwidth]{\raisebox{-0.3ex}{nb}}};
+		\node     [state](sr3) at (0.55,0.55){\makebox[\statetextwidth]{}};
+		\node     [state](sr4) at (2.25,2.25){\makebox[\statetextwidth]{}};
+		\node     [state](sr5) at (0.55,2.25){\makebox[\statetextwidth]{}};
+
+		\begin{scope}[->,line cap=rect]
+			\draw (sr0) to (4.5,4.4);
+			\draw (sr0) to (4.4,-1.8);
+			\draw (sr0) to (4.2,-1.7);
+			\draw (sr0) to (4,-1.6);
+			\draw (sr1) to (3.1,-1.8);
+			\draw (sr1) to (3.3,-1.6);
+			\draw[out=200,in=90] (sr1) to (1.4,-1.6);
+			%\draw (sr1) to (3.8,4.3);
+			\draw (sr1) to (sr3);
+			\draw (sr2) to (3.5,4.4);
+			\draw (sr2) to node[red]{\small $m$} (sr1);
+			\draw (sr2) to (sr3);
+			\draw (sr3) to (0.75,-1.6);
+			\draw (sr3) to (sr5);
+			\draw (sr4) to (sr2);
+			\draw (sr4) to (sr3);
+			\draw (sr4) to (sr5);
+			\draw[out=250,in=110] (sr5) to (0.6,-1.8);
+			\draw (sr5) to (1,4.4);
+
+		\end{scope}
+	\end{tikzpicture}
+	\subcaption{\label{fig:exa:split-i}}
+	\end{subfigure}
+
+	\caption{Ilustración de la separación de una action-block-slice chica de $T$ y de la estabilización del bloque $B$ respecto de los nuevos bunches $\TaB$ y $T \setminus \TaB$, tal como se explica en el Ejemplo~\ref{exa:split}.\label{fig:exa:split}}
+	\end{figure}
+
+\begin{example}\label{exa:split}
+Observemos la Figura~\ref{fig:exa:split-a}, el bloque $B$ es estable respecto de los bunches $T$ y $T'$.
+Separamos de $T$ un bunch chico $\TaB$ y, como consecuencia, $B$ necesita ser reestabilizado.
+Los bunches que inicialmente se colocan en la splitter list son $\TaB$ y $T \setminus \TaB$.
+Al colocarlos en la splitter list, todas las transiciones de $\TBaB$ quedan marcadas: las {\color{red}$m$} de la Figura~\ref{fig:exa:split-b}.
+Además, para los estados que tienen transiciones tanto en $\TaB$ como en $T \setminus \TaB$,
+se marca una de esas transiciones del segundo bunch: las {\color{gray}$m$} de la Figura~\ref{fig:exa:split-b}.
+
+Primero dividimos $B$ respecto del splitter primario $\TaB$ en $R$, los estados que pueden alcanzar $\TaB$ de forma inerte, y $U$, los estados que no pueden. En la Figura~\ref{fig:exa:split-b}, los estados que ya se sabe que están destinados a $R$ se indican con \redstatetext, y los que ya se sabe que están destinados a $U$ se indican con \bluestatetext.
+Inicialmente, todos los estados con una transición saliente marcada están destinados a $R$, y el estado bottom restante de $B$ está destinado a $U$.
+La subrutina $\mathsf{split}$ extiende los conjuntos $R$ y $U$ hacia atrás mediante dos corrutinas, marcando un estado como destinado a $R$ si alguno de sus sucesores ya está en $R$, y marcándolo como destinado a $U$ si todos sus sucesores están en $U$.
+En este caso, el estado de $U$ no tiene ninguna transición inerte entrante, por lo que su corrutina termina inmediatamente y todos los demás estados pertenecen a $R$. El bloque $B$ se divide en $R$ y $U$.
+El bloque $U$ resultante es estable respecto de $\TaB$ y de $T \setminus \TaB$. Los conjuntos $R$ y $U$ resultantes se muestran en la Figura~\ref{fig:exa:split-c}.
+
+Todavía nos falta dividir $R$ respecto de $T \setminus \TaB$, digamos en $R_1$ y $U_1$.
+Para esto usamos las transiciones marcadas de $T \setminus \TaB$ como punto de partida para calcular todos los estados bottom que pueden alcanzar una transición en $T \setminus \TaB$.
+Esto garantiza que el tiempo que usamos es proporcional a $\size{\TaB}$.
+Inicialmente hay un estado destinado a $R_1$, marcado con \redstatetext\ en la Figura~\ref{fig:exa:split-c}, y un estado destinado a $U_1$, marcado con \bluestatetext\ en la misma figura.
+Ahora ejecutamos ambas corrutinas de $\mathsf{split}$ simultáneamente.
+La Figura~\ref{fig:exa:split-d} muestra la situación luego de que ambas corrutinas consideraron una transición:
+la corrutina de $U_1$ (la que calcula los estados que no pueden alcanzar de forma inerte una transición en $T \setminus \TaB$) inicializó en $2$ el contador $\mathit{untested}$ de uno de los estados, en la Línea~\ref{alg:line-define-untested}$\ell$ (es decir, en la columna izquierda) del Algoritmo~\ref{alg:split},
+porque dos de sus transiciones inertes salientes todavía no fueron consideradas.
+La corrutina de $R_1$ (la que calcula los estados que sí pueden alcanzar de forma inerte una transición en $T \setminus \TaB$) revisó la transición no marcada del splitter $T_{R\pijl{}} \setminus T_{R \pijl{a} B'}$.
+Como esta última corrutina terminó de visitar las transiciones no marcadas del splitter,
+la corrutina de $U_1$ ya no necesita ejecutar el ciclo de test lento de las Líneas~\ref{alg:slow-test}$\ell$--\ref{alg:slow-test-end}$\ell$ del Algoritmo~\ref{alg:split}.
+En la Figura~\ref{fig:exa:split-e} se muestra la situación después de dos pasos más de las corrutinas.
+Cada una visitó dos transiciones adicionales.
+Hay dos estados nuevos destinados a $R_1$, marcados con \redstatetext,
+y hay un estado destinado a $U_1$ con $0$ transiciones inertes restantes,
+del cual sabemos inmediatamente que no tiene ninguna transición en $T \setminus \TaB$; está marcado con \bluestatetext.
+En este punto, la corrutina de $R_1$ se aborta, ya que su conjunto contiene más de $\frac{1}{2}\size{R}$ estados,
+y se visitan las transiciones entrantes restantes de los estados de $U_1$.
+Esto no extiende más a $U_1$, porque todos los estados ya están destinados a $R_1$ o a $U_1$.
+
+El resultado de la división se muestra en la Figura~\ref{fig:exa:split-f}.
+Notemos que algunas transiciones inertes pasan a ser no inertes,
+por lo que se crea un nuevo bunch con las transiciones $R_1 \pijl{\tau} U_1$,
+y todas ellas quedan marcadas con {\color{red}$m$}.
+
+A continuación tenemos que dividir $R_1$ respecto de este nuevo bunch, en el conjunto de estados $N_1$ que pueden alcanzar de forma inerte una transición del nuevo bunch, y el conjunto $R'_1$ que no puede alcanzarlo de forma inerte.
+En este caso, todos los estados de $R_1$ tienen una transición saliente marcada, por lo que $N_1 = R_1$ y $R'_1 = \emptyset$.
+La corrutina que calcula el conjunto de estados que no pueden alcanzar de forma inerte una transición del bunch termina inmediatamente, porque no hay transiciones que considerar.
+
+Observemos que $R_1$ ($=N_1$) tiene un nuevo estado bottom.
+Esto significa que la estabilidad de $R_1$ respecto de cualquier bunch ya no está garantizada, y hay que restablecerla.
+Por lo tanto, consideramos todos los bunches en los que $R_1$ tiene una transición saliente.
+Agregamos $T_{R_1\pijl{a}B'}$, $T_{R_1 \pijl{}} \setminus T_{R_1 \pijl{a} B'}$ y $T'_{R_1\pijl{}}$ a la splitter list como splitters secundarios,
+y marcamos con {\color{gray}$m$} una de las transiciones salientes de cada estado bottom en cada uno de esos bunches.
+Esta situación se muestra en la Figura~\ref{fig:exa:split-g}.
+
+En este caso, $R_1$ es estable respecto de $T_{R_1\pijl{a}B'}$ y de $T_{R_1 \pijl{}} \setminus T_{R_1 \pijl{a} B'}$, es decir, todos los estados de $R_1$ pueden alcanzar de forma inerte una transición en ambos bunches.
+En los dos casos esto se observa inmediatamente después de la inicialización de split,
+ya que el conjunto de estados que no pueden alcanzar de forma inerte una transición en esos bunches es inicialmente vacío, y la corrutina correspondiente termina de inmediato.
+
+Consideremos entonces la división de $R_1$ respecto de $T'_{R_1\pijl{}}$. Esto da lugar a $R_2$, el conjunto de estados que pueden alcanzar de forma inerte una transición en $T'$, y $U_2$, el conjunto de estados que no pueden alcanzar de forma inerte una transición en $T'$.
+Notemos que no hay transiciones marcadas en $T'_{R_1\pijl{}}$,
+así que inicialmente todos los estados bottom de $R_1$ están destinados a $U_2$ (marcados con \bluestatetext\ en la Figura~\ref{fig:exa:split-h}), y no hay ningún estado destinado a $R_2$.
+Luego empezamos a dividir $R_1$.
+En la corrutina de $R_2$, primero agregamos a $R_2$ los estados con una transición no marcada en $T'_{R_1\pijl{}}$, en la Línea~\ref{alg:line-R-union-unmarked-T}$r$
+(es decir, en la columna derecha del Algoritmo~\ref{alg:split}),
+y después hay que considerar todos los predecesores del nuevo estado bottom.
+Cuando $\mathsf{split}$ termina, no hay estados adicionales en $U_2$, y los estados restantes terminan en $R_2$.
+
+La situación después de dividir $R_1$ en $R_2$ y $U_2$ se muestra en la Figura~\ref{fig:exa:split-i}.
+Una de las transiciones inertes pasa a ser no inerte, y está marcada con {\color{red}$m$}.
+Además, $R_2$ contiene un nuevo estado bottom: es el estado de $R_2$ con una transición hacia $T'$, y está marcado con nb.
+
+Nos queda seguir estabilizando $R_2$ respecto del bunch $R_2 \pijl{\tau} U_2$,
+lo cual no genera una nueva división,
+y reestabilizar $R_2$ respecto de todos los bunches en los que tiene una transición saliente.
+Esto tampoco genera nuevas divisiones, por lo que la situación de la Figura~\ref{fig:exa:split-i},
+luego de quitar las marcas de las transiciones en $R_2 \pijl{\tau} U_2$,
+es el resultado final de la división.
+\end{example}
+
+
+\section{La función split}
+\label{sec:splitting_blocks}
+
+La función $\mathsf{split}(B,T)$, presentada en el Algoritmo~\ref{alg:split}, refina el bloque $B$ en dos subbloques, $R$ y $U$,
+donde $R$ contiene aquellos estados de $B$ que pueden alcanzar de forma inerte una transición en $T$,
+y $U$ contiene los estados que no pueden,
+tal como se especifica formalmente en la Ecuación~\eqref{eqn:splitproperty}.
+
+Estos dos conjuntos se calculan mediante dos corrutinas que se ejecutan en lockstep:
+las dos corrutinas comienzan la misma cantidad de iteraciones de sus ciclos,
+de modo que el overhead es a lo sumo proporcional al tiempo de la más rápida de las dos,
+y todo el trabajo hecho en ambas corrutinas puede atribuirse al más chico de los dos subbloques $R$ y $U$.
+
+Como precondición,
+la función requiere que el marcado de las transiciones en $\TB$ sea tal
+que los estados bottom de $B$ que tienen una transición saliente en $\TB$ también tengan una transición saliente marcada en $\TB$.
+Formalmente, usando la notación $X_{\pijl{T}}$ para el conjunto de estados de $X$ con una transición saliente en $T$,
+\begin{equation*}
+\Bottom(B)_{\pijl{\Marked(\TB)}} = \Bottom(B)_{\pijl{\TB}}.
+\end{equation*}
+Los conjuntos iniciales se calculan de la siguiente manera.
+Inicialmente, todos los estados de $B_{\pijl{\Marked(T)}}$,
+es decir, todos los estados que son origen de una transición marcada en $T$, se colocan en $R$.
+Todos los estados bottom que inicialmente no están en $R$ se colocan en $U$.
+Observemos que estos conjuntos iniciales pueden calcularse en tiempo $\bigo{\size{\Marked(T)}}$
+agrupando los estados bottom que tienen transiciones marcadas.
+
+Los conjuntos se extienden en las corrutinas de la siguiente manera.
+Para los estados de $R$, primero se agregan los estados de $B_{\pijl{T \setminus \Marked(T)}}$ que todavía no estaban en $R$.
+Estos son todos los orígenes de una transición no marcada en $T$.
+Usando \textit{backwards inert reachability},
+$R$ se extiende hasta que no se pueden agregar más estados o bien $R$ contiene más de la mitad de los estados de $B$.
+
+Para identificar los estados de $U$, observemos que un estado $t$ está en $U$
+si todos sus sucesores inertes están en $U$
+y no tiene ninguna transición en $\TB$.
+La primera condición se satisface trivialmente para los estados bottom.
+Para calcular $U$, usamos un contador $\mathit{untested}[t]$ para cada estado no bottom $t$, que registra la cantidad de transiciones inertes salientes hacia estados de los que todavía no se sabe si están en $U$.
+Si $\mathit{untested}[t] = 0$, esto significa que todos los sucesores inertes de $t$ están garantizadamente en $U$, así que, siempre que $t$ no
+tenga una transición en $\TB$, $t$ también se agrega a $U$.
+Para cubrir la posibilidad de que todas las transiciones inertes de $t$ hayan sido visitadas antes de que todos los estados que son origen de una transición en
+$\TB$ se hayan agregado a $R$, revisamos todas las transiciones no inertes de $t$ para determinar
+si no están en $\TB$, en las Líneas~\ref{alg:slow-test}$\ell$--\ref{alg:slow-test-end}$\ell$, es decir, en la columna izquierda del Algoritmo~\ref{alg:split}.
+
+La corrutina que termina primero,
+siempre que su cantidad de estados no exceda $\frac{1}{2}\size{B}$,
+calculó completamente el subbloque más chico resultante del refinamiento,
+y la otra corrutina puede abortarse.
+
+\begin{algorithm}[tb]
+	\caption{Refinamiento de un bloque respecto de un splitter.}
+	\label{alg:split}
+	\algsetup{indent=0.45cm}
+	% Las dos columnas van en \footnotesize y sin justificar: las palabras clave
+	% en castellano son mas largas que las inglesas y, si no, las lineas se
+	% parten y se desalinean los numeros de linea.
+	\footnotesize\begin{algorithmic}[1]
+	\STATE	\textbf{función} $\mathsf{split}(\text{bloque } B, \text{block-bunch-slice } T$)
+	\STATE \label{alg:line-initRMarked}  $R:=B_{\pijl{\Marked(T)}}$; \quad
+	       \label{alg:line-initU} $U := \Bottom(B) \setminus R$
+	\STATE	\textbf{comienzo de corrutinas} \label{alg:line-after-initU}
+		\\[0.18\baselineskip]\setlength{\itemsep}{-0.7\baselineskip}%
+	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{6.9cm}||>{\raggedright\arraybackslash}p{5.3cm}@{}}
+		\STATE	\hspace*{\algorithmicindent}Definir $\mathit{untested}[t]$ indefinido para todo $t \mathbin{\in} B$                       & $R:=R \cup B_{\pijl{T \setminus \Marked(T)}}$\label{alg:line-R-union-unmarked-T}\rightbrace[-2]{1}{$\bigo{\size{\Marked(T)}}$}\label{alg:line-initR}\label{alg:line-init-untested}\\
+%Line below is outcommented, because there are no references in the text to red and blue. JFG.
+%		\item[]	\COMMENT{find predecessors of blue states\hfill}                                                                          & \COMMENT{find predecessors of red states}\\
+		\STATE	\hspace*{\algorithmicindent}\algorithmicforall\,$s\,{\in}\,U$ \algorithmicwhile\,$\size{U}\,{\leq}\,\frac{1}{2}\size{B}$\,\algorithmicdo & \algorithmicforall\,$s\,{\in}\,R$ \algorithmicwhile\,$\size{R}\,{\leq}\,\frac{1}{2}\size{B}$\,\algorithmicdo\rightbrace[-1]{1}{$\bigo{1}$ o $\bigo{\size{R_{\pijl{}}}}$}\\
+		\STATE	\hspace*{2\algorithmicindent}\algorithmicforall\ $t \pijl{\tau} s$ inerte \algorithmicdo                                  & \hspace*{\algorithmicindent}\algorithmicforall\,$t\,{\pijl{\tau}}\,s$\,inerte \algorithmicdo\label{alg:line-for-inert-predecessors}\rightbrace[-1]{8}{\parbox[l]{0.3\textwidth}{$\bigo{\size{U_{\lijp{}}}}$ o \\ $\bigo{\size{R_{\lijp{}}}}$}}\\
+		\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $t\in R$ \algorithmicthen\ saltear estado $t$\label{alg:line-skip-R-states}   & \\
+		\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $\mathit{untested}[t]$ indefinido \algorithmicthen                           & \\
+		\STATE	\hspace*{4\algorithmicindent}$\mathit{untested}[t]\,{:=}\,\size{\{ t\,{\pijl{\tau}}\,u\,{\mid}\,u\,{\in}\,B \}}$          & \\ \label{alg:line-define-untested}
+		\STATE	\hspace*{3\algorithmicindent}\algorithmicendif                                                                            & \\
+		\STATE	\hspace*{3\algorithmicindent}$\mathit{untested}[t] := \mathit{untested}[t] - 1$                                           & \\
+		\STATE	\hspace*{3\algorithmicindent}\algorithmicif\,$\mathit{untested}[t]\,{>}\,0$\,\algorithmicthen\,saltear\,$t$               & \\
+		\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $\BT\not \subseteq R$\ \algorithmicthen \label{alg:slow-test}       & \rightbrace{5}{\parbox[l]{0.3\textwidth}{%
+																			$\bigO(\size{U_{\pijl{}}} + \mbox{}$ \\
+																			$\phantom{\bigO (}\lvert(\Bottom(R) \setminus \mbox{}$ \\
+																			$\phantom{\bigO (\lvert(}\Bottom(B))_{\pijl{}}\rvert)$}}\\
+		\STATE	\hspace*{4\algorithmicindent}\algorithmicforall\ $t \pijl{\alpha} u$ no inerte \algorithmicdo                            & \\
+		\STATE	\hspace*{5\algorithmicindent}\algorithmicif\ $t \pijl{\alpha} u \in T$  \algorithmicthen\ saltear $t$                     & \\
+		\STATE	\hspace*{4\algorithmicindent}\algorithmicendfor                                                                           & \\
+		\STATE	\hspace*{3\algorithmicindent}\algorithmicendif \label{alg:slow-test-end}                                                  & \\
+		\STATE	\hspace*{3\algorithmicindent}Agregar $t$ a $U$                                                                            & \hspace*{2\algorithmicindent}Agregar $t$ a $R$\rightbrace{3}{\parbox[l]{0.3\textwidth}{$\bigo{\size{U_{\lijp{}}}}$ o \\ $\bigo{\size{R_{\lijp{}}}}$}}\\
+		\STATE	\hspace*{2\algorithmicindent}\algorithmicendfor                                                                           & \hspace*{\algorithmicindent}\algorithmicendfor\\
+		\STATE	\hspace*{\algorithmicindent}\algorithmicendfor\label{alg:line-handle-state-loopend}                                       & \algorithmicendfor\\
+	%	\item[]	\COMMENT{------ split off blue block ------}                                                                              & \COMMENT{------ split off red block ------}\\
+		\STATE	\hspace*{\algorithmicindent}\algorithmicif\ $\size{U}>\frac{1}{2}\size{B}$ \algorithmicthen                               & \algorithmicif\ $\size{R}>\frac{1}{2}\size{B}$ \algorithmicthen\rightbrace{5}{$\bigo{1}$}\\
+		\STATE	\hspace*{2\algorithmicindent}Abortar esta corrutina                                                                       & \hspace*{\algorithmicindent}Abortar esta corrutina\\
+		\STATE	\hspace*{\algorithmicindent}\algorithmicendif                                                                             & \algorithmicendif\\
+		\STATE	\hspace*{\algorithmicindent}Abortar la otra corrutina                                                                     & Abortar la otra corrutina \\
+		\STATE	\hspace*{\algorithmicindent}\textbf{retornar} $(B\setminus U,U)$\label{alg:line-return}                                    & \textbf{retornar} $(R,B\setminus R)$\\
+	\end{tabular}\setlength{\itemsep}{0cm}%
+	\STATE	\textbf{fin de corrutinas}\\
+	%
+	%
+	%------------ REMAINDERS\\
+	%\begin{tabular}{@{}p{7.5cm}||p{7cm}@{}}
+	%	\STATE	\hspace*{\algorithmicindent}Make all non-red bottom states blue &  \\
+	%	\item[]	\hspace*{\algorithmicindent}\textcolor{red}{\COMMENT{------ find predecessors of blue states ------}} & \hspace*{\algorithmicindent}\textcolor{red}{\COMMENT{---\hspace{-1.45mm}--- collect other states from $\mathit{splitter}~T$ ---\hspace{-1.45mm}---}} \\
+	%	\STATE	\hspace*{\algorithmicindent}\algorithmicforall\ blue states $s$ \algorithmicdo & \hspace*{\algorithmicindent}\algorithmicforall\ transitions $s \to t$ in $\mathit{splitter}$ \\
+	%	\STATE	\hspace*{2\algorithmicindent}\algorithmicforall\ inert transitions $t \pijl{\tau} s$ \algorithmicdo & \hfill (except those handled in \ref{mark-prepaid-for}--\ref{mark-prepaid-endfor}) \algorithmicdo \\
+	%	\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $t$ is red \algorithmicthen\ Skip state $t$ & \hspace*{2\algorithmicindent}Make $s$ a red state \\
+	%	\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $\mathit{untested}[t]$ is undefined \algorithmicthen & \hspace*{\algorithmicindent}\algorithmicendfor \\
+	%	\STATE	\hspace*{4\algorithmicindent}$\mathit{untested}[t] := \lvert \{ u \in B \mid t \pijl{\tau} u \} \rvert$ & \hspace*{\algorithmicindent}$\mathit{initially\_red\_states\_found} := \mathbf{true}$ \\
+	%	\STATE	\hspace*{3\algorithmicindent}\algorithmicendif & \algorithmicendif \\
+	%	\STATE	\hspace*{3\algorithmicindent}$\mathit{untested}[t] := \mathit{untested}[t] - 1$ & \\
+	%	\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $\mathit{untested}[t] > 0$ \algorithmicthen\ Skip state $t$ & \\
+	%	\STATE	\hspace*{3\algorithmicindent}\algorithmicif\ $\neg \mathit{initially\_red\_states\_found}$ \algorithmicthen & \\
+	%	\STATE	\hspace*{4\algorithmicindent}\algorithmicforall\ non-inert $t \pijl{\alpha} u$ \algorithmicdo\label{alg:slow-test} & \\
+	%	\STATE	\hspace*{5\algorithmicindent}\algorithmicif\ $t \pijl{\alpha} u \in \mathit{splitter}$ \algorithmicthen\ Skip $t$ & \textcolor{red}{\COMMENT{------ find predecessors of red states ------}} \\
+	%	\STATE	\hspace*{4\algorithmicindent}\algorithmicendfor & \algorithmicforall\ red states $s$ \algorithmicdo \\
+	%	\STATE	\hspace*{3\algorithmicindent}\algorithmicendif & \hspace*{\algorithmicindent}\algorithmicforall\ inert transitions $t \pijl{\tau} s$ \algorithmicdo \\
+	%	\STATE	\hspace*{3\algorithmicindent}Make $t$ a blue state & \hspace*{2\algorithmicindent}Make $t$ a red state \\
+	%	\STATE	\hspace*{2\algorithmicindent}\algorithmicendfor & \hspace*{\algorithmicindent}\algorithmicendfor \\
+	%	\STATE	\hspace*{\algorithmicindent}\algorithmicendfor & \algorithmicendfor \\
+	%
+	%
+	%\end{tabular}
+	\end{algorithmic}
+	\end{algorithm}
+
+
+En detalle, la complejidad temporal de $\langle R, U \rangle := \mathsf{split}(B, T)$ es:
+\begin{itemize}
+\item $\bigo{\size{R_{\pijl{}}} + \size{R_{\lijp{}}}}$, si $\size{R} \leq \size{U}$,
+y
+\item $\bigo{\size{\Marked(T)} + \size{U_{\pijl{}}} + \size{U_{\lijp{}}} + \size{(\Bottom(R) \setminus \Bottom(B))_{\pijl{}}}}$, si $\size{U} \leq \size{R}$.
+\end{itemize}
+
+Esta complejidad puede deducirse de la siguiente manera.
+Primero, notemos que ejecutamos las corrutinas en lockstep.
+Eso significa que ejecutarlas implica un overhead que es a lo sumo proporcional al tiempo de la más rápida de las dos.
+Tan pronto como una de las corrutinas encuentra más de $\frac{1}{2}\size{B}$ estados,
+se sabe que su subbloque es demasiado grande,
+por lo que esa corrutina se aborta.
+Esto solo reduce el overhead.
+Por lo tanto, basta con mostrar que se satisface la cota de tiempo del subbloque más chico.
+Notemos que si ambos subbloques tienen el mismo tamaño, $\size{R} = \size{U} = \frac{1}{2} \size{B}$,
+la más rápida de las dos termina primero, así que ambas cotas de tiempo valen.
+
+Consideremos el caso $\size{R} \leq \size{U}$.
+Observemos que $\size{\Marked(T)} \leq \size{R_{\pijl{}}}$, y que todo el trabajo se atribuye a la corrutina de la derecha del Algoritmo~\ref{alg:split},
+por lo que obtenemos $\bigo{\size{R_{\pijl{}}} + \size{R_{\lijp{}}}}$ directamente de la corrutina de $R$.
+
+Consideremos ahora el caso $\size{U} \leq \size{R}$.
+Entonces usamos tiempo $\bigo{\size{\Marked(T)}}$ para la Línea~\ref{alg:line-initRMarked},
+y tiempo $\bigo{\size{U_{\lijp{}}}}$ para todo lo demás, excepto las Líneas~\ref{alg:slow-test}$\ell$--\ref{alg:slow-test-end}$\ell$.
+Para estas últimas líneas
+distinguimos dos casos.
+Si resulta que $t$ no tiene ninguna transición $t \pijl{\alpha} u \in T$,
+entonces es un estado de $U$, así que podemos atribuir el tiempo a $\bigo{\size{U_{\pijl{}}}}$.
+En caso contrario, es decir, si existe alguna $t \pijl{\alpha} u \in T$,
+es un estado de $R$.
+¿Cómo se contabiliza un estado de $R$ en la corrutina que se supone que encuentra $U$?
+La solución es que $t$ es un nuevo estado bottom.
+Tenía algunas transiciones inertes en $B$,
+pero ahora todas están en $R \pijl{\tau} U$.
+Así que atribuimos el tiempo a las transiciones salientes de los nuevos estados bottom:
+$\bigo{\size{(\Bottom(R) \setminus \Bottom(B))_{\pijl{}}}}$.
+Notemos que eventualmente llegamos a la situación en la que todos los estados de $\BT$ están en $R$ por la Línea~\ref{alg:line-R-union-unmarked-T}$r$,
+y esta verificación costosa se saltea.
+
+También puede pasar que $U$ sea vacío. En ese caso se gasta tiempo $\bigo{\size{\Marked(T)}}$ en $\mathsf{split}$. La inicialización toma tiempo $\bigo{\size{\Marked(T)}}$ y, como $U$ queda vacío después de la inicialización, la corrutina izquierda termina inmediatamente y la corrutina derecha se aborta. Esto último toma tiempo $\bigo{1}$.
+
+\section{Detalle de la complejidad}
+\label{sec:complejidad}
+
+Una vez descriptos el algoritmo principal (Algoritmo~\ref{algo:main-algorithm-abstract}) y la subrutina $\mathsf{split}$ (Algoritmo~\ref{alg:split}), podemos analizar de dónde sale la cota $\bigo{m \log n}$. Para simplificar la notación asumimos, al igual que los autores del trabajo original, que $n \leq m + 1$.
+
+La inicialización (Líneas~\ref{alg-line-contract-SCCs}--\ref{algo:main:outerloop}) se hace en tiempo $\bigo{m}$: la contracción de las $\tau$-SCCs es un recorrido sobre el subgrafo de transiciones $\tau$, y para el cálculo de los conjuntos de estados iniciales se usa el supuesto $n \leq m+1$. El costo del ciclo principal lo podemos dividir en tres:
+\begin{enumerate}
+\item la división de bunches, junto con el agregado de block-bunch-slices a la splitter list y el marcado de transiciones, que se atribuye a las transiciones del nuevo bunch chico;
+\item la división de bloques, es decir, la función $\mathsf{split}$;
+\item los cálculos que hacen falta cuando aparecen nuevos estados bottom.
+\end{enumerate}
+
+\textbf{División de bunches.} Acá se aplica el principio de \emph{procesar la mitad más chica} a los bunches nuevos, y lo que hay que acotar es cuántas veces una misma transición puede formar parte de un bunch nuevo en la Línea~\ref{alg-line-find-splittable-block}.
+
+La primera vez que eso ocurre, el bunch nuevo es una action-block-slice $\TaB$: todas sus transiciones tienen la misma etiqueta $a$ y el mismo bloque destino $B'$, y como hay a lo sumo $n^2$ pares de estados, ese bunch contiene a lo sumo $n^2$ transiciones. Cada vez siguiente que se separa un bunch nuevo que contiene esa misma transición, ese bunch tiene a lo sumo la mitad del tamaño del anterior, porque la Línea~\ref{alg-line-select-small-bunch} elige siempre una $\TaB$ con $\size{\TaB} \leq \frac{1}{2}\size{T}$. Un bunch con una sola transición ya no se puede volver a partir, así que la cantidad de veces que una transición aparece en un bunch nuevo está acotada por la cantidad de veces que se puede partir $n^2$ al medio hasta llegar a $1$, que son $2\log_2 n$ veces. En otras palabras, cada transición participa de un bunch nuevo $\bigo{\log n}$ veces.
+
+Cada una de esas veces la transición se procesa en tiempo constante, que es el $\bigo{\size{\TaB}}$ de las Líneas~\ref{alg-line-select-small-bunch}--\ref{alg-line-stabilize-begin}. Sumando sobre las $m$ transiciones, el trabajo atribuido a la división de bunches es $\bigo{m \log n}$. Notemos que acá está la diferencia esencial con un algoritmo que recorriera todos los bunches en cada iteración: el factor $\log n$ aparece justamente porque cada transición solo puede caer en un bunch nuevo esa cantidad de veces.
+
+Dentro de esta misma parte queda contabilizado el procesamiento de las block-bunch-slices de la forma $\TBaB$ y $\TB \setminus \TBaB$ que se agregan a la splitter list en la Línea~\ref{alg-line-find-splittable-block}: cuesta $\bigo{\size{\Marked(\TB')}}$ en las Líneas~\ref{alg:line:callsplit1}--\ref{alg:new_bunch}, y eso es a lo sumo la cantidad de transiciones en $\TBaB$, por lo que ya está cubierto.
+
+\textbf{División de bloques.} Como se vio en la Sección~\ref{sec:splitting_blocks}, el costo de $\mathsf{split}$ depende del \emph{más chico} de los dos subbloques resultantes, así que acá aplicamos \emph{procesar la mitad más chica} a los bloques. El razonamiento es el mismo que antes: la primera vez que un estado cae en el subbloque más chico, ese subbloque tiene a lo sumo $n/2$ estados, y cada vez siguiente tiene a lo sumo la mitad del tamaño del anterior; como un subbloque de un solo estado ya no se parte, un estado puede estar en el subbloque más chico a lo sumo $\log_2 n$ veces. Cada vez que un estado está en el subbloque más chico podemos atribuirle tiempo proporcional a la cantidad de sus transiciones entrantes y salientes, que es exactamente lo que dan las cotas de $\mathsf{split}$: $\bigo{\size{R_{\pijl{}}} + \size{R_{\lijp{}}}}$ si $\size{R} \leq \size{U}$, y $\bigo{\size{\Marked(T)} + \size{U_{\pijl{}}} + \size{U_{\lijp{}}} + \size{(\Bottom(R) \setminus \Bottom(B))_{\pijl{}}}}$ si $\size{U} \leq \size{R}$.
+
+En el Algoritmo~\ref{algo:main-algorithm-abstract} esto aparece como
+\begin{align*}
+\bigo{\size{U_{\pijl{}}} + \size{U_{\lijp{}}}} \;\text{ o }\; \bigo{\size{R_{\pijl{}}} + \size{R_{\lijp{}}}}
+	&& \text{(Líneas~\ref{alg:line:callsplit1}--\ref{alg:new_bunch})},\\
+\bigo{\size{R'_{\pijl{}}} + \size{R'_{\lijp{}}}} \;\text{ o }\; \bigo{\size{N_{\pijl{}}} + \size{N_{\lijp{}}}}
+	&& \text{(Líneas~\ref{alg:split-call2}--\ref{alg:extend_bunch})}.
+\end{align*}
+Además, como $R \pijl{\tau} U \subseteq U_{\lijp{}} \cap R_{\pijl{}}$, el término $\bigo{\size{R \pijl{\tau} U}}$ de las Líneas~\ref{alg:split-call2}--\ref{alg:extend_bunch} se atribuye a $U$ o a $R$, al que sea más chico. Sumando sobre todos los estados: cada estado $s$ aporta a lo sumo $\bigo{\log n}$ veces un costo proporcional a su cantidad de transiciones entrantes y salientes, y como la suma de esas cantidades sobre todos los estados es $\bigo{m}$, el total atribuido a la división de bloques es también $\bigo{m \log n}$.
+
+\textbf{Nuevos estados bottom.} Cuando en un bloque aparecen nuevos estados bottom, ese bloque puede volverse inestable respecto de algún bunch, así que hay que volver a poner en la splitter list todas las block-bunch-slices que salen de él y marcar transiciones en cada una (Líneas~\ref{alg:line-make-all-slices-unstable}--\ref{alg:line-mark-bb-of-new-bottom}).
+
+$\Bottom(N)_{\pijl{}}$ es el conjunto de las transiciones salientes de los estados bottom de $N$. Cada vez que un estado $s$ se convierte en un nuevo estado bottom, la complejidad es proporcional a la cantidad de transiciones que salen de $s$, sumada sobre los nuevos estados bottom de $N$, tal como se ve en la anotación $\bigo{\size{\Bottom(N)_{\pijl{}}}}$ de las Líneas~\ref{alg:line:callsplit1}--\ref{alg:line-mark-bb-of-new-bottom}.
+
+Un estado se puede convertir en estado bottom solo una vez a lo largo del algoritmo. Los bloques solo se refinan y las transiciones inertes solo pueden dejar de ser inertes, nunca al revés, así que una vez que un estado se queda sin transiciones inertes salientes es bottom para siempre. Por lo tanto, el trabajo total de esta parte está acotado por la suma, sobre todos los estados, de sus transiciones salientes:
+\[
+\sum_{s \in S} \size{s_{\pijl{}}} = m,
+\]
+es decir, $\bigo{m}$.
+
+La Línea~\ref{alg:line-make-all-slices-unstable} vuelve a marcar como inestables todas las block-bunch-slices que salen de $N$, así que su costo es proporcional a la cantidad de esas slices. Acá no alcanza con contar los nuevos estados bottom que $N$ tiene en este momento, porque puede haber block-bunch-slices cuyas transiciones salgan únicamente de estados no bottom. Cuando $N$ se divida respecto de una de esas slices, al menos uno de esos estados no bottom va a pasar a ser bottom, pero todavía no podemos decir cuál. Por eso el costo se contabiliza como $\bigo{\size{\Bottom^{*}(N)_{\pijl{}}}}$, donde $\Bottom^{*}(N)$ denota los nuevos estados bottom de $N$ presentes y futuros, es decir, contamos también a los estados que todavía no son bottom pero de los que ya sabemos que lo van a ser.
+
+\textbf{Total.} 
+\[
+\begin{array}{lr}
+\text{inicialización (Líneas~\ref{alg-line-contract-SCCs}--\ref{algo:main:outerloop})} & \bigo{m} \\
+\text{división de bunches} & \bigo{m \log n} \\
+\text{división de bloques} & \bigo{m \log n} \\
+\text{nuevos estados bottom} & \bigo{m} \\[2pt]
+\hline
+\rule{0pt}{2.4ex}\text{total} & \bigo{m \log n}
+\end{array}
+\]
+El total es $\bigo{m \log n}$, que coincide con la cota prometida por los autores. Comparada con la complejidad $\bigo{nm}$ del algoritmo de Mohajerani et al.~\cite{wsoe} usado hasta ahora en la síntesis composicional, la mejora en las cotas es de un factor $n / \log n$. En el Capítulo~\ref{cap:implementacion} se describe la implementación de este algoritmo dentro de \MTSA, y qué estructuras de datos hacen falta para que cada línea del pseudocódigo respete la complejidad con la que fue descrita en esta sección.

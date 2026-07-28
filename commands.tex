@@ -110,6 +110,19 @@
 \newcommand{\bisauxiliary}{\raisebox{.3ex}{\makebox[\leftrightarrowwidth]{$\underline{\makebox[0.7\leftrightarrowwidth]{$\leftrightarrow$}}$}}}
 \newcommand{\bbis}{\mathrel{\bisauxiliary_b\!}}
 \newcommand{\pijl}[1]{\mathrel{\text{$\xrightarrow{\smash[t]{#1}}$}}}
+\newcommand{\lijp}[1]{\mathrel{\text{$\xleftarrow{\smash[t]{#1}}$}}}
+% Slices y conjuntos derivados de las particiones Pi_s y Pi_t (Cap. 4)
+\newcommand{\TB}{T_{B\pijl{}}}
+\newcommand{\TBp}{T'_{B\pijl{}}}
+\newcommand{\TBaB}{T_{B\pijl{a} B'}}
+\newcommand{\TaB}{T_{\pijl{a} B'}}
+\newcommand{\BT}{B_{\pijl{T}}}
+% Ojo: \# esta redefinido mas abajo como \rapprox (notacion de DCS), asi que
+% el numeral hay que tomarlo de la fuente de texto con \symbol{35}.
+\newcommand{\hash}{\mathord{\text{\symbol{35}}}}
+\newcommand{\nraB}{\hash aB'}
+\newcommand{\Bottom}{\mathit{Bottom}}
+\newcommand{\splittableBlocks}{\mathit{splittableBlocks}}
 
 \newcommand{\notstep}[2]{\overset{#1}{\not\D}_{#2}}
 \newcommand{\step}[2]{\overset{#1}{\D}_{#2}}
@@ -173,6 +186,9 @@
 
 
 \newcommand{\marked}[2]{\mk{\exists e_m \in #1 \ldot e_m \in M_{#2}}}
+\newcommand{\Marked}{\mathit{Marked}}
+\newtheorem{invariante}[definition]{Invariante}
+
 \newcommand{\descendants}{\mk{descendants}}
 
 \newcommand{\Targets}{Targets\newcommand{\Targets}{Targets}
@@ -259,3 +275,100 @@
 \newcommand{\multlinecomment}[1]{\directlua{-- #1}}
 
 \newcommand{\Review}[1]{#1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Notacion de complejidad y llaves de costo en los algoritmos (Cap. 4)
+%%  Tomados de las fuentes de Jansen et al. (arXiv:1909.10824).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\bigo}[1]{{O\!\left(#1\right)}}
+\newcommand{\bigO}{O}                                   % O sin argumento
+\newcommand{\size}[1]{\left\lvert #1 \right\rvert}
+
+% \rightbrace{<lineas>}{<texto>}: llave gris al margen derecho de un bloque de
+% pseudocodigo, para anotar su costo.
+\newlength{\halflineskip}
+\newcommand{\rightbrace}[3][0]{\setlength{\halflineskip}{0.5\baselineskip}\hspace{0pt plus 1filll}\makebox[0pt][l]{\smash{\tikz[baseline=#1\baselineskip]{\draw[thick,color=gray,line cap=round,decorate,decoration={brace,amplitude=2.3pt}] (0pt,0.7\baselineskip) ++(0.1em,0) -- ++(0pt,-#2\baselineskip+1pt) (5pt,\halflineskip-#2\halflineskip) node[color=gray,right,inner sep=0.1em,anchor=base west]{\small #3};}}}}
+
+% Comentarios en gris dentro de los algoritmos
+\renewcommand{\algorithmiccomment}[1]{\hfill{\color{gray}// #1}}
+
+% Rotulo del float de algoritmos ("Algorithm 1" -> "Algoritmo 1")
+\makeatletter
+\renewcommand{\ALG@name}{Algoritmo}
+\makeatother
+\renewcommand{\listalgorithmname}{Índice de algoritmos}
+
+% Palabras clave del pseudocodigo en castellano. Las compuestas
+% (\algorithmicendif, \algorithmicendfor, \algorithmicendwhile, ...) se derivan
+% de \algorithmicend y de la palabra correspondiente, asi que salen solas.
+\renewcommand{\algorithmicrequire}{\textbf{Requiere:}}
+\renewcommand{\algorithmicensure}{\textbf{Asegura:}}
+\renewcommand{\algorithmicend}{\textbf{fin}}
+\renewcommand{\algorithmicif}{\textbf{si}}
+\renewcommand{\algorithmicthen}{\textbf{entonces}}
+\renewcommand{\algorithmicelse}{\textbf{si no}}
+\renewcommand{\algorithmicelsif}{\textbf{si no, si}}
+\renewcommand{\algorithmicfor}{\textbf{para}}
+\renewcommand{\algorithmicforall}{\textbf{para todo}}
+\renewcommand{\algorithmicdo}{\textbf{hacer}}
+\renewcommand{\algorithmicwhile}{\textbf{mientras}}
+\renewcommand{\algorithmicloop}{\textbf{repetir}}
+\renewcommand{\algorithmicrepeat}{\textbf{repetir}}
+\renewcommand{\algorithmicuntil}{\textbf{hasta que}}
+\renewcommand{\algorithmicprint}{\textbf{imprimir}}
+\renewcommand{\algorithmicreturn}{\textbf{retornar}}
+\renewcommand{\algorithmicand}{\textbf{y}}
+\renewcommand{\algorithmicor}{\textbf{o}}
+\renewcommand{\algorithmicnot}{\textbf{no}}
+\renewcommand{\algorithmicto}{\textbf{hasta}}
+\renewcommand{\algorithmicinputs}{\textbf{entradas}}
+\renewcommand{\algorithmicoutputs}{\textbf{salidas}}
+\renewcommand{\algorithmicglobals}{\textbf{globales}}
+\renewcommand{\algorithmicbody}{\textbf{hacer}}
+\renewcommand{\algorithmictrue}{\textbf{verdadero}}
+\renewcommand{\algorithmicfalse}{\textbf{falso}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  Estilos tikz para las figuras de bloques y bunches (Cap. 4)
+%%  Tomados de las fuentes de Jansen et al. (arXiv:1909.10824).
+%%  Van agrupados en el estilo `bunchpic' para que la redefinicion de `state'
+%%  quede local a cada tikzpicture y no afecte a los automatas de los otros
+%%  capitulos (que usan el `state' de la libreria automata).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newlength{\statetextwidth}\settowidth{\statetextwidth}{$s_0$}
+\newlength{\statetextheight}\settoheight{\statetextheight}{$s_0$}
+\newlength{\statetextdepth}\settodepth{\statetextdepth}{$s_0$}
+
+\tikzset{bunchpic/.style={
+	bunch/.style={very thin,draw,fill=gray!5},
+	block/.style={thick,draw,fill=gray!15,rounded corners=4.95mm},
+	state/.style={circle,draw,semithick,fill=white,inner sep=1.35pt,
+		text height=\statetextheight,text depth=\statetextdepth},
+	% Estados rayados: verticales para los destinados a R, horizontales para
+	% los destinados a U. Se usan rayas (y no solo color) para que las figuras
+	% se sigan entendiendo impresas en blanco y negro.
+	red state/.style={state,fill=red!10,path picture={\draw[red!40,very thick]
+		(-0.25\statetextwidth,-1cm) -- (-0.25\statetextwidth,2cm)
+		(0cm,-1cm) -- (0cm,2cm)
+		(0.25\statetextwidth,-1cm) -- (0.25\statetextwidth,2cm)
+		(0.5\statetextwidth,-1cm) -- (0.5\statetextwidth,2cm)
+		(0.75\statetextwidth,-1cm) -- (0.75\statetextwidth,2cm)
+		(\statetextwidth,-1cm) -- (\statetextwidth,2cm)
+		(1.25\statetextwidth,-1cm) -- (1.25\statetextwidth,2cm);}},
+	blue state/.style={state,fill=blue!10,path picture={\draw[blue!40,very thick]
+		(-1cm,0.5\statetextheight-0.5\statetextdepth+0.75\statetextwidth) -- (2cm,0.5\statetextheight-0.5\statetextdepth+0.75\statetextwidth)
+		(-1cm,0.5\statetextheight-0.5\statetextdepth+0.5\statetextwidth) -- (2cm,0.5\statetextheight-0.5\statetextdepth+0.5\statetextwidth)
+		(-1cm,0.5\statetextheight-0.5\statetextdepth+0.25\statetextwidth) -- (2cm,0.5\statetextheight-0.5\statetextdepth+0.25\statetextwidth)
+		(-1cm,0.5\statetextheight-0.5\statetextdepth) -- (2cm,0.5\statetextheight-0.5\statetextdepth)
+		(-1cm,0.5\statetextheight-0.5\statetextdepth-0.25\statetextwidth) -- (2cm,0.5\statetextheight-0.5\statetextdepth-0.25\statetextwidth)
+		(-1cm,0.5\statetextheight-0.5\statetextdepth-0.5\statetextwidth) -- (2cm,0.5\statetextheight-0.5\statetextdepth-0.5\statetextwidth)
+		(-1cm,0.5\statetextheight-0.5\statetextdepth-0.75\statetextwidth) -- (2cm,0.5\statetextheight-0.5\statetextdepth-0.75\statetextwidth);}}
+}}
+
+%%  Marcas en linea para referirse a los estados rayados desde el texto.
+\newcommand{\redstatetext}{\smash{\tikz[bunchpic,baseline=-0.37\statetextwidth]{%
+	\node[red state,thin,inner sep=0pt]{\makebox[0.5\statetextwidth]{}};}}}
+\newcommand{\bluestatetext}{\smash{\tikz[bunchpic,baseline=-0.37\statetextwidth]{%
+	\node[blue state,thin,inner sep=0pt]{\makebox[0.5\statetextwidth]{}};}}}
