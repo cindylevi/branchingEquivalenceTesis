@@ -87,7 +87,10 @@ Como trabajo a futuro, presentamos las siguientes ideas.
     embargo una familia de algoritmos de minimización que opera sobre representaciones
     simbólicas, donde los conjuntos de estados y la relación de transición se codifican como
     diagramas de decisión binarios (BDDs) y el refinamiento de la partición se realiza mediante
-    operaciones sobre esos diagramas~\cite{sigref}. Esa representación cambia por completo el
+    operaciones sobre esos diagramas. Un ejemplo es Sigref~\cite{sigref}, una caja de herramientas
+    que implementa varias de las
+    equivalencias de bisimulación, entre ellas \textit{branching} y
+    \textit{weak bisimulation}. Esa representación cambia por completo el
     costo de las operaciones elementales sobre las que se apoya el análisis $\bigo{m \log n}$,
     ya que no hay un costo constante por transición individual, sino que el costo depende del tamaño
     del BDD, que a su vez no es monótono en la cantidad de estados. Queda entonces como pregunta
