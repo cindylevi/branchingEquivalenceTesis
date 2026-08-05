@@ -76,10 +76,10 @@ Como trabajo a futuro, presentamos las siguientes ideas.
     bisimilarity}~\cite{groote2025}, esta vez basado en particiones de estados, que combina las estructuras
     de datos más simples de los algoritmos sobre estructuras de Kripke con una representación
     más económica de la partición de transiciones, y cuyos \textit{benchmarks} reportan mejoras
-    sobre~\cite{groote2019} tanto en tiempo como en espacio. Además, el mismo grupo continúa
+     tanto en tiempo como en espacio. Además, el mismo grupo continúa
     trabajando en algoritmos todavía más eficientes para esta equivalencia, por lo que conviene
     estar atentos a los resultados que surjan en esa línea. Se podria ver de implementar este nuevo algoritmo con estructuras de datos eficientes
-    en Java y ver si los tiempos presentan alguna mejora.
+    en Java y ver si los tiempos o el uso de memoria presentan alguna mejora significativa.
 
     \item \textbf{Evaluar el algoritmo sobre representaciones simbólicas.} Todos los LTS que
     minimizamos en esta tesis están representados de forma explícita, es decir, enumerando
@@ -88,8 +88,8 @@ Como trabajo a futuro, presentamos las siguientes ideas.
     simbólicas, donde los conjuntos de estados y la relación de transición se codifican como
     diagramas de decisión binarios (BDDs) y el refinamiento de la partición se realiza mediante
     operaciones sobre esos diagramas~\cite{sigref}. Esa representación cambia por completo el
-    costo de las operaciones elementales sobre las que se apoya el análisis $\bigo{m \log n}$:
-    ya no hay un costo constante por transición individual, sino que el costo depende del tamaño
+    costo de las operaciones elementales sobre las que se apoya el análisis $\bigo{m \log n}$,
+    ya que no hay un costo constante por transición individual, sino que el costo depende del tamaño
     del BDD, que a su vez no es monótono en la cantidad de estados. Queda entonces como pregunta
     abierta si las mejoras en tiempo que medimos acá se mantienen al ejecutar estos algoritmos
     sobre LTS con representación simbólica.
